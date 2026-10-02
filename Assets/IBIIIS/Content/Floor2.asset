@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ab9f7c3f79586c44eac1dd8535d68206, type: 3}
+  m_Name: Floor2
+  m_EditorClassIdentifier: IBIIIS.Runtime::IBIIIS.TileDefinition
+  id: ee9d00b371b647e2a6e641792d956001
+  displayName: "\uC0C8 \uD0C0\uC77C"
+  walkable: 1
+  color: {r: 0.26802725, g: 0.70440245, b: 0.5627222, a: 1}
+  visualPrefab: {fileID: 0}

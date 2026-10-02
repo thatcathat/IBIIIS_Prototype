@@ -1,0 +1,13 @@
+.map-root { flex-grow: 1; background-color: #222831; color: #eeeeee; }
+.toolbar { flex-direction: row; flex-wrap: wrap; padding: 6px; background-color: #303945; }
+.toolbar > Button { margin-right: 5px; }
+.map-picker { flex-grow: 1; min-width: 260px; }
+.body { flex-direction: row; flex-grow: 1; }
+.sidebar { width: 220px; padding: 10px; background-color: #303945; }
+.sidebar > * { margin-bottom: 8px; }
+.heading { -unity-font-style: bold; font-size: 16px; }
+.help { white-space: normal; }
+.canvas { flex-grow: 1; overflow: hidden; min-width: 160px; background-color: #1c222a; }
+.status { white-space: normal; padding: 8px; background-color: #303945; }
+.palette { max-height: 250px; }
+.selected-tile { background-color: #24695d; color: #ffffff; }
