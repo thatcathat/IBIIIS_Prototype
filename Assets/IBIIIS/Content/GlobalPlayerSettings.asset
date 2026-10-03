@@ -13,5 +13,8 @@ MonoBehaviour:
   m_Name: GlobalPlayerSettings
   m_EditorClassIdentifier: IBIIIS.Runtime::IBIIIS.PlayerSettings
   visualPrefab: {fileID: 0}
-  moveTurnCost: 1
-  blockedTurnCost: 0
+  moveDuration: 0.25
+  showMoveHints: 1
+  moveHintColor: {r: 0.2, g: 0.9, b: 1, a: 1}
+  destinationColor: {r: 1, g: 0.8, b: 0.15, a: 1}
+  moveHintMaterial: {fileID: 0}

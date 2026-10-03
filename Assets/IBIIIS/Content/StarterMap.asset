@@ -12,6 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c71711c24b6055f4e84a5c6edcc9967e, type: 3}
   m_Name: StarterMap
   m_EditorClassIdentifier: IBIIIS.Runtime::IBIIIS.GridMap
+  groundMaterial: {fileID: 0}
+  groundMargin: 50
+  movementColor: {r: 0.28, g: 0.55, b: 0.46, a: 1}
   width: 15
   height: 15
   cells:

@@ -71,14 +71,8 @@ namespace IBIIIS.Editor
                 var cell = new Vector2Int(x, y); var o = offset + new Vector2(x, Map.Height - 1 - y) * size;
                 if (o.x + size < 0 || o.y + size < 0 || o.x > contentRect.width || o.y > contentRect.height) continue;
                 var tile = Map.GetTile(cell);
-                painter.fillColor = tile != null ? tile.Color : string.IsNullOrEmpty(Map.GetId(cell)) ? new Color(.16f, .19f, .23f) : Color.magenta;
+                painter.fillColor = Map.IsWalkable(cell) ? Map.GetFloorColor(cell) : (tile != null || string.IsNullOrEmpty(Map.GetId(cell))) ? new Color(.16f, .19f, .23f) : Color.magenta;
                 Rect(painter, o + Vector2.one, size - 2, size - 2); painter.Fill();
-                if (tile != null && !tile.Walkable)
-                {
-                    painter.strokeColor = Color.black; painter.lineWidth = 2;
-                    painter.BeginPath(); painter.MoveTo(o + Vector2.one * size * .25f); painter.LineTo(o + Vector2.one * size * .75f);
-                    painter.MoveTo(o + new Vector2(.25f, .75f) * size); painter.LineTo(o + new Vector2(.75f, .25f) * size); painter.Stroke();
-                }
                 if (Map.HasStart && Map.Start == cell)
                 { painter.strokeColor = Color.yellow; painter.lineWidth = 3; Rect(painter, o + Vector2.one * 3, size - 6, size - 6); painter.Stroke(); }
             }

@@ -10,11 +10,9 @@ namespace IBIIIS
     {
         [SerializeField, Tooltip("필수. 맵 에디터에서 작성한 맵")] private GridMap map;
         [SerializeField, Min(.1f), Tooltip("한 칸의 월드 크기")] private float cellSize = 1;
-        [SerializeField, Tooltip("공용 플레이어 외형·이동 비용 설정. 새 테스트 씬은 기본 설정을 자동 연결합니다.")] private PlayerSettings playerSettings;
-        [SerializeField, HideInInspector] private int moveTurnCost = 1;
-        [SerializeField, HideInInspector] private int blockedTurnCost;
+        [SerializeField, Tooltip("공용 플레이어 외형·이동 시간·이동 표시 설정. 새 테스트 씬은 기본 설정을 자동 연결합니다.")] private PlayerSettings playerSettings;
         [SerializeField, HideInInspector] private GameObject playerVisualPrefab;
-        [SerializeField, Tooltip("선택. 기본 블록에 쓸 머티리얼")] private Material fallbackMaterial;
+        [SerializeField, Tooltip("선택. 이동 영역과 임시 플레이어 외형에 쓸 머티리얼")] private Material fallbackMaterial;
         [SerializeField, Tooltip("맵 전체를 비추는 테스트 카메라")] private Camera viewCamera;
         [SerializeField, Tooltip("선택. 자동 맞춤 시 적용하는 공용 Projection·각도·화각 설정")] private MapCameraSettings cameraSettings;
         [SerializeField, Tooltip("Scene과 Play에서 맵 전체가 보이도록 카메라 위치·크기를 자동 계산합니다. 끄면 직접 편집한 카메라 구도를 유지합니다.")] private bool autoFitCamera = true;
@@ -22,6 +20,9 @@ namespace IBIIIS
         private GridSession session;
         private Transform generated;
         private Transform player;
+        private Transform[] moveHints;
+        private static readonly Vector2Int[] Directions = { Vector2Int.up, Vector2Int.right, Vector2Int.down, Vector2Int.left };
+        public float MoveDuration => playerSettings != null ? playerSettings.MoveDuration : .25f;
         [SerializeField, HideInInspector] private GameObject environmentInstance;
         [SerializeField, HideInInspector] private GameObject environmentSource;
         public GameObject EnvironmentInstance => environmentInstance;
@@ -47,8 +48,6 @@ namespace IBIIIS
         public Transform Generated => generated;
         public bool AutoFitCamera => autoFitCamera;
         public PlayerSettings SharedPlayerSettings => playerSettings;
-        public int MoveTurnCost => playerSettings != null ? playerSettings.MoveTurnCost : moveTurnCost;
-        public int BlockedTurnCost => playerSettings != null ? playerSettings.BlockedTurnCost : blockedTurnCost;
         public GameObject PlayerVisualPrefab => playerSettings != null ? playerSettings.VisualPrefab : playerVisualPrefab;
         public Material FallbackMaterial => fallbackMaterial;
         public MapCameraSettings CameraSettings => cameraSettings;
@@ -60,10 +59,11 @@ namespace IBIIIS
         {
             if (session != null) return;
             ClearGenerated();
-            try { session = new GridSession(map, MoveTurnCost, BlockedTurnCost); }
+            try { session = new GridSession(map); }
             catch (Exception e) { Debug.LogError($"[IBIIIS] {name}: {e.Message}", this); enabled = false; return; }
             CreateVisuals(false);
             EnsureRuntimeEnvironment();
+            if (Application.IsPlaying(gameObject)) MovementWorldTime.Register(this);
         }
         public void RefreshPreview()
         {
@@ -75,7 +75,8 @@ namespace IBIIIS
         public void ClearGenerated()
         {
             if (generated != null) { generated.gameObject.SetActive(false); Release(generated.gameObject); }
-            generated = null; player = null; session = null;
+            MovementWorldTime.Unregister(this);
+            generated = null; player = null; session = null; moveHints = null;
             foreach (var material in materials) if (material != null) Release(material);
             materials.Clear();
         }
@@ -115,19 +116,21 @@ namespace IBIIIS
             for (int y = 0; y < map.Height; y++)
                 for (int x = 0; x < map.Width; x++)
                 {
-                    var p = new Vector2Int(x, y); var tile = map.GetTile(p);
-                    if (tile == null) continue;
-                    var anchor = new GameObject($"Cell {x},{y}").transform;
-                    anchor.SetParent(generated, false); anchor.localPosition = LocalPosition(p);
-                    if (tile.VisualPrefab != null) Instantiate(tile.VisualPrefab, anchor, false);
-                    else
-                    {
-                        var visual = Block(anchor, tile.Color);
-                        visual.localScale = new Vector3(cellSize * .96f, tile.Walkable ? .12f : .7f, cellSize * .96f);
-                        visual.localPosition = new Vector3(0, tile.Walkable ? -.06f : .35f, 0);
-                    }
+                    var p = new Vector2Int(x, y);
+                    if (!map.IsWalkable(p)) continue;
+                    var visual = FlatSurface($"Cell {x},{y}", new Vector3(cellSize * .96f, cellSize * .96f, 1));
+                    visual.localPosition = LocalPosition(p) + Vector3.up * .01f;
+                    var tile = map.GetTile(p);
+                    if (tile != null && tile.SurfaceMaterial != null) visual.GetComponent<Renderer>().sharedMaterial = tile.SurfaceMaterial;
+                    else Tint(visual.gameObject, map.GetFloorColor(p));
                 }
             if (map.HasStart && map.IsWalkable(map.Start)) CreatePlayer(preview ? map.Start : session.Position);
+            var ground = FlatSurface("Background Ground", new Vector3((map.Width + map.GroundMargin * 2) * cellSize, (map.Height + map.GroundMargin * 2) * cellSize, 1));
+            ground.localPosition = new Vector3((map.Width - 1) * cellSize / 2, 0, (map.Height - 1) * cellSize / 2);
+            var groundMaterial = map.GroundMaterial != null ? map.GroundMaterial : Resources.Load<Material>("IBIIIS/DefaultGround");
+            if (groundMaterial != null) ground.GetComponent<Renderer>().sharedMaterial = groundMaterial;
+            else Tint(ground.gameObject, new Color(.22f, .24f, .26f));
+            CreateMoveHints(); RefreshMoveHints();
             if (preview)
                 foreach (var child in generated.GetComponentsInChildren<Transform>(true)) child.gameObject.hideFlags = HideFlags.HideAndDontSave;
         }
@@ -147,10 +150,11 @@ namespace IBIIIS
             }
         }
         private Vector3 LocalPosition(Vector2Int p) => new Vector3(p.x * cellSize, 0, p.y * cellSize);
-        private Transform Block(Transform parent, Color color)
+        private Transform FlatSurface(string label, Vector3 scale)
         {
-            var go = GameObject.CreatePrimitive(PrimitiveType.Cube); go.transform.SetParent(parent, false);
-            Release(go.GetComponent<Collider>()); Tint(go, color); return go.transform;
+            var go = GameObject.CreatePrimitive(PrimitiveType.Quad); go.name = label; go.transform.SetParent(generated, false);
+            go.transform.localRotation = Quaternion.Euler(90, 0, 0); go.transform.localScale = scale;
+            Release(go.GetComponent<Collider>()); return go.transform;
         }
         private void Tint(GameObject go, Color color)
         {
@@ -158,18 +162,77 @@ namespace IBIIIS
             var material = new Material(fallbackMaterial) { hideFlags = HideFlags.HideAndDontSave }; material.color = color; materials.Add(material);
             go.GetComponent<Renderer>().sharedMaterial = material;
         }
+        private void CreateMoveHints()
+        {
+            var root = new GameObject("Movement Hints").transform; root.SetParent(generated, false);
+            moveHints = new Transform[5];
+            var basis = playerSettings != null ? playerSettings.MoveHintMaterial : null;
+            if (basis == null) basis = fallbackMaterial != null ? fallbackMaterial : Resources.Load<Material>("IBIIIS/DefaultGround");
+            var shader = basis != null ? basis.shader : Shader.Find("Universal Render Pipeline/Unlit");
+            if (shader == null) return;
+            for (int i = 0; i < 5; i++)
+            {
+                var ring = new GameObject(i == 4 ? "Destination" : "Adjacent " + Directions[i]).transform;
+                ring.SetParent(root, false); moveHints[i] = ring;
+                var material = basis != null ? new Material(basis) : new Material(shader);
+                material.hideFlags = HideFlags.HideAndDontSave;
+                material.color = i == 4 ? (playerSettings != null ? playerSettings.DestinationColor : Color.yellow) :
+                    (playerSettings != null ? playerSettings.MoveHintColor : Color.cyan);
+                materials.Add(material);
+                for (int edge = 0; edge < 4; edge++)
+                {
+                    bool horizontal = edge < 2; float sign = edge % 2 == 0 ? -1 : 1;
+                    var strip = FlatSurface("Border", new Vector3(cellSize * (horizontal ? .9f : .035f), cellSize * (horizontal ? .035f : .9f), 1));
+                    strip.SetParent(ring, false); strip.localRotation = Quaternion.Euler(90, 0, 0);
+                    strip.localPosition = horizontal ? new Vector3(0, 0, sign * cellSize * .435f) : new Vector3(sign * cellSize * .435f, 0, 0);
+                    strip.GetComponent<Renderer>().sharedMaterial = material;
+                }
+            }
+        }
+        public void RefreshMoveHints()
+        {
+            if (moveHints == null) return;
+            bool enabledHints = playerSettings == null || playerSettings.ShowMoveHints;
+            bool valid = session != null || (map != null && map.HasStart && map.IsWalkable(map.Start));
+            bool moving = session != null && session.IsMoving;
+            var position = session != null ? session.Position : map != null ? map.Start : Vector2Int.zero;
+            for (int i = 0; i < moveHints.Length; i++)
+            {
+                if (moveHints[i] == null) continue;
+                bool visible = enabledHints && valid && (i == 4 ? moving : !moving &&
+                    (session != null ? session.CanMove(Directions[i]) : GridSession.CanStep(position, Directions[i], map.IsWalkable)));
+                moveHints[i].gameObject.SetActive(visible);
+                if (visible) moveHints[i].localPosition = LocalPosition(i == 4 ? session.Destination : position + Directions[i]) + Vector3.up * .025f;
+            }
+        }
+        public bool TryBeginMove(Vector2Int direction)
+        {
+            if (session == null || !session.TryMove(direction, MoveDuration)) return false;
+            if (Application.IsPlaying(gameObject)) MovementWorldTime.SetMoving(this, true);
+            RefreshMoveHints(); return true;
+        }
+        public void AdvanceMovement(float seconds)
+        {
+            if (session == null || !session.IsMoving) return;
+            session.Advance(seconds);
+            player.localPosition = session.IsMoving ? Vector3.Lerp(LocalPosition(session.Position), LocalPosition(session.Destination), session.Progress) : LocalPosition(session.Position);
+            if (Application.IsPlaying(gameObject)) MovementWorldTime.SetMoving(this, session.IsMoving);
+            RefreshMoveHints();
+        }
         private void Update()
         {
-            if (!Application.IsPlaying(gameObject) || session == null || Keyboard.current == null) return;
+            if (!Application.IsPlaying(gameObject) || session == null) return;
+            if (session.IsMoving) { AdvanceMovement(Time.unscaledDeltaTime); return; }
+            if (Keyboard.current == null) return;
             var k = Keyboard.current;
             var direction = k.wKey.wasPressedThisFrame ? Vector2Int.up : k.sKey.wasPressedThisFrame ? Vector2Int.down :
                 k.aKey.wasPressedThisFrame ? Vector2Int.left : k.dKey.wasPressedThisFrame ? Vector2Int.right : Vector2Int.zero;
-            if (direction == Vector2Int.zero) return;
-            session.TryMove(direction); player.localPosition = LocalPosition(session.Position);
+            if (direction != Vector2Int.zero) TryBeginMove(direction);
         }
         private void OnGUI()
         {
-            if (Application.IsPlaying(gameObject) && session != null) GUI.Box(new Rect(12, 12, 360, 52), $"WASD: move one cell   |   Turn {session.Turn}\nCell ({session.Position.x}, {session.Position.y})");
+            if (Application.IsPlaying(gameObject) && session != null) GUI.Box(new Rect(12, 12, 360, 52),
+                $"WASD: move one cell | {(session.IsMoving ? "Moving" : "Waiting")}\nCell ({session.Position.x}, {session.Position.y})");
         }
         private void OnDisable() { ClearGenerated(); }
         private void OnDestroy() { ClearGenerated(); }

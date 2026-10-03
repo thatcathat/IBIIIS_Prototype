@@ -3,14 +3,15 @@ using UnityEngine;
 
 namespace IBIIIS
 {
-    [CreateAssetMenu(menuName = "IBIIIS/Tile Definition")]
     public sealed class TileDefinition : ScriptableObject
     {
         [SerializeField, HideInInspector] private string id;
-        [SerializeField, Tooltip("팔레트에 표시할 이름")] private string displayName = "새 타일";
-        [SerializeField, Tooltip("이 타일 위로 이동할 수 있는지 여부")] private bool walkable = true;
-        [SerializeField, Tooltip("맵 편집기 및 대체 외형의 색상")] private Color color = new Color(.3f, .6f, .5f);
-        [SerializeField, Tooltip("선택 사항. 한 칸 크기로 제작한 외형 프리팹. 없으면 임시 블록 사용")] private GameObject visualPrefab;
+        [SerializeField, Tooltip("바닥 팔레트에 표시할 이름")] private string displayName = "새 타일";
+        [SerializeField, HideInInspector] private bool walkable = true;
+        [SerializeField, Tooltip("맵 에디터 표시 색상. 재질이 없으면 Scene에서도 이 색상을 사용합니다.")] private Color color = new Color(.3f, .6f, .5f);
+        [SerializeField, HideInInspector] private GameObject visualPrefab;
+        [SerializeField, Tooltip("선택. 평면 바닥 재질. 지정하면 Scene에서 재질 원본의 색상과 텍스처를 사용합니다.")] private Material surfaceMaterial;
+        public Material SurfaceMaterial => surfaceMaterial;
         public string Id => id;
         public string DisplayName => displayName;
         public bool Walkable => walkable;

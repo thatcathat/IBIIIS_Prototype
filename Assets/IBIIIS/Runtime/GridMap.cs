@@ -8,12 +8,25 @@ namespace IBIIIS
     public sealed class GridMap : ScriptableObject
     {
         public const int MaxSize = 64;
+        private const string WalkableCellId = "__ibiiis_walkable__";
+        [SerializeField, Tooltip("선택. 비어 있으면 공용 기본 바닥 재질을 사용합니다.")] private Material groundMaterial;
+        [SerializeField, Min(0), Tooltip("그리드 바깥 각 방향의 바닥 여유 폭 (칸). 기본값 50.")] private float groundMargin = 50;
+        [SerializeField, Tooltip("이동 영역 표시 색상. 표시 방식은 임시 설정입니다.")] private Color movementColor = new Color(.28f, .55f, .46f);
+        public Material GroundMaterial => groundMaterial;
+        public float GroundMargin => Mathf.Max(0, groundMargin);
+        public Color MovementColor => movementColor;
+        public void SetWalkable(Vector2Int p, bool value)
+        {
+            if (!Contains(p)) throw new ArgumentOutOfRangeException(nameof(p));
+            cells[p.y * width + p.x] = value ? WalkableCellId : null;
+            if (!value && hasStart && start == p) hasStart = false;
+        }
         [SerializeField, HideInInspector] private int width = 12;
         [SerializeField, HideInInspector] private int height = 12;
         [SerializeField, HideInInspector] private string[] cells = new string[144];
         [SerializeField, HideInInspector] private bool hasStart;
         [SerializeField, HideInInspector] private Vector2Int start;
-        [SerializeField, Tooltip("사용할 타일 목록. 같은 ID가 있는 타일을 중복 등록하지 마세요.")]
+        [SerializeField, HideInInspector]
         private List<TileDefinition> palette = new List<TileDefinition>();
         [SerializeField, Tooltip("선택. Scene에서 편집할 장식 배치 프리팹. 이동 판정과 무관하며 원점은 (0,0) 칸 중심입니다.")]
         private GameObject environmentPrefab;
@@ -32,7 +45,7 @@ namespace IBIIIS
             if (string.IsNullOrEmpty(id)) return null;
             return palette.Find(t => t != null && t.Id == id);
         }
-        public bool IsWalkable(Vector2Int p) => GetTile(p) != null && GetTile(p).Walkable;
+        public bool IsWalkable(Vector2Int p) => GetId(p) == WalkableCellId || (GetTile(p) != null && GetTile(p).Walkable);
         public void AddTile(TileDefinition tile) { if (tile != null && !palette.Contains(tile)) palette.Add(tile); }
         public void SetTile(Vector2Int p, TileDefinition tile)
         {
@@ -40,6 +53,20 @@ namespace IBIIIS
             if (tile != null && !palette.Contains(tile)) throw new ArgumentException("타일을 먼저 팔레트에 등록하세요.");
             cells[p.y * width + p.x] = tile == null ? null : tile.Id;
         }
+        public void AddFloor(TileDefinition tile)
+        {
+            if (tile == null || !tile.Walkable) throw new ArgumentException("이동 가능한 바닥만 등록할 수 있습니다.");
+            if (string.IsNullOrEmpty(tile.Id) || tile.Id == WalkableCellId || palette.Exists(t => t != null && t != tile && t.Id == tile.Id))
+                throw new ArgumentException("바닥 ID가 비어 있거나 중복됩니다. 새 바닥 만들기로 생성하세요.");
+            AddTile(tile);
+        }
+        public void PaintFloor(Vector2Int p, TileDefinition tile)
+        {
+            if (tile == null) { SetWalkable(p, true); return; }
+            if (!tile.Walkable) throw new ArgumentException("이동 불가 타일은 배치할 수 없습니다.");
+            SetTile(p, tile);
+        }
+        public Color GetFloorColor(Vector2Int p) => GetTile(p) != null ? GetTile(p).Color : movementColor;
         public void SetStart(Vector2Int p)
         {
             if (!IsWalkable(p)) throw new ArgumentException("시작 위치는 이동 가능한 타일이어야 합니다.");
@@ -60,7 +87,7 @@ namespace IBIIIS
             var errors = new List<string>();
             if (width < 1 || height < 1 || width > MaxSize || height > MaxSize || cells == null || cells.Length != width * height)
             { errors.Add("맵 크기 또는 셀 데이터가 올바르지 않습니다."); return errors; }
-            var ids = new HashSet<string>();
+            var ids = new HashSet<string> { WalkableCellId };
             foreach (var tile in palette)
             {
                 if (tile == null) { errors.Add("팔레트에 누락된 타일 참조가 있습니다."); continue; }

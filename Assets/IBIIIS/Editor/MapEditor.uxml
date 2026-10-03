@@ -15,21 +15,26 @@
         <ui:IntegerField name="width" label="가로 (칸)" value="12" />
         <ui:IntegerField name="height" label="세로 (칸)" value="12" />
         <ui:Button name="resize" text="크기 적용 (1~64)" />
-        <ui:Label text="타일 팔레트" class="heading" />
-        <ui:ScrollView name="palette" class="palette" />
-        <uie:ObjectField name="tile" label="등록할 타일" />
-        <ui:Button name="add-tile" text="팔레트에 등록" />
-        <ui:Button name="new-tile" text="새 타일 만들기" />
-        <ui:Button name="edit-tile" text="선택 타일 설정 열기" />
+        <ui:Label text="이동 영역 편집" class="heading" />
         <ui:DropdownField name="tool" label="도구" />
+        <ui:Label text="이동 바닥 팔레트" class="heading" />
+        <ui:ScrollView name="floor-palette" class="palette" />
+        <ui:Button name="new-floor" text="새 바닥 만들기" />
+        <uie:ObjectField name="floor-asset" label="기존 바닥" />
+        <ui:Button name="add-floor" text="팔레트에 등록" />
+        <ui:VisualElement name="floor-settings" />
+        <ui:Label text="모든 바닥은 이동 가능합니다. 바닥 설정은 같은 에셋을 쓰는 맵에 함께 적용됩니다. 에디터는 색상으로, Scene은 지정 재질로 표시합니다." class="help" />
+        <ui:Label text="배경과 기본 바닥" class="heading" />
+        <ui:VisualElement name="map-settings" />
+        <ui:Label text="배경 바닥은 이동 영역과 별개입니다. 지운 칸은 이동할 수 없습니다." class="help" />
         <ui:Button name="reset-view" text="화면 위치 초기화" />
         <ui:Label name="selection" text="칸을 선택하세요." class="help" />
-        <ui:Label text="왼쪽 드래그: 칠하기 / 지우기
+        <ui:Label text="왼쪽 드래그: 이동 영역 배치 / 지우기
 오른쪽 클릭: 칸 정보
 가운데 드래그: 화면 이동
 휠: 확대·축소
 노란 테두리: 시작 위치
-X: 이동 불가 / 자홍: 누락 타일" class="help" />
+회색: 이동 불가 / 자홍: 누락 데이터" class="help" />
       </ui:ScrollView>
       <ui:VisualElement name="canvas-host" class="canvas" />
     </ui:VisualElement>

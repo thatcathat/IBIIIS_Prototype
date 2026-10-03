@@ -21,8 +21,6 @@ namespace IBIIIS.Editor
             {
                 var serialized = new SerializedObject(settings);
                 serialized.FindProperty("visualPrefab").objectReferenceValue = legacySource.PlayerVisualPrefab;
-                serialized.FindProperty("moveTurnCost").intValue = legacySource.MoveTurnCost;
-                serialized.FindProperty("blockedTurnCost").intValue = legacySource.BlockedTurnCost;
                 serialized.ApplyModifiedPropertiesWithoutUndo();
             }
             AssetDatabase.CreateAsset(settings, AssetDatabase.GenerateUniqueAssetPath(path)); AssetDatabase.SaveAssetIfDirty(settings);
@@ -43,31 +41,31 @@ namespace IBIIIS.Editor
             AssetDatabase.CreateAsset(settings, AssetDatabase.GenerateUniqueAssetPath(path)); AssetDatabase.SaveAssetIfDirty(settings);
             return settings;
         }
-        public static TileDefinition[] EnsureDefaultTiles()
+        public static Material EnsureGroundMaterial()
         {
-            Directory.CreateDirectory(Root); AssetDatabase.Refresh();
-            return new[] { Tile("Floor", "기본 바닥", true, new Color(.28f, .55f, .46f)), Tile("Wall", "장애물", false, new Color(.48f, .51f, .6f)) };
-        }
-        private static TileDefinition Tile(string name, string label, bool walkable, Color color)
-        {
-            var path = Root + "/" + name + ".asset";
-            var existing = AssetDatabase.LoadAssetAtPath<TileDefinition>(path);
-            if (existing != null) return existing;
-            var tile = ScriptableObject.CreateInstance<TileDefinition>(); tile.Initialize(Guid.NewGuid().ToString("N"), label, walkable, color);
-            AssetDatabase.CreateAsset(tile, AssetDatabase.GenerateUniqueAssetPath(path)); AssetDatabase.SaveAssetIfDirty(tile); return tile;
+            const string folder = "Assets/IBIIIS/Resources/IBIIIS";
+            const string path = folder + "/DefaultGround.mat";
+            var material = AssetDatabase.LoadAssetAtPath<Material>(path);
+            if (material != null) return material;
+            Directory.CreateDirectory(folder); AssetDatabase.Refresh();
+            var shader = Shader.Find("Universal Render Pipeline/Unlit");
+            if (shader == null) throw new InvalidOperationException("URP/Unlit 셰이더가 없습니다.");
+            material = new Material(shader) { color = new Color(.22f, .24f, .26f) };
+            AssetDatabase.CreateAsset(material, path); AssetDatabase.SaveAssetIfDirty(material);
+            return material;
         }
         [MenuItem("IBIIIS/Create Starter Map")]
         public static void CreateStarter()
         {
-            var tiles = EnsureDefaultTiles();
+            EnsureGroundMaterial();
             var map = AssetDatabase.LoadAssetAtPath<GridMap>(Root + "/StarterMap.asset");
             if (map == null)
             {
-                map = ScriptableObject.CreateInstance<GridMap>(); foreach (var tile in tiles) map.AddTile(tile);
+                map = ScriptableObject.CreateInstance<GridMap>();
                 map.Resize(12, 10);
                 for (int y = 0; y < map.Height; y++) for (int x = 0; x < map.Width; x++)
-                    map.SetTile(new Vector2Int(x, y), x == 0 || y == 0 || x == map.Width - 1 || y == map.Height - 1 ? tiles[1] : tiles[0]);
-                map.SetTile(new Vector2Int(5, 4), tiles[1]); map.SetStart(new Vector2Int(2, 2));
+                    map.SetWalkable(new Vector2Int(x, y), x > 0 && y > 0 && x < map.Width - 1 && y < map.Height - 1);
+                map.SetWalkable(new Vector2Int(5, 4), false); map.SetStart(new Vector2Int(2, 2));
                 AssetDatabase.CreateAsset(map, AssetDatabase.GenerateUniqueAssetPath(Root + "/StarterMap.asset")); AssetDatabase.SaveAssetIfDirty(map);
             }
             MapEditorWindow.OpenMap(map);
@@ -87,7 +85,7 @@ namespace IBIIIS.Editor
             var map = ScriptableObject.CreateInstance<GridMap>();
             try
             {
-                foreach (var tile in EnsureDefaultTiles()) map.AddTile(tile);
+                EnsureGroundMaterial();
                 AssetDatabase.CreateAsset(map, mapPath); AssetDatabase.SaveAssetIfDirty(map);
                 var createdScene = CreateTestScene(map, scenePath, true);
                 if (string.IsNullOrEmpty(createdScene)) throw new IOException("새 맵의 씬을 생성하지 못했습니다.");
@@ -118,6 +116,7 @@ namespace IBIIIS.Editor
             if (string.IsNullOrEmpty(path)) return null;
             path = AssetDatabase.GenerateUniqueAssetPath(path);
             AssetDatabase.SaveAssetIfDirty(map);
+            EnsureGroundMaterial();
             var materialPath = Root + "/PrototypeUnlit.mat";
             var material = AssetDatabase.LoadAssetAtPath<Material>(materialPath);
             if (material == null)

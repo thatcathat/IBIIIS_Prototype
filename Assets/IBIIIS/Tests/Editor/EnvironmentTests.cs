@@ -65,7 +65,7 @@ namespace IBIIIS.Tests
             PrefabUtility.ApplyPrefabInstance(owner.EnvironmentInstance, InteractionMode.AutomatedAction);
             var second = (GameObject)PrefabUtility.InstantiatePrefab(prefab, scene);
             Assert.AreEqual(1, second.transform.childCount); Assert.AreEqual(Vector3.one * 20, second.transform.GetChild(0).localScale);
-            var session = new GridSession(map); Assert.True(session.TryMove(Vector2Int.right)); Assert.AreEqual(1, session.Turn);
+            var session = new GridSession(map); Assert.True(session.TryMove(Vector2Int.right)); session.Advance(.25f); Assert.AreEqual(Vector2Int.right, session.Position);
         }
         [Test] public void EnvironmentOptionalAndRootTransformEditsProtected()
         {
