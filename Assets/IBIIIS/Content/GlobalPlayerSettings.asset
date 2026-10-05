@@ -12,9 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c0add6970721cac4c9bf1a26d1e64a73, type: 3}
   m_Name: GlobalPlayerSettings
   m_EditorClassIdentifier: IBIIIS.Runtime::IBIIIS.PlayerSettings
-  visualPrefab: {fileID: 0}
+  visualPrefab: {fileID: 7676110716552073340, guid: 67d91fac91f403247b7c3084f00a9736, type: 3}
   moveDuration: 0.25
   showMoveHints: 1
   moveHintColor: {r: 0.2, g: 0.9, b: 1, a: 1}
   destinationColor: {r: 1, g: 0.8, b: 0.15, a: 1}
   moveHintMaterial: {fileID: 0}
+  enemyStepDuration: 0.25

@@ -20,6 +20,9 @@ namespace IBIIIS
         private GridSession session;
         private Transform generated;
         private Transform player;
+        private PlayerVisual playerView;
+        private PlayerAction lastAction = PlayerAction.Wait;
+        private Vector2Int lastDirection;
         private Transform[] moveHints;
         private readonly List<EnemyDefinition> enemyViews = new List<EnemyDefinition>();
         private static readonly Vector2Int[] Directions = { Vector2Int.up, Vector2Int.right, Vector2Int.down, Vector2Int.left };
@@ -78,7 +81,7 @@ namespace IBIIIS
         {
             if (generated != null) { generated.gameObject.SetActive(false); Release(generated.gameObject); }
             MovementWorldTime.Unregister(this);
-            generated = null; player = null; session = null; moveHints = null; enemyViews.Clear();
+            generated = null; player = null; playerView = null; lastAction = PlayerAction.Wait; lastDirection = Vector2Int.zero; session = null; moveHints = null; enemyViews.Clear();
             foreach (var material in materials) if (material != null) Release(material);
             materials.Clear();
         }
@@ -141,7 +144,12 @@ namespace IBIIIS
         {
             player = new GameObject("Player Logic Anchor").transform;
             player.SetParent(generated, false); player.localPosition = LocalPosition(position);
-            if (PlayerVisualPrefab != null) Instantiate(PlayerVisualPrefab, player, false);
+            if (PlayerVisualPrefab != null)
+            {
+                var instance = Instantiate(PlayerVisualPrefab, player, false);
+                playerView = instance.GetComponentInChildren<PlayerVisual>();
+                if (playerView != null) { instance.transform.localScale = Vector3.one * cellSize; ShowPlayerVisual(); }
+            }
             else
             {
                 var visual = GameObject.CreatePrimitive(PrimitiveType.Quad);
@@ -240,14 +248,21 @@ namespace IBIIIS
             float duration = MoveDuration * (action == PlayerAction.Dash ? 2 : 1);
             if (session == null || !session.TryAct(action, direction, duration, playerSettings != null ? playerSettings.EnemyStepDuration : .25f)) return false;
             if (Application.IsPlaying(gameObject)) MovementWorldTime.SetMoving(this, true);
+            lastAction = action; lastDirection = direction; ShowPlayerVisual();
             UpdateEnemyViews(); RefreshMoveHints(); return true;
+        }
+        private void ShowPlayerVisual()
+        {
+            if (playerView == null) return;
+            bool moving = session != null && session.IsMoving;
+            playerView.Show(lastAction, lastDirection, session != null ? session.Progress : 0, moving, viewCamera);
         }
         public void AdvanceMovement(float seconds)
         {
             if (session == null || !session.IsBusy) return;
             session.Advance(seconds);
             player.localPosition = session.IsMoving ? Vector3.Lerp(LocalPosition(session.Position), LocalPosition(session.Destination), session.Progress) : LocalPosition(session.Position);
-            UpdateEnemyViews();
+            ShowPlayerVisual(); UpdateEnemyViews();
             if (Application.IsPlaying(gameObject)) MovementWorldTime.SetMoving(this, session.IsBusy);
             RefreshMoveHints();
         }
