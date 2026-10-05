@@ -11,6 +11,8 @@ namespace IBIIIS
         [SerializeField] private Color moveHintColor = new Color(.2f, .9f, 1f, 1f);
         [SerializeField] private Color destinationColor = new Color(1f, .8f, .15f, 1f);
         [SerializeField, Tooltip("선택. 이동 표시의 테두리 재질. 원본은 변경하지 않습니다.")] private Material moveHintMaterial;
+        [SerializeField, Min(.01f), Tooltip("적 한 칸 이동 연출 시간(초). 두 칸 적은 두 번 진행합니다.")] private float enemyStepDuration = .25f;
+        public float EnemyStepDuration => float.IsNaN(enemyStepDuration) || float.IsInfinity(enemyStepDuration) ? .25f : Mathf.Max(.01f, enemyStepDuration);
         public GameObject VisualPrefab => visualPrefab;
         public float MoveDuration => float.IsNaN(moveDuration) || float.IsInfinity(moveDuration) ? .25f : Mathf.Max(.01f, moveDuration);
         public bool ShowMoveHints => showMoveHints;

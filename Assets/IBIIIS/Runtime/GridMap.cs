@@ -8,6 +8,18 @@ namespace IBIIIS
     public sealed class GridMap : ScriptableObject
     {
         public const int MaxSize = 64;
+        [SerializeField, HideInInspector] private List<EnemyPlacement> enemies = new List<EnemyPlacement>();
+        public IReadOnlyList<EnemyPlacement> Enemies => enemies;
+        public EnemyPlacement EnemyAt(Vector2Int p) => enemies.Find(e => e != null && e.Position == p);
+        public void RemoveEnemy(Vector2Int p) { enemies.RemoveAll(e => e != null && e.Position == p); }
+        public void PlaceEnemy(Vector2Int p, GameObject prefab, Vector2Int direction)
+        {
+            var definition = prefab != null ? prefab.GetComponent<EnemyDefinition>() : null;
+            if (definition == null || !definition.IsValid) throw new ArgumentException("루트에 유효한 EnemyDefinition이 있는 적 프리팹을 선택하세요.");
+            if (!IsWalkable(p) || (hasStart && start == p)) throw new ArgumentException("적은 시작 위치를 제외한 이동 가능한 칸에 배치하세요.");
+            if (Math.Abs((long)direction.x) + Math.Abs((long)direction.y) != 1) throw new ArgumentException("적의 방향은 상하좌우여야 합니다.");
+            RemoveEnemy(p); enemies.Add(new EnemyPlacement(prefab, p, direction));
+        }
         private const string WalkableCellId = "__ibiiis_walkable__";
         [SerializeField, Tooltip("선택. 비어 있으면 공용 기본 바닥 재질을 사용합니다.")] private Material groundMaterial;
         [SerializeField, Min(0), Tooltip("그리드 바깥 각 방향의 바닥 여유 폭 (칸). 기본값 50.")] private float groundMargin = 50;
@@ -19,7 +31,7 @@ namespace IBIIIS
         {
             if (!Contains(p)) throw new ArgumentOutOfRangeException(nameof(p));
             cells[p.y * width + p.x] = value ? WalkableCellId : null;
-            if (!value && hasStart && start == p) hasStart = false;
+            if (!value) { if (hasStart && start == p) hasStart = false; RemoveEnemy(p); }
         }
         [SerializeField, HideInInspector] private int width = 12;
         [SerializeField, HideInInspector] private int height = 12;
@@ -69,7 +81,7 @@ namespace IBIIIS
         public Color GetFloorColor(Vector2Int p) => GetTile(p) != null ? GetTile(p).Color : movementColor;
         public void SetStart(Vector2Int p)
         {
-            if (!IsWalkable(p)) throw new ArgumentException("시작 위치는 이동 가능한 타일이어야 합니다.");
+            if (!IsWalkable(p) || EnemyAt(p) != null) throw new ArgumentException("시작 위치는 적이 없는 이동 가능한 칸이어야 합니다.");
             start = p; hasStart = true;
         }
         public void Resize(int newWidth, int newHeight)
@@ -81,6 +93,7 @@ namespace IBIIIS
                 for (int x = 0; x < Math.Min(width, newWidth); x++) next[y * newWidth + x] = GetId(new Vector2Int(x, y));
             width = newWidth; height = newHeight; cells = next;
             if (!Contains(start)) hasStart = false;
+            enemies.RemoveAll(e => e != null && !Contains(e.Position));
         }
         public List<string> ValidateMap(bool requireStart = true)
         {
@@ -96,6 +109,15 @@ namespace IBIIIS
             for (int i = 0; i < cells.Length; i++)
                 if (!string.IsNullOrEmpty(cells[i]) && !ids.Contains(cells[i])) errors.Add($"({i % width}, {i / width}): 타일 ID '{cells[i]}'의 참조가 없습니다.");
             if (requireStart && (!hasStart || !IsWalkable(start))) errors.Add("플레이어 시작 위치를 이동 가능한 타일에 지정하세요.");
+            var occupied = new HashSet<Vector2Int>();
+            foreach (var enemy in enemies)
+            {
+                if (enemy == null) { errors.Add("누락된 적 배치가 있습니다."); continue; }
+                var definition = enemy.Prefab != null ? enemy.Prefab.GetComponent<EnemyDefinition>() : null;
+                if (definition == null || !definition.IsValid) errors.Add($"{enemy.Position}: 적 프리팹 또는 설정이 없습니다.");
+                if (!IsWalkable(enemy.Position) || !occupied.Add(enemy.Position) || (hasStart && start == enemy.Position)) errors.Add($"{enemy.Position}: 적 배치가 이동 영역·시작 위치·다른 적과 충돌합니다.");
+                if (Math.Abs((long)enemy.Direction.x) + Math.Abs((long)enemy.Direction.y) != 1) errors.Add($"{enemy.Position}: 적 방향이 잘못되었습니다.");
+            }
             return errors;
         }
     }

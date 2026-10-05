@@ -21,7 +21,9 @@ namespace IBIIIS
         private Transform generated;
         private Transform player;
         private Transform[] moveHints;
+        private readonly List<EnemyDefinition> enemyViews = new List<EnemyDefinition>();
         private static readonly Vector2Int[] Directions = { Vector2Int.up, Vector2Int.right, Vector2Int.down, Vector2Int.left };
+        private static readonly Vector2Int[] RollDirections = { new Vector2Int(-1,1), new Vector2Int(1,1), new Vector2Int(-1,-1), new Vector2Int(1,-1) };
         public float MoveDuration => playerSettings != null ? playerSettings.MoveDuration : .25f;
         [SerializeField, HideInInspector] private GameObject environmentInstance;
         [SerializeField, HideInInspector] private GameObject environmentSource;
@@ -76,7 +78,7 @@ namespace IBIIIS
         {
             if (generated != null) { generated.gameObject.SetActive(false); Release(generated.gameObject); }
             MovementWorldTime.Unregister(this);
-            generated = null; player = null; session = null; moveHints = null;
+            generated = null; player = null; session = null; moveHints = null; enemyViews.Clear();
             foreach (var material in materials) if (material != null) Release(material);
             materials.Clear();
         }
@@ -130,6 +132,7 @@ namespace IBIIIS
             var groundMaterial = map.GroundMaterial != null ? map.GroundMaterial : Resources.Load<Material>("IBIIIS/DefaultGround");
             if (groundMaterial != null) ground.GetComponent<Renderer>().sharedMaterial = groundMaterial;
             else Tint(ground.gameObject, new Color(.22f, .24f, .26f));
+            CreateEnemyViews();
             CreateMoveHints(); RefreshMoveHints();
             if (preview)
                 foreach (var child in generated.GetComponentsInChildren<Transform>(true)) child.gameObject.hideFlags = HideFlags.HideAndDontSave;
@@ -162,22 +165,45 @@ namespace IBIIIS
             var material = new Material(fallbackMaterial) { hideFlags = HideFlags.HideAndDontSave }; material.color = color; materials.Add(material);
             go.GetComponent<Renderer>().sharedMaterial = material;
         }
+        private void CreateEnemyViews()
+        {
+            if (map.Enemies.Count == 0) return;
+            var root = new GameObject("Enemies").transform; root.SetParent(generated, false);
+            foreach (var spawn in map.Enemies)
+            {
+                var instance = Instantiate(spawn.Prefab, root, false);
+                instance.transform.localPosition = LocalPosition(spawn.Position);
+                instance.transform.localScale = Vector3.one * cellSize;
+                instance.transform.localRotation = Quaternion.LookRotation(new Vector3(spawn.Direction.x, 0, spawn.Direction.y));
+                var view = instance.GetComponent<EnemyDefinition>(); view.FaceCamera(viewCamera); enemyViews.Add(view);
+            }
+        }
+        private void UpdateEnemyViews()
+        {
+            if (session == null) return;
+            for (int i = 0; i < enemyViews.Count; i++)
+            {
+                var state = session.Enemies[i]; var view = enemyViews[i]; view.gameObject.SetActive(state.Alive);
+                view.transform.localPosition = session.IsEnemiesMoving ? Vector3.Lerp(LocalPosition(state.StepFrom), LocalPosition(state.StepTo), session.EnemyProgress) : LocalPosition(state.Position);
+                view.transform.localRotation = Quaternion.LookRotation(new Vector3(state.Direction.x, 0, state.Direction.y)); view.FaceCamera(viewCamera);
+            }
+        }
         private void CreateMoveHints()
         {
             var root = new GameObject("Movement Hints").transform; root.SetParent(generated, false);
-            moveHints = new Transform[5];
+            moveHints = new Transform[13];
             var basis = playerSettings != null ? playerSettings.MoveHintMaterial : null;
             if (basis == null) basis = fallbackMaterial != null ? fallbackMaterial : Resources.Load<Material>("IBIIIS/DefaultGround");
             var shader = basis != null ? basis.shader : Shader.Find("Universal Render Pipeline/Unlit");
             if (shader == null) return;
-            for (int i = 0; i < 5; i++)
+            for (int i = 0; i < moveHints.Length; i++)
             {
-                var ring = new GameObject(i == 4 ? "Destination" : "Adjacent " + Directions[i]).transform;
+                var ring = new GameObject(i == 4 ? "Destination" : i < 4 ? "Adjacent " + Directions[i] : i < 9 ? "Dash " + Directions[i - 5] : "Roll " + RollDirections[i - 9]).transform;
                 ring.SetParent(root, false); moveHints[i] = ring;
                 var material = basis != null ? new Material(basis) : new Material(shader);
                 material.hideFlags = HideFlags.HideAndDontSave;
                 material.color = i == 4 ? (playerSettings != null ? playerSettings.DestinationColor : Color.yellow) :
-                    (playerSettings != null ? playerSettings.MoveHintColor : Color.cyan);
+                    i >= 9 ? new Color(.8f, .4f, 1f) : i >= 5 ? new Color(.3f, .5f, 1f) : (playerSettings != null ? playerSettings.MoveHintColor : Color.cyan);
                 materials.Add(material);
                 for (int edge = 0; edge < 4; edge++)
                 {
@@ -199,40 +225,50 @@ namespace IBIIIS
             for (int i = 0; i < moveHints.Length; i++)
             {
                 if (moveHints[i] == null) continue;
-                bool visible = enabledHints && valid && (i == 4 ? moving : !moving &&
-                    (session != null ? session.CanMove(Directions[i]) : GridSession.CanStep(position, Directions[i], map.IsWalkable)));
+                bool waiting = session == null || session.Phase == BattlePhase.Waiting;
+                var direction = i < 4 ? Directions[i] : i == 4 ? Vector2Int.zero : i < 9 ? Directions[i - 5] : RollDirections[i - 9];
+                var action = i < 5 ? PlayerAction.Move : i < 9 ? PlayerAction.Dash : PlayerAction.Roll;
+                bool can = i != 4 && waiting && (session != null ? session.CanAct(action, direction) : i < 4 && GridSession.CanStep(position, direction, p => map.IsWalkable(p) && map.EnemyAt(p) == null));
+                bool visible = enabledHints && valid && (i == 4 ? moving : can);
                 moveHints[i].gameObject.SetActive(visible);
-                if (visible) moveHints[i].localPosition = LocalPosition(i == 4 ? session.Destination : position + Directions[i]) + Vector3.up * .025f;
+                if (visible) moveHints[i].localPosition = LocalPosition(i == 4 ? session.Destination : position + direction * (action == PlayerAction.Dash ? 2 : 1)) + Vector3.up * .025f;
             }
         }
-        public bool TryBeginMove(Vector2Int direction)
+        public bool TryBeginMove(Vector2Int direction) => TryBeginAction(PlayerAction.Move, direction);
+        public bool TryBeginAction(PlayerAction action, Vector2Int direction)
         {
-            if (session == null || !session.TryMove(direction, MoveDuration)) return false;
+            float duration = MoveDuration * (action == PlayerAction.Dash ? 2 : 1);
+            if (session == null || !session.TryAct(action, direction, duration, playerSettings != null ? playerSettings.EnemyStepDuration : .25f)) return false;
             if (Application.IsPlaying(gameObject)) MovementWorldTime.SetMoving(this, true);
-            RefreshMoveHints(); return true;
+            UpdateEnemyViews(); RefreshMoveHints(); return true;
         }
         public void AdvanceMovement(float seconds)
         {
-            if (session == null || !session.IsMoving) return;
+            if (session == null || !session.IsBusy) return;
             session.Advance(seconds);
             player.localPosition = session.IsMoving ? Vector3.Lerp(LocalPosition(session.Position), LocalPosition(session.Destination), session.Progress) : LocalPosition(session.Position);
-            if (Application.IsPlaying(gameObject)) MovementWorldTime.SetMoving(this, session.IsMoving);
+            UpdateEnemyViews();
+            if (Application.IsPlaying(gameObject)) MovementWorldTime.SetMoving(this, session.IsBusy);
             RefreshMoveHints();
         }
         private void Update()
         {
             if (!Application.IsPlaying(gameObject) || session == null) return;
-            if (session.IsMoving) { AdvanceMovement(Time.unscaledDeltaTime); return; }
+            if (session.IsBusy) { AdvanceMovement(Time.unscaledDeltaTime); return; }
             if (Keyboard.current == null) return;
             var k = Keyboard.current;
-            var direction = k.wKey.wasPressedThisFrame ? Vector2Int.up : k.sKey.wasPressedThisFrame ? Vector2Int.down :
-                k.aKey.wasPressedThisFrame ? Vector2Int.left : k.dKey.wasPressedThisFrame ? Vector2Int.right : Vector2Int.zero;
-            if (direction != Vector2Int.zero) TryBeginMove(direction);
+            if (k.rKey.wasPressedThisFrame) { ClearGenerated(); Build(); return; }
+            if (k.spaceKey.wasPressedThisFrame) { TryBeginAction(PlayerAction.Wait, Vector2Int.zero); return; }
+            var roll = k.qKey.wasPressedThisFrame ? RollDirections[0] : k.eKey.wasPressedThisFrame ? RollDirections[1] : k.zKey.wasPressedThisFrame ? RollDirections[2] : k.cKey.wasPressedThisFrame ? RollDirections[3] : Vector2Int.zero;
+            if (roll != Vector2Int.zero) { TryBeginAction(PlayerAction.Roll, roll); return; }
+            var direction = k.wKey.wasPressedThisFrame || k.upArrowKey.wasPressedThisFrame ? Vector2Int.up : k.sKey.wasPressedThisFrame || k.downArrowKey.wasPressedThisFrame ? Vector2Int.down :
+                k.aKey.wasPressedThisFrame || k.leftArrowKey.wasPressedThisFrame ? Vector2Int.left : k.dKey.wasPressedThisFrame || k.rightArrowKey.wasPressedThisFrame ? Vector2Int.right : Vector2Int.zero;
+            if (direction != Vector2Int.zero) TryBeginAction(k.leftShiftKey.isPressed || k.rightShiftKey.isPressed ? PlayerAction.Dash : PlayerAction.Move, direction);
         }
         private void OnGUI()
         {
-            if (Application.IsPlaying(gameObject) && session != null) GUI.Box(new Rect(12, 12, 360, 52),
-                $"WASD: move one cell | {(session.IsMoving ? "Moving" : "Waiting")}\nCell ({session.Position.x}, {session.Position.y})");
+            if (Application.IsPlaying(gameObject) && session != null) GUI.Box(new Rect(12, 12, 520, 76),
+                $"{session.Phase} | Enemies {session.AliveCount} | Evasion {(session.EvasionLocked ? "cooldown" : "ready")}\nWASD/Arrows Move | Shift Dash | Q/E/Z/C Roll | Space Wait | R Restart\nCell ({session.Position.x}, {session.Position.y})");
         }
         private void OnDisable() { ClearGenerated(); }
         private void OnDestroy() { ClearGenerated(); }

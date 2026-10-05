@@ -11,6 +11,8 @@ namespace IBIIIS.Editor
     {
         [SerializeField] private GridMap map;
         [SerializeField] private TileDefinition selectedFloor;
+        [SerializeField] private GameObject selectedEnemy;
+        [SerializeField] private string enemyFacing = "위 (+Z)";
         private MapCanvas canvas;
         private Label status;
         private int undoGroup = -1;
@@ -31,7 +33,7 @@ namespace IBIIIS.Editor
             picker.SetValueWithoutNotify(map); picker.RegisterValueChangedCallback(e => { EndStroke(); map = e.newValue as GridMap; selectedFloor = null; Refresh(); });
             status = rootVisualElement.Q<Label>("status");
             canvas = new MapCanvas(this); canvas.AddToClassList("canvas"); rootVisualElement.Q("canvas-host").Add(canvas);
-            var tools = rootVisualElement.Q<DropdownField>("tool"); tools.choices = new List<string> { "이동 영역 배치", "지우기", "시작 위치" }; tools.SetValueWithoutNotify(tool);
+            var tools = rootVisualElement.Q<DropdownField>("tool"); tools.choices = new List<string> { "이동 영역 배치", "지우기", "시작 위치", "적 배치", "적 지우기" }; tools.SetValueWithoutNotify(tool);
             tools.RegisterValueChangedCallback(e => SelectTool(e.newValue));
             Hook("new", NewMap); Hook("save", Save); Hook("undo", Undo.PerformUndo); Hook("redo", Undo.PerformRedo);
             Hook("environment", () => { if (map != null) { Selection.activeObject = map; EditorGUIUtility.PingObject(map); } });
@@ -49,6 +51,18 @@ namespace IBIIIS.Editor
             });
             rootVisualElement.Q("floor-settings").RegisterCallback<SerializedPropertyChangeEvent>(_ =>
             { RefreshPalette(); canvas.MarkDirtyRepaint(); if (map != null) UpdateStatus(); });
+            var enemyPicker = rootVisualElement.Q<ObjectField>("enemy-prefab"); enemyPicker.objectType = typeof(GameObject); enemyPicker.allowSceneObjects = false;
+            enemyPicker.SetValueWithoutNotify(selectedEnemy);
+            enemyPicker.RegisterValueChangedCallback(e =>
+            {
+                var prefab = e.newValue as GameObject;
+                if (prefab != null && (!PrefabUtility.IsPartOfPrefabAsset(prefab) || AssetDatabase.LoadAssetAtPath<GameObject>(AssetDatabase.GetAssetPath(prefab)) != prefab || prefab.GetComponent<EnemyDefinition>() == null))
+                { enemyPicker.SetValueWithoutNotify(selectedEnemy); status.text = "EnemyDefinition이 있는 프리팹 루트를 선택하세요."; return; }
+                selectedEnemy = prefab; if (prefab != null) SelectTool("적 배치");
+            });
+            var facing = rootVisualElement.Q<DropdownField>("enemy-facing"); facing.choices = new List<string> { "위 (+Z)", "오른쪽 (+X)", "아래 (-Z)", "왼쪽 (-X)" }; facing.SetValueWithoutNotify(enemyFacing);
+            facing.RegisterValueChangedCallback(e => enemyFacing = e.newValue);
+            Hook("default-enemies", () => { EnemyPrefabSetup.EnsureDefaults(); status.text = "기본 적 3종: Assets/IBIIIS/Content/Enemies — 적 프리팹 슬롯에서 선택하세요."; });
             Refresh(); PlayModeChanged(default);
         }
         private void Hook(string name, Action action) { rootVisualElement.Q<Button>(name).clicked += action; }
@@ -102,7 +116,7 @@ namespace IBIIIS.Editor
             if (map == null) return;
             int w = rootVisualElement.Q<IntegerField>("width").value, h = rootVisualElement.Q<IntegerField>("height").value;
             if (w < 1 || h < 1 || w > GridMap.MaxSize || h > GridMap.MaxSize) { status.text = "가로·세로는 1~64칸이어야 합니다."; return; }
-            if ((w < map.Width || h < map.Height) && !EditorUtility.DisplayDialog("맵 크기 축소", "새 범위 밖의 타일과 시작 위치가 제거됩니다. 실행 취소로 복구할 수 있습니다.", "축소", "취소")) return;
+            if ((w < map.Width || h < map.Height) && !EditorUtility.DisplayDialog("맵 크기 축소", "새 범위 밖의 타일·적 배치·시작 위치가 제거됩니다. 실행 취소로 복구할 수 있습니다.", "축소", "취소")) return;
             Undo.RecordObject(map, "Resize map"); map.Resize(w, h); Changed();
         }
         private void Save()
@@ -144,7 +158,7 @@ namespace IBIIIS.Editor
         private void UpdateStatus()
         {
             var errors = map.ValidateMap();
-            status.text = $"현재 도구: {tool} · 바닥: {(selectedFloor != null ? selectedFloor.DisplayName : "기본 바닥")} · " + (EditorUtility.IsDirty(map) || System.Linq.Enumerable.Any(map.Palette, t => t != null && EditorUtility.IsDirty(t)) ? "저장 전 변경 있음 · " : "") + $"{map.Width} × {map.Height}칸 · " +
+            status.text = $"현재 도구: {tool} · 바닥: {(selectedFloor != null ? selectedFloor.DisplayName : "기본 바닥")} · " + (EditorUtility.IsDirty(map) || System.Linq.Enumerable.Any(map.Palette, t => t != null && EditorUtility.IsDirty(t)) ? "저장 전 변경 있음 · " : "") + $"{map.Width} × {map.Height}칸 · 적 {map.Enemies.Count}마리{(map.Enemies.Count % 2 != 0 ? " (홀수 배치)" : "")} · " +
                 (errors.Count == 0 ? "플레이 준비 완료" : $"확인 필요 {errors.Count}건: {errors[0]}");
         }
         internal void BeginStroke() { EndStroke(); Undo.IncrementCurrentGroup(); undoGroup = Undo.GetCurrentGroup(); Undo.SetCurrentGroupName("Paint map"); if (map != null) Undo.RegisterCompleteObjectUndo(map, "Paint map"); }
@@ -154,16 +168,23 @@ namespace IBIIIS.Editor
             if (map == null || !map.Contains(p)) return;
             if (!inspectOnly)
             {
-                if (tool == "시작 위치") { if (map.IsWalkable(p)) map.SetStart(p); else { status.text = "시작 위치는 이동 가능한 타일에 지정하세요."; return; } }
-                else if (tool == "지우기") map.SetWalkable(p, false);
-                else
+                try
                 {
-                    try { map.PaintFloor(p, selectedFloor); }
-                    catch (ArgumentException e) { status.text = e.Message; return; }
+                    if (tool == "시작 위치") map.SetStart(p);
+                    else if (tool == "지우기") map.SetWalkable(p, false);
+                    else if (tool == "적 지우기") map.RemoveEnemy(p);
+                    else if (tool == "적 배치")
+                    {
+                        var direction = enemyFacing == "위 (+Z)" ? Vector2Int.up : enemyFacing == "오른쪽 (+X)" ? Vector2Int.right : enemyFacing == "아래 (-Z)" ? Vector2Int.down : Vector2Int.left;
+                        map.PlaceEnemy(p, selectedEnemy, direction);
+                    }
+                    else map.PaintFloor(p, selectedFloor);
                 }
+                catch (ArgumentException e) { status.text = e.Message; return; }
                 EditorUtility.SetDirty(map); canvas.MarkDirtyRepaint(); UpdateStatus();
             }
-            rootVisualElement.Q<Label>("selection").text = $"선택 ({p.x}, {p.y})\n" + (map.IsWalkable(p) ? (map.GetTile(p) != null ? map.GetTile(p).DisplayName : "기본 바닥") + " · 이동 가능" : "빈 칸 · 이동 불가");
+            var enemy = map.EnemyAt(p);
+            rootVisualElement.Q<Label>("selection").text = $"선택 ({p.x}, {p.y})\n" + (map.IsWalkable(p) ? (map.GetTile(p) != null ? map.GetTile(p).DisplayName : "기본 바닥") + " · 이동 가능" : "빈 칸 · 이동 불가") + (enemy != null ? $"\n적: {(enemy.Prefab != null ? enemy.Prefab.name : "누락")} / 방향 {enemy.Direction}" : "");
         }
     }
     [CustomEditor(typeof(GridMap))]

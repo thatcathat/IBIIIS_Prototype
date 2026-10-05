@@ -15,6 +15,6 @@ MonoBehaviour:
   id: ee9d00b371b647e2a6e641792d956001
   displayName: "\uC0C8 \uD0C0\uC77C2"
   walkable: 1
-  color: {r: 0.7058824, g: 0.68873703, b: 0.2666667, a: 1}
+  color: {r: 0.2666667, g: 0.7058824, b: 0.44997033, a: 1}
   visualPrefab: {fileID: 0}
   surfaceMaterial: {fileID: 0}

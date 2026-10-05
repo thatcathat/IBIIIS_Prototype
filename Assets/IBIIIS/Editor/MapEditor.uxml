@@ -17,6 +17,11 @@
         <ui:Button name="resize" text="크기 적용 (1~64)" />
         <ui:Label text="이동 영역 편집" class="heading" />
         <ui:DropdownField name="tool" label="도구" />
+        <ui:Label text="적 배치" class="heading" />
+        <uie:ObjectField name="enemy-prefab" label="적 프리팹" />
+        <ui:DropdownField name="enemy-facing" label="시작 방향" />
+        <ui:Button name="default-enemies" text="기본 적 프리팹 준비" />
+        <ui:Label text="프리팹 선택 후 적 배치 도구로 칸을 클릭하세요. 적 지우기는 바닥을 남깁니다. 바닥 지우기는 해당 적도 지웁니다." class="help" />
         <ui:Label text="이동 바닥 팔레트" class="heading" />
         <ui:ScrollView name="floor-palette" class="palette" />
         <ui:Button name="new-floor" text="새 바닥 만들기" />
