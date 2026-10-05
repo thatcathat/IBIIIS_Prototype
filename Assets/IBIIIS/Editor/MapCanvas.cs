@@ -73,6 +73,19 @@ namespace IBIIIS.Editor
                 var tile = Map.GetTile(cell);
                 painter.fillColor = Map.IsWalkable(cell) ? Map.GetFloorColor(cell) : (tile != null || string.IsNullOrEmpty(Map.GetId(cell))) ? new Color(.16f, .19f, .23f) : Color.magenta;
                 Rect(painter, o + Vector2.one, size - 2, size - 2); painter.Fill();
+                var enemy = Map.EnemyAt(cell);
+                if (enemy != null)
+                {
+                    var definition = enemy.Prefab != null ? enemy.Prefab.GetComponent<EnemyDefinition>() : null;
+                    painter.fillColor = definition != null ? definition.EditorColor : Color.magenta;
+                    var center = o + Vector2.one * size * .5f;
+                    var forward = new Vector2(enemy.Direction.x, -enemy.Direction.y);
+                    var side = new Vector2(-forward.y, forward.x);
+                    painter.BeginPath(); painter.MoveTo(center + forward * size * .35f);
+                    painter.LineTo(center - forward * size * .25f + side * size * .25f);
+                    painter.LineTo(center - forward * size * .25f - side * size * .25f); painter.ClosePath(); painter.Fill();
+                    painter.strokeColor = Color.black; painter.lineWidth = 1; painter.Stroke();
+                }
                 if (Map.HasStart && Map.Start == cell)
                 { painter.strokeColor = Color.yellow; painter.lineWidth = 3; Rect(painter, o + Vector2.one * 3, size - 6, size - 6); painter.Stroke(); }
             }

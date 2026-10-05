@@ -47,6 +47,7 @@ namespace IBIIIS.Editor
                 if (target.Map != null)
                 {
                     signature += EditorJsonUtility.ToJson(target.Map);
+                    foreach (var enemy in target.Map.Enemies) if (enemy != null && enemy.Prefab != null) signature += AssetDatabase.GetAssetDependencyHash(AssetDatabase.GetAssetPath(enemy.Prefab)).ToString();
                     foreach (var tile in target.Map.Palette) if (tile != null)
                     {
                         signature += EditorJsonUtility.ToJson(tile);

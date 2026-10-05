@@ -4,45 +4,170 @@ using UnityEngine;
 
 namespace IBIIIS
 {
+    public enum BattlePhase { Waiting, Moving, Won, Lost }
+    public enum PlayerAction { Move, Wait, Dash, Roll }
+    public sealed class EnemyState
+    {
+        public GameObject Prefab { get; internal set; }
+        public Vector2Int Position { get; internal set; }
+        public Vector2Int Direction { get; internal set; }
+        public Vector2Int StepFrom { get; internal set; }
+        public Vector2Int StepTo { get; internal set; }
+        public bool Alive { get; internal set; } = true;
+        public bool Recognized { get; internal set; }
+        public int MoveCells { get; internal set; }
+        internal Vector2Int[] Recognition, Attack, RecognizedAttack;
+        internal readonly List<Vector2Int> Path = new List<Vector2Int>();
+    }
     public sealed class GridSession
     {
         private readonly bool[,] walkable;
-        private float elapsed, duration;
+        private readonly List<EnemyState> enemies = new List<EnemyState>();
+        private readonly HashSet<Vector2Int> attackCells = new HashSet<Vector2Int>();
+        private float elapsed, duration, enemyDuration, enemyElapsed;
+        private bool enemiesComplete;
+        private int enemyStep;
+        private bool evasion;
+        public IReadOnlyList<EnemyState> Enemies => enemies;
+        public IEnumerable<Vector2Int> AttackCells => attackCells;
         public Vector2Int Position { get; private set; }
         public Vector2Int Destination { get; private set; }
-        public bool IsMoving { get; private set; }
-        public float Progress => IsMoving ? Mathf.Clamp01(elapsed / duration) : 0;
+        public BattlePhase Phase { get; private set; } = BattlePhase.Waiting;
+        public bool IsMoving => IsBusy && elapsed < duration;
+        public bool IsBusy => Phase == BattlePhase.Moving;
+        public bool IsEnemiesMoving => IsBusy && !enemiesComplete;
+        public float EnemyProgress => IsEnemiesMoving ? Mathf.Clamp01(enemyElapsed / enemyDuration) : 0;
+        public bool EvasionLocked { get; private set; }
+        public float Progress => IsBusy ? Mathf.Clamp01(elapsed / duration) : 0;
         public float ActiveDuration => duration;
+        public int AliveCount { get { int count = 0; foreach (var e in enemies) if (e.Alive) count++; return count; } }
         public GridSession(GridMap map)
         {
             if (map == null) throw new ArgumentNullException(nameof(map));
             var errors = map.ValidateMap();
             if (errors.Count > 0) throw new ArgumentException(string.Join("\n", errors));
             walkable = new bool[map.Width, map.Height];
-            for (int y = 0; y < map.Height; y++)
-                for (int x = 0; x < map.Width; x++) walkable[x, y] = map.IsWalkable(new Vector2Int(x, y));
+            for (int y = 0; y < map.Height; y++) for (int x = 0; x < map.Width; x++) walkable[x, y] = map.IsWalkable(new Vector2Int(x, y));
             Position = Destination = map.Start;
+            foreach (var spawn in map.Enemies)
+            {
+                var d = spawn.Prefab.GetComponent<EnemyDefinition>();
+                enemies.Add(new EnemyState { Prefab = spawn.Prefab, Position = spawn.Position, StepFrom = spawn.Position, StepTo = spawn.Position,
+                    Direction = spawn.Direction, MoveCells = d.MoveCells, Recognition = d.Recognition, Attack = d.Attack, RecognizedAttack = d.RecognizedAttack });
+            }
         }
-        public static bool CanStep(Vector2Int position, Vector2Int direction, Func<Vector2Int, bool> isWalkable)
-            => Math.Abs((long)direction.x) + Math.Abs((long)direction.y) == 1 && isWalkable(position + direction);
+        public static bool CanStep(Vector2Int position, Vector2Int direction, Func<Vector2Int, bool> available)
+            => Math.Abs((long)direction.x) + Math.Abs((long)direction.y) == 1 && available(position + direction);
         private bool IsWalkable(Vector2Int p) => p.x >= 0 && p.y >= 0 && p.x < walkable.GetLength(0) && p.y < walkable.GetLength(1) && walkable[p.x, p.y];
-        public bool CanMove(Vector2Int direction) => !IsMoving && CanStep(Position, direction, IsWalkable);
-        public bool TryMove(Vector2Int direction, float moveDuration = .25f)
+        private bool Available(Vector2Int p)
         {
-            if (!CanMove(direction)) return false;
-            if (float.IsNaN(moveDuration) || float.IsInfinity(moveDuration) || moveDuration <= 0) throw new ArgumentOutOfRangeException(nameof(moveDuration));
-            Destination = Position + direction; duration = moveDuration; elapsed = 0; IsMoving = true; return true;
+            if (!IsWalkable(p)) return false;
+            foreach (var e in enemies) if (e.Alive && e.Position == p) return false;
+            return true;
+        }
+        public bool CanMove(Vector2Int direction) => CanAct(PlayerAction.Move, direction);
+        public bool CanAct(PlayerAction action, Vector2Int direction)
+        {
+            if (Phase != BattlePhase.Waiting) return false;
+            if (action == PlayerAction.Wait) return direction == Vector2Int.zero;
+            if (action == PlayerAction.Move) return CanStep(Position, direction, Available);
+            if (EvasionLocked) return false;
+            if (action == PlayerAction.Dash) return CanStep(Position, direction, Available) && Available(Position + direction * 2);
+            if (action == PlayerAction.Roll) return Math.Abs((long)direction.x) == 1 && Math.Abs((long)direction.y) == 1 && Available(Position + direction);
+            return false;
+        }
+        public bool TryMove(Vector2Int direction, float moveDuration = .25f) => TryAct(PlayerAction.Move, direction, moveDuration);
+        public bool TryAct(PlayerAction action, Vector2Int direction, float moveDuration = .25f, float enemyStepDuration = .25f)
+        {
+            if (!CanAct(action, direction)) return false;
+            if (!ValidTime(moveDuration) || !ValidTime(enemyStepDuration)) throw new ArgumentOutOfRangeException(nameof(moveDuration));
+            evasion = action == PlayerAction.Dash || action == PlayerAction.Roll;
+            Destination = Position + direction * (action == PlayerAction.Dash ? 2 : 1);
+            duration = moveDuration; enemyDuration = enemyStepDuration; elapsed = 0; Phase = BattlePhase.Moving; attackCells.Clear(); BeginEnemies(); return true;
+        }
+        private static bool ValidTime(float value) => !float.IsNaN(value) && !float.IsInfinity(value) && value > 0;
+        public static Vector2Int LocalToGrid(Vector2Int local, Vector2Int facing) => new Vector2Int(facing.y, -facing.x) * local.x + facing * local.y;
+        private bool Recognizes(EnemyState e, Vector2Int target)
+        {
+            foreach (var offset in e.Recognition) if (e.Position + LocalToGrid(offset, e.Direction) == target) return true;
+            return false;
+        }
+        private void Aim(EnemyState e, Vector2Int target)
+        {
+            var delta = target - e.Position;
+            if (Math.Abs(delta.x) > Math.Abs(delta.y)) e.Direction = new Vector2Int(delta.x > 0 ? 1 : -1, 0);
+            else if (Math.Abs(delta.y) > Math.Abs(delta.x)) e.Direction = new Vector2Int(0, delta.y > 0 ? 1 : -1);
+            else if ((delta.x * e.Direction.x + delta.y * e.Direction.y) <= 0) e.Direction = e.Direction.x != 0 ? new Vector2Int(0, delta.y > 0 ? 1 : -1) : new Vector2Int(delta.x > 0 ? 1 : -1, 0);
+        }
+        private void BeginEnemies()
+        {
+            enemiesComplete = AliveCount == 0; enemyElapsed = 0;
+            if (enemiesComplete) return;
+            foreach (var e in enemies) if (e.Alive) { e.Path.Clear(); e.Recognized = false; if (Recognizes(e, Destination)) Aim(e, Destination); }
+            enemyStep = 1; PlanEnemyStep();
+        }
+        private void PlanEnemyStep()
+        {
+            enemyElapsed = 0;
+            foreach (var e in enemies)
+            {
+                e.StepFrom = e.StepTo = e.Position;
+                if (!e.Alive || e.MoveCells < enemyStep) continue;
+                var next = e.Position + e.Direction;
+                if (!IsWalkable(next)) { e.Direction = -e.Direction; next = e.Position + e.Direction; }
+                if (IsWalkable(next)) e.StepTo = next;
+            }
+        }
+        private void CommitEnemyStep()
+        {
+            var occupied = new Dictionary<Vector2Int, List<EnemyState>>();
+            foreach (var e in enemies)
+            {
+                if (!e.Alive) continue;
+                e.Position = e.StepTo;
+                if (e.MoveCells >= enemyStep) e.Path.Add(e.Position);
+                if (!occupied.TryGetValue(e.Position, out var group)) occupied[e.Position] = group = new List<EnemyState>();
+                group.Add(e);
+            }
+            foreach (var group in occupied.Values) if (group.Count > 1) foreach (var e in group) e.Alive = false;
+            bool another = false;
+            foreach (var e in enemies) if (e.Alive && e.MoveCells > enemyStep) another = true;
+            if (another) { enemyStep++; PlanEnemyStep(); } else enemiesComplete = true;
+        }
+        private void FinishAction()
+        {
+            bool hit = false;
+            foreach (var e in enemies)
+            {
+                if (!e.Alive) continue;
+                e.Recognized = Recognizes(e, Position);
+                foreach (var offset in e.Recognized ? e.RecognizedAttack : e.Attack)
+                {
+                    var p = e.Position + LocalToGrid(offset, e.Direction); attackCells.Add(p); if (p == Position) hit = true;
+                }
+                if (e.Path.Contains(Position)) hit = true;
+            }
+            EvasionLocked = evasion;
+            Phase = hit ? BattlePhase.Lost : enemies.Count > 0 && AliveCount == 0 ? BattlePhase.Won : BattlePhase.Waiting;
         }
         public void Advance(float seconds)
         {
             if (float.IsNaN(seconds) || float.IsInfinity(seconds) || seconds < 0) throw new ArgumentOutOfRangeException(nameof(seconds));
-            if (!IsMoving) return;
-            elapsed = Mathf.Min(duration, elapsed + seconds);
-            if (elapsed < duration) return;
-            Position = Destination; IsMoving = false;
+            while (IsBusy && seconds > 0)
+            {
+                float untilPlayer = IsMoving ? duration - elapsed : float.PositiveInfinity;
+                float untilEnemy = IsEnemiesMoving ? enemyDuration - enemyElapsed : float.PositiveInfinity;
+                float step = Mathf.Min(seconds, untilPlayer, untilEnemy);
+                bool playerMoving = IsMoving, enemyMoving = IsEnemiesMoving;
+                if (playerMoving) elapsed = Mathf.Min(duration, elapsed + step);
+                if (enemyMoving) enemyElapsed = Mathf.Min(enemyDuration, enemyElapsed + step);
+                seconds -= step;
+                if (playerMoving && elapsed >= duration) Position = Destination;
+                if (enemyMoving && enemyElapsed >= enemyDuration) CommitEnemyStep();
+                if (!IsMoving && enemiesComplete) FinishAction();
+            }
         }
     }
-
     public static class MovementWorldTime
     {
         private static readonly HashSet<object> owners = new HashSet<object>();

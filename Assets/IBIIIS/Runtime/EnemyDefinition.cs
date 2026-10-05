@@ -1,0 +1,37 @@
+using System;
+using UnityEngine;
+
+namespace IBIIIS
+{
+    [DisallowMultipleComponent]
+    public sealed class EnemyDefinition : MonoBehaviour
+    {
+        [SerializeField] private string enemyId = "Enemy001";
+        [SerializeField, Range(1, 2)] private int moveCells = 1;
+        [SerializeField, Tooltip("로컬 오프셋: X=오른쪽, Y=앞. 기본 001/002는 전방 반원 맨해튼 2칸.")]
+        private Vector2Int[] recognition = { new Vector2Int(-2,0), new Vector2Int(-1,0), Vector2Int.zero, new Vector2Int(1,0), new Vector2Int(2,0), new Vector2Int(-1,1), new Vector2Int(0,1), new Vector2Int(1,1), new Vector2Int(0,2) };
+        [SerializeField, Tooltip("도착 칸 기준. X=오른쪽, Y=앞.")] private Vector2Int[] attack = { Vector2Int.zero };
+        [SerializeField] private Vector2Int[] recognizedAttack = { Vector2Int.zero, Vector2Int.up };
+        [SerializeField] private Color editorColor = new Color(1f, .5f, .3f);
+        [SerializeField, Tooltip("선택. 카메라를 향하게 할 스프라이트/평면 외형의 자식 Transform.")] private Transform visual;
+        public string Id => enemyId;
+        public int MoveCells => moveCells;
+        public Vector2Int[] Recognition => recognition == null ? null : (Vector2Int[])recognition.Clone();
+        public Vector2Int[] Attack => attack == null ? null : (Vector2Int[])attack.Clone();
+        public Vector2Int[] RecognizedAttack => recognizedAttack == null ? null : (Vector2Int[])recognizedAttack.Clone();
+        public Color EditorColor => editorColor;
+        public bool IsValid => !string.IsNullOrEmpty(enemyId) && moveCells >= 1 && moveCells <= 2 && recognition != null && attack != null && recognizedAttack != null;
+        public void FaceCamera(Camera camera) { if (visual != null && visual != transform && camera != null) visual.rotation = camera.transform.rotation; }
+    }
+    [Serializable]
+    public sealed class EnemyPlacement
+    {
+        [SerializeField] private GameObject prefab;
+        [SerializeField] private Vector2Int position;
+        [SerializeField] private Vector2Int direction;
+        public GameObject Prefab => prefab;
+        public Vector2Int Position => position;
+        public Vector2Int Direction => direction;
+        public EnemyPlacement(GameObject value, Vector2Int cell, Vector2Int facing) { prefab = value; position = cell; direction = facing; }
+    }
+}
