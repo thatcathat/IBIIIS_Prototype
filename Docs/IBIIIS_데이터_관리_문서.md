@@ -24,6 +24,7 @@
 | 패턴 ID·패턴 전환·타깃·예고 규칙 | 엑셀의 행동 패턴 시트 | 미구현. 패턴 ID 없이 적 프리팹마다 행동 목록 하나를 가진다 |
 | 플레이어 외형·이동 시간·표시·입력·연출 설정 | 게임 시스템 기획서 | `Assets/IBIIIS/Settings/GlobalPlayerSettings.asset`과 연결된 설정 에셋(아래) |
 | 이미지·애니메이션·효과음 참조 | 엑셀의 현재 열 구조에 없음 | 플레이어는 `PlayerVisual.prefab`의 슬롯, 적은 프리팹의 `Visual` 자식, 충돌 연출은 `CollisionFeedback.asset`. 절차는 [에셋 제작 가이드](IBIIIS_에셋_제작_가이드.md) |
+| 스테이지 클리어 기록 | 게임 시스템 기획서의 미니맵 항목 | `Application.persistentDataPath/IBIIIS_progress.json`(아래 클리어 기록). 스테이지 ID는 미니맵의 `StageEntrance`에서 정한다 |
 | 현재 위치·방향·생존·인식·회피기 쿨다운 | 개체별 실행 상태 | `GridSession`과 `EnemyState`에만 저장한다. 공유 설정·프리팹·맵 에셋에 기록하지 않으며 저장·불러오기 기능은 없다 |
 
 ## 맵 실행 데이터
@@ -50,8 +51,18 @@
 | `Assets/IBIIIS/Settings/GlobalCameraSettings.asset` | 카메라 Projection·회전·화각. 맵 에셋에는 카메라 설정을 저장하지 않는다 |
 | `Assets/IBIIIS/Settings/IBIIISInput.inputactions` | 전투 키 배치(`Battle` 액션 맵) |
 | `Assets/IBIIIS/Settings/CollisionFeedback.asset` | 충돌·패배 연출의 시간·강도·이펙트·효과음 |
+| `Assets/IBIIIS/Settings/OverworldSettings.asset` | 미니맵 이동 속도, 카메라 설정·거리·따라가는 빠르기, 미니맵 입력 연결 |
+| `Assets/IBIIIS/Settings/OverworldInput.inputactions` | 미니맵 키 배치(`Overworld` 액션 맵) |
 
 이동 시간은 각 행동 시작 시 개별 세션에 복사하며 실행 상태는 공용 설정에 기록하지 않는다. 입력 에셋은 실행 시 사본을 만들어 쓴다. 편집 절차는 개발 및 사용 가이드를 따른다.
+
+## 클리어 기록
+
+- 위치: `Application.persistentDataPath/IBIIIS_progress.json`(Windows 에디터에서는 보통 `%USERPROFILE%\AppData\LocalLow\<회사 이름>\<제품 이름>\`). 메뉴 `IBIIIS > Overworld > Show Save File`로 연다.
+- 형식: `{"version": 1, "clearedStages": ["스테이지 ID", ...]}`. 승리 시 해당 스테이지 ID를 한 번만 추가하고 바로 저장한다. 임시 파일에 쓴 뒤 교체한다.
+- 키는 `StageEntrance`의 Stage Id다. 표시 이름·씬 경로가 바뀌어도 ID가 같으면 기록이 유지된다. ID를 바꾸거나 두 입구에 같은 ID를 쓰면 기록이 어긋나므로 Inspector가 누락·중복을 알린다. ID 명명 규칙은 미정이다.
+- 읽을 수 없는 파일은 `.corrupt` 사본으로 보존한 뒤 빈 기록으로 시작한다. 더 새로운 버전의 파일도 같은 방식으로 다룬다.
+- 초기화는 `IBIIIS > Overworld > Reset Clear Records`(파일 삭제). 저장 슬롯·클라우드 저장은 없다.
 
 ## 환경 배치 데이터
 

@@ -31,7 +31,7 @@ namespace IBIIIS
         public bool IsValid => !string.IsNullOrEmpty(enemyId) && ActionsValid && recognition != null && attack != null && recognizedAttack != null;
         /// <summary>카메라를 향하는 외형 자식. 없으면 null.</summary>
         public Transform Visual => visual != null && visual != transform ? visual : null;
-        public void FaceCamera(Camera camera) { if (visual != null && visual != transform && camera != null) visual.rotation = camera.transform.rotation; }
+        public void FaceCamera(Camera camera) { if (visual != null && visual != transform && camera != null) CameraFacingSprite.Face(visual, camera); }
     }
     [Serializable]
     public sealed class EnemyPlacement

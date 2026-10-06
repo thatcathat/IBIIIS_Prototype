@@ -315,6 +315,8 @@ namespace IBIIIS
         private static readonly HashSet<object> owners = new HashSet<object>();
         private static readonly HashSet<object> moving = new HashSet<object>();
         private static float previousScale = 1;
+        /// <summary>전투 시간을 관리 중인 오브젝트가 있으면 true. 미니맵은 이 관리에 참여하지 않는다.</summary>
+        public static bool HasOwners => owners.Count > 0;
         public static void Register(object owner)
         {
             if (owners.Contains(owner)) return;

@@ -6,7 +6,7 @@
 
 프로젝트를 실행하고, 외형을 교체하고, 맵과 적·오브젝트를 다루는 실제 절차를 기록한다. 개발 시에는 구현 구조와 새 기능의 연결 지점을 확인하는 데 사용한다.
 
-맵 편집기, 전투 프로토타입(이동·대시·구르기·대기, 적 3종, 충돌·승패, 되돌리기), 맵 자동 검증을 구현했다. 전투 규칙과 적 배치 절차는 [전투 및 적 배치 가이드](IBIIIS_전투_및_적배치_가이드.md)를 따른다. 아래 표에서 미작성으로 표시한 항목은 아직 사용할 수 있는 절차로 해석하지 않는다.
+맵 편집기, 전투 프로토타입(이동·대시·구르기·대기, 적 3종, 충돌·승패, 되돌리기), 맵 자동 검증을 구현했다. 미니맵(Overworld)은 `feature/overworld-minimap` 브랜치에서 시험 중이다. 전투 규칙과 적 배치 절차는 [전투 및 적 배치 가이드](IBIIIS_전투_및_적배치_가이드.md)를 따른다. 아래 표에서 미작성으로 표시한 항목은 아직 사용할 수 있는 절차로 해석하지 않는다.
 
 ## 검증 역할
 
@@ -32,7 +32,7 @@
 | 작업 | 기록 위치 | 상태 |
 |---|---|---|
 | 프로젝트 실행 | 아래 맵 편집·기본 이동 절차 | 개발 검증 완료, 플레이 사용자 확인 대기 |
-| 테스트 실행 | 아래 자동 테스트 | EditMode 77/77 통과 (2026-10-06) |
+| 테스트 실행 | 아래 자동 테스트 | EditMode 103/103 통과 (2026-10-07, 미니맵 브랜치) |
 | 플레이어 외형 교체 | 아래 공용 플레이어 설정, 플레이어 스프라이트 외형 | 스프라이트 외형 구현·자동 검증 완료, 화면 사용자 확인 대기. 반복 애니메이션 미구현 |
 | 적 설정 편집·배치 | 전투 및 적 배치 가이드 | 구현·자동 검증 완료, 화면 사용자 확인 대기 |
 | 새 적 추가 | 설정 생성 메뉴, ID, 패턴·외형 연결, 등장 방법 | 미작성·미검증. 적 팔레트는 루트에 EnemyDefinition이 있는 프리팹을 자동 수집한다 |
@@ -40,6 +40,7 @@
 | 수치 변경 | 아래 공용 플레이어 설정, 전투 및 적 배치 가이드의 충돌 연출 | 플레이어·적 이동 시간과 연출 수치는 기록. 그 밖의 수치는 미작성 |
 | 패턴 조합 | 전투 및 적 배치 가이드의 행동 목록 | 행동 목록 편집 구현. `Turn`을 쓰는 패턴은 미정 |
 | 새 행동 구현 | 전투 및 적 배치 가이드의 행동 목록 | 코드 위치 기록. 등록·검증 절차 미작성 |
+| 미니맵·스테이지 연결 | 아래 미니맵(Overworld) 프로토타입 | 구현·자동 테스트 통과, 테스트 씬 생성. 플레이 사용자 확인 대기 |
 
 ## 기능별 설명 양식
 
@@ -63,7 +64,10 @@
 | `Runtime/GridMapPlayer.cs` | 맵·외형 생성, 입력 명령 실행, 카메라 맞춤, 임시 표시·HUD |
 | `Runtime/BattleInput.cs` | 입력 에셋을 전투 명령으로 변환 |
 | `Runtime/PlayerVisual.cs`, `CollisionFeedback.cs` | 플레이어 스프라이트 선택, 충돌·패배 연출 |
+| `Runtime/CameraFacingSprite.cs` | 캐릭터 그림을 카메라와 나란히 세우는 공통 규칙(플레이어·적·NPC) |
 | `Runtime/MapSolver.cs` | 맵 클리어 가능 여부 탐색 |
+| `Runtime/Overworld*.cs`, `NpcSpeaker.cs`, `StageEntrance.cs` | 미니맵 자유 이동·따라가는 카메라·입력·상호작용 대상(NPC 말풍선, 스테이지 입구) |
+| `Runtime/StageFlow.cs`, `StageResultPopup.cs`, `ProgressStore.cs` | 미니맵 ↔ 전투 씬 전환, 결과 팝업, 클리어 기록 저장 |
 | `Editor/` | MapEditorWindow·MapCanvas·UXML/USS(맵 편집기), MapEditorSetup(새 맵·씬 생성), GridMapPreview(Scene 미리보기), 각종 기본 에셋 생성 메뉴 |
 
 Editor 코드는 런타임과 별도 어셈블리(`IBIIIS.Editor`)에 있고, 테스트는 `IBIIIS.Tests`에 있다.
@@ -73,14 +77,15 @@ Editor 코드는 런타임과 별도 어셈블리(`IBIIIS.Editor`)에 있고, �
 | 경로 | 내용 |
 |---|---|
 | `Assets/IBIIIS/Runtime`, `Editor`, `Tests/Editor` | 코드와 asmdef. 편집기 UXML/USS는 `Editor/UI` |
-| `Assets/IBIIIS/Settings` | GlobalPlayerSettings, GlobalCameraSettings, IBIIISInput, CollisionFeedback |
-| `Assets/IBIIIS/Characters/Player` | PlayerVisual.prefab, `Sprites/` |
+| `Assets/IBIIIS/Settings` | GlobalPlayerSettings, GlobalCameraSettings, IBIIISInput, CollisionFeedback, MotionFeedback, OverworldSettings, OverworldInput |
+| `Assets/IBIIIS/Characters/Player` | PlayerVisual.prefab, OverworldPlayer.prefab, `Sprites/` |
 | `Assets/IBIIIS/Characters/Enemies/<적 ID>/` | 적별 프리팹·재질·스프라이트를 한 폴더에 둔다. 새 적은 폴더 단위로 추가한다 |
 | `Assets/IBIIIS/Characters/Shared` | 공용 GroundShadow·FacingArrow 프리팹 |
 | `Assets/IBIIIS/Effects`, `Audio` | 충돌 연출 이펙트·효과음 |
 | `Assets/IBIIIS/Tiles` | 이동 바닥 종류(TileDefinition) |
 | `Assets/IBIIIS/Environments` | 환경 장식 프리팹 |
 | `Assets/IBIIIS/Materials` | 공용 재질(PrototypeUnlit) |
+| `Assets/IBIIIS/Overworld` | 미니맵 테스트 씬(OverworldTest.unity)과 임시 재질 |
 | `Assets/IBIIIS/Maps/<맵 이름>/` | GridMap(.asset)과 연결 씬(.unity) 한 쌍. 샘플과 사용자 맵 모두 여기에 둔다 |
 | `Assets/IBIIIS/Resources/IBIIIS` | 이름으로 로드하는 기본 재질(DefaultGround). 이동 금지 |
 | `Assets/Settings` | URP 렌더 설정(템플릿) |
@@ -96,7 +101,8 @@ Editor 코드는 런타임과 별도 어셈블리(`IBIIIS.Editor`)에 있고, �
 ## 자동 테스트
 
 - `Window > General > Test Runner > EditMode`에서 `IBIIIS.Tests`를 실행한다. 자동 테스트는 Play를 조작하지 않고 EditMode에서 실행한다.
-- 최근 결과: 컴파일 완료, EditMode 77/77 통과(2026-10-06, 플레이어 패배 연출 추가 시점). 기능별로 확인한 내용은 각 기능 항목의 검증에 기록한다.
+- 최근 결과: 컴파일 완료, EditMode 103/103 통과(2026-10-07, `feature/overworld-minimap` 브랜치. 미니맵 테스트 11개 포함). 기능별로 확인한 내용은 각 기능 항목의 검증에 기록한다.
+- UnityMCP가 연결되지 않았을 때는 Unity가 만든 `IBIIIS.*.csproj`를 `dotnet build`해 컴파일만 확인할 수 있다. 이것은 Unity 컴파일·테스트 실행을 대신하지 않는다.
 - 에이전트는 Unity 에디터가 열려 UnityMCP가 연결되어 있을 때 컴파일 확인과 테스트 실행을 할 수 있다. Player 빌드는 실행하지 않았다.
 
 ## 맵 편집·기본 이동 프로토타입
@@ -167,7 +173,7 @@ Editor 코드는 런타임과 별도 어셈블리(`IBIIIS.Editor`)에 있고, �
 
 ### 공용 카메라 설정
 
-- `Assets/IBIIIS/Settings/GlobalCameraSettings.asset`을 선택해 Inspector에서 편집한다. Orthographic 끔 = Perspective, Rotation = `(55, 0, 0)`, Field Of View = `60`이 현재 값이다. 정면은 좌우 회전 Y=0을 의미하며, 바닥을 볼 수 있도록 내려다보는 X=55°를 유지했다.
+- `Assets/IBIIIS/Settings/GlobalCameraSettings.asset`을 선택해 Inspector에서 편집한다. Orthographic 끔 = Perspective, Rotation = `(40, 0, 0)`, Field Of View = `75`가 현재 값이다(사용자가 의도한 값, 사용자 확인 2026-10-07). 정면은 좌우 회전 Y=0을 의미하며, X는 바닥을 내려다보는 각도다. 미니맵 카메라도 이 설정을 함께 쓴다.
 - `StarterMap_Test.unity`와 새로 생성하는 테스트 씬은 이 에셋을 참조한다. 별도로 만든 기존 씬은 Grid Map Player의 Camera Settings에 같은 에셋을 연결하고 Auto Fit Camera를 켜면 함께 적용된다.
 - Perspective에서는 맵 크기·화각·화면 비율에 따라 거리를, Orthographic에서는 Size를 계산한다. 그리드 범위와 플레이어 표시 높이를 포함하며 임의로 매우 크게 만든 외형까지 자동으로 맞추지는 않는다.
 - Auto Fit Camera를 끄면 씬 Camera의 개별 설정을 유지한다. 공용 값은 설정 에셋에, 설정 참조와 개별 카메라 값은 씬에 저장한다.
@@ -250,3 +256,59 @@ Editor 코드는 런타임과 별도 어셈블리(`IBIIIS.Editor`)에 있고, �
 4. 임시 대체: 정면 대기, 뒤·앞 대시는 해당 그림이 없어 `c_basic_right`를 쓴다. 그림이 제작되면 `PlayerVisual`의 해당 슬롯만 교체한다. 슬롯이 비면 이전 표시를 유지하고 콘솔에 경고를 남긴다.
 5. 자동 검증: 방향·동작별 선택, 구르기 프레임 전환, 빈 슬롯 경고, 카메라 정면 회전. 실제 플레이 화면 확인은 사용자 확인 대기다.
 6. 사용자 확인 순서: 테스트 씬을 열고 Play → WASD(이동 스프라이트), Shift+WASD(대시: 좌우만 전용, 앞뒤는 임시 그림), Q/E/Z/C(구르기 2프레임), 이동 후 대기 스프라이트가 마지막 방향인지, 캐릭터 크기·발밑 위치가 칸 중앙에 맞는지 확인한다.
+
+## 미니맵(Overworld) 프로토타입
+
+`feature/overworld-minimap` 브랜치의 시험 기능이다. 규칙은 [기획서](IBIIIS_게임시스템_기획서.md)의 미니맵 항목을 따른다.
+
+### 테스트 씬 만들기
+
+1. Unity에서 메뉴 `IBIIIS > Overworld > Create Overworld Test Scene`을 누른다. 이름 없는 씬이 열려 있으면 먼저 저장하라는 안내가 나온다. 현재 열린 씬은 바꾸지 않는다.
+2. 다음을 만든다. 이미 있는 에셋·연결은 덮어쓰지 않는다.
+   - `Assets/IBIIIS/Settings/OverworldSettings.asset`: 이동 속도, 카메라, 입력 설정. 비어 있는 카메라 설정에는 GlobalCameraSettings, 비어 있는 입력에는 아래 입력 에셋을 연결한다.
+   - `Assets/IBIIIS/Settings/OverworldInput.inputactions`: 액션 맵 `Overworld`(Move = WASD·방향키, Interact = F).
+   - `Assets/IBIIIS/Characters/NPC/NPC.prefab`과 임시 실루엣 `NPC_Placeholder.png`: NPC 기본 프리팹(아래 NPC 추가). 메뉴 `IBIIIS > Overworld > Create NPC Prefab`으로 따로 만들 수도 있다.
+   - `Assets/IBIIIS/Overworld/ClearedFlag.prefab`과 임시 그림 `ClearedFlag.png`: 카메라를 바라보는 클리어 깃발 스프라이트.
+   - `Assets/IBIIIS/Characters/Player/OverworldPlayer.prefab`: CharacterController + OverworldPlayer, 자식에 GlobalPlayerSettings의 플레이어 외형 프리팹을 중첩한다. 외형 프리팹이 없으면 만들지 않고 안내한다.
+   - `Assets/IBIIIS/Overworld/OverworldTest.unity`(같은 이름이 있으면 번호를 붙임): 24×24칸 바닥과 보이지 않는 경계 벽, 플레이어, 따라가는 카메라, NPC `NPC_Guide`(NPC 프리팹, 대사 3줄), 스테이지 입구 `Stage_ProtoTypeMap`(ID `stage-prototype-01`, `Maps/ProtoTypeMap/ProtoTypeMap.unity` 연결). 입구 아래에는 클리어 깃발 프리팹(평소 꺼짐)을 두고 Cleared Indicator로 연결한다. 입구 발판은 `Overworld/Placeholder_Stage.mat`을 쓰는 바닥 평면 임시 도형이다.
+3. 만든 씬을 Project에서 더블클릭해 열고 Play한다.
+
+### 조작과 흐름
+
+- WASD/방향키로 자유 이동한다(대각선 포함, 대각선 속도는 직선과 같다). 위만 누르면 뒷모습, 아래만 누르면 앞모습, 좌우가 섞이면(대각선 포함) 옆모습이다. 멈추면 마지막 방향의 대기 그림을 유지한다.
+- 상호작용 대상 범위에 들어가면 대상 위에 `[F] 말 걸기`, `[F] 프로토타입 스테이지 입장` 같은 안내가 나온다. 범위가 겹치면 가장 가까운 대상 하나만 고른다.
+- NPC: F를 누를 때마다 머리 위 말풍선에 대사가 한 줄씩 나오고 마지막 줄 다음에 닫힌다. 범위를 벗어나도 닫힌다. 말하는 동안에도 움직일 수 있다.
+- 스테이지 입구: F를 누르면 연결된 전투 씬으로 바뀐다. 전투는 기존 규칙·조작 그대로다.
+  - 승리: 충돌 연출이 끝나면 클리어 기록을 저장하고 `클리어!` 팝업을 띄운다.
+  - 패배: 패배 연출이 끝나면 `패배` 팝업을 띄운다.
+  - `확인` 버튼(또는 Enter)을 누르면 미니맵의 들어갔던 위치·방향으로 돌아온다.
+  - 팝업이 떠 있는 동안에도 전투의 되돌리기(Backspace/U)·재시작(R)은 동작하며, 그러면 팝업이 사라지고 전투를 계속한다. 이미 저장한 클리어 기록은 유지된다.
+- 전투 씬을 미니맵 없이 바로 Play하면 팝업 없이 기존과 같이 동작한다.
+- 화면 왼쪽 위에 조작 안내와 클리어한 스테이지 수가 나온다. 클리어한 입구는 초록 깃발(Cleared Indicator)이 켜지고 안내에 `(클리어)`가 붙는다.
+
+### 편집 항목
+
+- **Overworld Settings**(`IBIIIS > Overworld > Overworld Settings`): `Move Speed`(칸/초, 임시 3.5), `Camera Settings`(각도·화각, 비우면 카메라 현재 값), `Camera Distance`(칸, 임시 9), `Camera Follow Sharpness`(0이면 지연 없음, 임시 8), `Input Actions`.
+- **NPC 추가**: `Assets/IBIIIS/Characters/NPC/NPC.prefab`을 씬에 끌어다 놓고, 루트의 `NpcSpeaker`에서 `Display Name`, `Lines`(항목 하나가 말풍선 한 번), `Radius`(상호작용 거리, 칸), `Label Height`(말풍선 높이, 칸)를 정한다. 그림은 자식 `Visual`의 SpriteRenderer 스프라이트를, 크기는 `Visual`의 Scale(현재 1.5)을 바꾼다. 막힘은 루트의 보이지 않는 CapsuleCollider, 말 걸기 범위는 바닥 평면 거리로 판정하므로 그림·크기를 바꿔도 달라지지 않는다. NPC마다 다른 그림을 오래 쓸 거라면 프리팹 변형(Prefab Variant)으로 만든다. 지금은 정면 한 장만 쓰며 돌아보기는 없다.
+- **카메라 바라보기**: 플레이어·적·NPC 그림은 모두 카메라 회전과 같은 회전으로 세워진다(`CameraFacingSprite`). NPC는 Play 중 매 프레임 맞추며, 편집 중 Scene에서는 똑바로 서 있는 상태로 보인다.
+- **스테이지 입구 추가**: 오브젝트에 `StageEntrance`를 붙이고 `Stage Id`(필수, 클리어 기록 키. 정한 뒤 바꾸지 않음), `Display Name`, `Battle Scene`(필수, 맵과 함께 만든 전투 씬), `Cleared Indicator`(선택, 보통 자식으로 둔 `Overworld/ClearedFlag.prefab`을 꺼 둔 채 연결)를 정한다. Inspector가 ID 누락·중복과 빌드 씬 목록 누락을 알려 준다. 에디터 Play에서는 빌드 씬 목록에 없어도 들어갈 수 있으나 빌드한 게임에서는 `빌드 씬 목록에 추가`가 필요하다. 미니맵 씬도 같다.
+- **클리어 기록**: `IBIIIS > Overworld > Reset Clear Records`로 모두 지우고, `Show Save File`로 파일 위치를 연다. 저장 형식은 [데이터 관리 문서](IBIIIS_데이터_관리_문서.md)를 따른다.
+
+### 구조와 시간 분리
+
+- 미니맵은 `MovementWorldTime`(전투의 입력 대기 중 시간 정지)에 참여하지 않고 일반 게임 시간으로 움직인다. 전투 씬이 정리되며 시간이 복구되지 않은 채 멈춰 있으면 미니맵 플레이어가 1로 되돌리고 경고를 남긴다.
+- 전투 씬과 `GridMapPlayer`는 미니맵을 모른다. 입구가 만든 `StageResultPopup`(씬 전환 사이에 유지)이 전투 씬의 `GridMapPlayer` 상태를 읽어 결과를 띄우고, 미니맵으로 돌아가면 사라진다. 돌아갈 씬과 위치는 `StageFlow`가 기억한다.
+- 말풍선·안내·팝업은 IMGUI로 그린 임시 화면이다. 정식 대화창·UI가 정해지면 교체한다.
+
+### 검증
+
+- 개발 검증: Unity 컴파일 완료, 콘솔 오류 0, EditMode 100/100 통과. 테스트 씬 생성 함수를 실행해 `Overworld/OverworldTest.unity`를 만들고, 열려 있던 씬이 바뀌거나 수정되지 않았음을 확인했다. 생성된 씬에서 플레이어(미니맵 플레이어 프리팹·설정·PlayerVisual 연결), 카메라(대상·MainCamera 태그·공용 카메라 각도), NPC(대사·안내 문구), 스테이지 입구(ID·전투 씬 경로·설정 오류 없음), 설정 에셋(카메라·입력 연결, 필수 액션 누락 없음)을 확인했다. 첫 실행에서 `Overworld` 폴더가 없으면 씬 경로를 만들지 못하던 결함을 찾아 고쳤다. NPC 2D 전환: NPC 프리팹·실루엣(256×256, PPU 256, 기준점 아래 중앙)을 만들고 기존 테스트 씬의 캡슐 NPC를 위치·이름·대사를 유지한 채 프리팹으로 바꿔 저장했으며, 쓰지 않게 된 `Placeholder_NPC.mat`을 지웠다. 클리어 깃발 2D 전환: 깃발 프리팹·그림(256×256, PPU 256, 기준점 아래 중앙)을 만들고 테스트 씬의 큐브 깃발을 같은 자리(바닥 높이)·꺼진 상태로 바꿔 입구에 다시 연결했으며, 쓰지 않게 된 `Placeholder_Cleared.mat`을 지웠다. EditMode 103/103 통과. Play 모드 확인은 하지 않았다.
+- 자동 테스트로 확인한 항목: 이동 입력별 스프라이트 방향(W 뒤, S 앞, A/D와 대각선 4종 옆, 데드존), 클리어 기록 저장·다시 읽기·중복 방지·빈 ID 거부·초기화, 읽을 수 없는 저장 파일의 `.corrupt` 보존, 복귀 위치를 돌아갈 씬에서 한 번만 돌려줌, 가장 가까운 상호작용 대상 선택(높이 무시·범위 밖·대사 없는 NPC 제외), 말풍선 줄 넘김·닫힘, 그림이 카메라와 나란히 서는지, NPC 프리팹의 그림·크기를 바꿔도 막힘 Collider·말 걸기 범위가 그대로인지(루트에는 렌더러 없음, 그림자 있음), 클리어 깃발이 클리어 기록이 있을 때만 켜지고 초기화하면 꺼지는지, 기본 키(W+A 정규화, F, 방향키)와 `Overworld` 맵이 없는 입력 에셋의 기본 배치 대체.
+- 사용자 확인 대기:
+  1. 메뉴로 테스트 씬을 만들고 연다 → Play.
+  2. W, S, A, D와 대각선 4방향으로 움직이며 스프라이트 방향(뒤/앞/옆)과 카메라 추적을 확인한다. 플레이어와 NPC 그림이 화면과 나란히 서 보이는지, NPC 크기·발밑 그림자가 플레이어와 어울리는지 확인한다.
+  3. NPC에 다가가 F를 세 번 → 말풍선 3줄 후 닫힘, 대화 중 멀어지면 닫힘을 확인한다. 한글이 깨지지 않는지 확인한다.
+  4. 주황 발판에서 F → 전투 진입 → 승리 → `클리어!` 팝업 → 확인 → 발판 위로 복귀, 깃발 표시와 `(클리어)` 안내를 확인한다.
+  5. 다시 들어가 일부러 패배 → `패배` 팝업 → 확인 → 복귀를 확인한다.
+  6. Play를 껐다 켜도 클리어 표시가 남는지, `Reset Clear Records` 후 사라지는지 확인한다.
+- 알려진 제한: 전투 중 미니맵으로 그냥 나가는 메뉴는 없다(승패 후에만 복귀). 미니맵 걷기 애니메이션은 없고 이동 그림 1장을 쓴다. NPC 그림(실루엣)·클리어 깃발·입구 발판은 임시이며 NPC는 정면 한 장만 쓴다.

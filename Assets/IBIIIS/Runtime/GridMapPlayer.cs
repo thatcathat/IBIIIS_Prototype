@@ -183,7 +183,7 @@ namespace IBIIIS
                 visual.name = "Temporary Player Visual"; visual.transform.SetParent(player, false); fallbackPlayerVisual = visual.transform;
                 visual.transform.localPosition = new Vector3(0, cellSize * .45f, 0);
                 visual.transform.localScale = Vector3.one * cellSize * .7f;
-                if (viewCamera != null) visual.transform.rotation = viewCamera.transform.rotation;
+                CameraFacingSprite.Face(visual.transform, viewCamera);
                 Release(visual.GetComponent<Collider>()); Tint(visual, new Color(1f, .76f, .25f));
             }
         }

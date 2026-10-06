@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 30d12bfdc4ebf044d9032db13158c10e, type: 3}
+  m_Name: OverworldSettings
+  m_EditorClassIdentifier: IBIIIS.Runtime::IBIIIS.OverworldSettings
+  moveSpeed: 3.5
+  cameraSettings: {fileID: 11400000, guid: 8997b4eab41f6414199c065a7671d13a, type: 2}
+  cameraDistance: 9
+  cameraFollowSharpness: 8
+  inputActions: {fileID: -944628639613478452, guid: 95049c6615686ae40925f6e9f2ea355f, type: 3}

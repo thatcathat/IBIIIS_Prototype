@@ -86,7 +86,7 @@ namespace IBIIIS
         {
             var t = spriteRenderer.transform; lastCamera = camera;
             if (!hasBasePosition) { basePosition = t.localPosition; baseScale = t.localScale; hasBasePosition = true; }
-            t.rotation = camera.transform.rotation * Quaternion.Euler(0, 0, pose.Tilt);
+            t.rotation = CameraFacingSprite.RotationFor(camera) * Quaternion.Euler(0, 0, pose.Tilt);
             var screenDown = camera.transform.rotation * Vector3.down; // 기울기와 무관하게 화면 아래 방향으로 발 보정
             var down = t.parent != null ? t.parent.InverseTransformDirection(screenDown) : screenDown;
             var up = t.parent != null ? t.parent.InverseTransformDirection(Vector3.up) : Vector3.up;

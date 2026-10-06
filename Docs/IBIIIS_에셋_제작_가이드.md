@@ -50,6 +50,9 @@
 - **바닥**: 맵은 XZ 평면에 평면 바닥으로 생성한다. 기본 셀 크기는 1 Unity 단위다. 이동 바닥 종류(TileDefinition)는 `바닥 재질`(선택)이나 `표시 색상`으로 표시하며, 타일 입체 외형(옛 `Visual Prefab`)은 쓰지 않는다. 이동 가능 여부는 맵 에디터에서 칸을 칠하거나 지워서 정한다. 색상 표시는 `Assets/IBIIIS/Materials/PrototypeUnlit.mat`의 사본을 쓴다. 절차는 개발 및 사용 가이드의 평면 바닥·이동 바닥 항목을 따른다.
 - **환경 장식**: 맵의 Environment Prefab에 연결하고 Scene의 해당 인스턴스에서 편집한다. 환경 프리팹 루트는 맵 (0,0) 칸 중심에 대응하며 위치·회전 0, 크기 1을 유지한다. 자식 소품은 격자 안팎에 자유롭게 배치할 수 있다. Cell Size 변경에 따라 환경 배치를 자동 조정하지 않는다. 환경 Collider와 격자 점유는 별개다. 정식 소품 스프라이트 제작 규격은 미정이다.
 - **플레이어**: `Assets/IBIIIS/Settings/GlobalPlayerSettings.asset > Visual Prefab`으로 교체한다. 같은 공용 설정을 참조하는 모든 씬에 적용된다. 현재 `Characters/Player/PlayerVisual.prefab`(임시 스케치 스프라이트)이 연결되어 있다. 슬롯이 비면 카메라를 향한 노란 평면 표식을 사용한다.
+- **미니맵 플레이어**: `Characters/Player/OverworldPlayer.prefab`이 같은 플레이어 외형 프리팹을 중첩해 쓴다. 이동 중에는 `Move` 슬롯, 멈추면 `Idle` 슬롯을 보여 주며, 방향은 위만 누르면 뒤, 아래만 누르면 앞, 좌우가 섞이면(대각선 포함) 옆이다. 대각선 전용 그림과 걷기 반복 애니메이션은 없다. 스테이지 발판은 바닥에 붙은 평면이라 `Assets/IBIIIS/Overworld/Placeholder_Stage.mat`을 쓰는 임시 도형으로 둔다. 클리어 깃발은 세워 두는 오브젝트라 2.5D 스프라이트다: `Overworld/ClearedFlag.prefab`(SpriteRenderer + CameraFacingSprite, 크기 1칸), 임시 그림 `Overworld/ClearedFlag.png`(코드로 그린 256×256, PPU 256, 기준점 아래 중앙). 정식 그림은 PNG를 교체한다.
+- **미니맵 NPC**: 전투 캐릭터와 같은 2.5D 방식이다. `Characters/NPC/NPC.prefab`의 자식 `Visual`(SpriteRenderer, Scale 1.5)이 카메라와 나란히 서고, 루트에 발밑 그림자를 둔다. 임시 그림 `Characters/NPC/NPC_Placeholder.png`는 코드로 만든 단색 실루엣(256×256, PPU 256 = 캔버스 한 칸 너비, 기준점 아래 중앙, 발이 캔버스 아래에 닿음)이다. 현재는 정면 한 장만 쓰며, 방향별 그림·좌우 반전은 미정이다. 정식 그림 규격(해상도·여백)은 플레이어·적과 함께 정한다.
+- **카메라 바라보기 공통 규칙**: 플레이어·적·NPC의 그림 회전은 `Runtime/CameraFacingSprite.cs`의 규칙(카메라 회전과 같게) 한 곳을 쓴다. 규칙을 바꾸면 세 캐릭터에 함께 적용된다.
 - **적**: 적 프리팹의 `Visual` 자식에서 스프라이트와 Scale을 바꾼다. 자세한 항목은 [전투 및 적 배치 가이드](IBIIIS_전투_및_적배치_가이드.md)를 따른다.
 - 논리 위치와 시각적 위치 보정은 분리한다. 외형 크기·자식 위치·Collider는 격자 이동 판정에 관여하지 않는다(자동 테스트로 확인).
 - Scene 미리보기와 Play는 같은 외형 생성 코드를 사용한다. 미리보기는 저장되지 않고 재생성되므로 생성된 자식의 외형을 직접 편집하지 않는다.

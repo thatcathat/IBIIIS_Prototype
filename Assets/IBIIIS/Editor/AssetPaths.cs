@@ -24,5 +24,18 @@ namespace IBIIIS.Editor
         public const string StarterMap = Maps + "/StarterMap/StarterMap.asset";
         public const string DefaultResources = Root + "/Resources/IBIIIS";
         public const string MapEditorLayout = Root + "/Editor/UI/MapEditor.uxml";
+        // 미니맵(Overworld): 테스트 씬과 임시 재질은 Overworld 폴더, 설정은 Settings, 플레이어 프리팹은 Characters/Player.
+        public const string Overworld = Root + "/Overworld";
+        public const string OverworldScene = Overworld + "/OverworldTest.unity";
+        public const string OverworldSettings = Settings + "/OverworldSettings.asset";
+        public const string OverworldInput = Settings + "/OverworldInput.inputactions";
+        public const string OverworldPlayer = Player + "/OverworldPlayer.prefab";
+        // 미니맵 NPC: 공용 기본 프리팹과 임시 실루엣 그림
+        public const string Npc = Root + "/Characters/NPC";
+        public const string NpcPrefab = Npc + "/NPC.prefab";
+        public const string NpcPlaceholderSprite = Npc + "/NPC_Placeholder.png";
+        public const string ClearedFlagPrefab = Overworld + "/ClearedFlag.prefab";
+        public const string ClearedFlagSprite = Overworld + "/ClearedFlag.png";
+        public const string OverworldTestStage = Maps + "/ProtoTypeMap/ProtoTypeMap.unity";
     }
 }
