@@ -59,6 +59,27 @@
 
 `Assets/IBIIIS/Runtime/GridMap.cs`가 맵 설정, `TileDefinition.cs`가 이동 바닥 종류별 외형 설정, `GridSession.cs`가 실행 중 위치·이동 상태 및 이동 판정, `GridMapPlayer.cs`가 입력·맵 생성·임시 표시를 담당한다. `Assets/IBIIIS/Editor/`의 MapEditorWindow, MapCanvas, MapEditorSetup과 UXML/USS가 편집기와 새 테스트 씬 생성을 담당한다. Editor 코드는 런타임과 별도 어셈블리에 있다.
 
+### Assets 폴더 구조 — 2026-10-06
+
+| 경로 | 내용 |
+|---|---|
+| `Assets/IBIIIS/Runtime`, `Editor`, `Tests/Editor` | 코드와 asmdef. 편집기 UXML/USS는 `Editor/UI` |
+| `Assets/IBIIIS/Settings` | GlobalPlayerSettings, GlobalCameraSettings |
+| `Assets/IBIIIS/Characters/Player` | PlayerVisual.prefab, `Sprites/` |
+| `Assets/IBIIIS/Characters/Enemies/<적 ID>/` | 적별 프리팹·재질·스프라이트를 한 폴더에 둔다. 새 적은 폴더 단위로 추가한다 |
+| `Assets/IBIIIS/Tiles` | 이동 바닥 종류(TileDefinition) |
+| `Assets/IBIIIS/Environments` | 환경 장식 프리팹 |
+| `Assets/IBIIIS/Materials` | 공용 재질(PrototypeUnlit) |
+| `Assets/IBIIIS/Maps/<맵 이름>/` | GridMap(.asset)과 연결 씬(.unity) 한 쌍. 샘플과 사용자 맵 모두 여기에 둔다 |
+| `Assets/IBIIIS/Resources/IBIIIS` | 이름으로 로드하는 기본 재질(DefaultGround). 이동 금지 |
+| `Assets/Settings` | URP 렌더 설정(템플릿) |
+| `Assets/Sandbox` | SampleScene 등 실험용. 빌드 씬 목록의 SampleScene도 이 경로를 가리킨다 |
+
+- 에디터 도구의 기본 생성·조회 경로는 `Assets/IBIIIS/Editor/AssetPaths.cs` 한 곳에서 관리한다. 폴더를 다시 바꿀 때는 Unity Project 창(또는 AssetDatabase)에서 이동해 GUID를 보존하고 이 파일의 경로를 함께 수정한다. 파일 탐색기·git으로 옮기지 않는다.
+- `새 맵`의 저장 대화상자는 `Maps`에서 열린다. `Maps` 바로 아래에 이름을 지정하면 `Maps/<이름>/` 폴더를 만들어 맵·씬 쌍을 넣는다. 다른 폴더를 고르면 기존과 같이 그 폴더에 생성한다. `새 바닥`은 `Tiles`, `새 환경 프리팹`은 `Environments`에서 열린다.
+- 2026-10-06 구조 변경 검증: Unity에서 이동 33건 성공, 컴파일 오류 0, EditMode 43/43 통과, `Assets/IBIIIS`·`Sandbox`의 씬·프리팹·에셋·재질 29개의 GUID 참조 148개 조사. 이동으로 끊긴 참조는 없고, 이전에 삭제된 `Wall.asset`을 가리키는 팔레트 참조 3건(StarterMap·TestMap·TestMap3)이 기존부터 남아 있다. 맵 에디터에서 각 맵을 열고 Play·적 배치가 이전과 같은지 확인하는 것은 사용자 확인 대기다.
+- `Assets/Logs/MapScenePreview.png`는 용도 미확인으로 이동·삭제하지 않았다.
+
 게임 규칙은 [기획서](IBIIIS_게임시스템_기획서.md)를 참조하고, 수치의 관리 위치와 데이터 반영 절차는 [데이터 관리 문서](IBIIIS_데이터_관리_문서.md)를 참조한다.
 
 ## 맵 편집·기본 이동 프로토타입
@@ -66,7 +87,7 @@
 ### 시작과 편집
 
 1. Unity `6000.3.23f1`에서 프로젝트를 연다. 메뉴 `IBIIIS > Map Editor`로 전용 창을 연다. Scene 창이나 Play 모드는 필요 없다.
-2. 상단 맵 슬롯에 `Assets/IBIIIS/Content/StarterMap.asset`을 넣는다. 샘플은 12×10칸이며 기존 배치와 시작 위치를 유지한다. 기존 장애물 칸은 사용자가 삭제했다. `IBIIIS > Create Starter Map`은 기존 샘플을 덮어쓰지 않고 연다.
+2. 상단 맵 슬롯에 `Assets/IBIIIS/Maps/StarterMap/StarterMap.asset`을 넣는다. 샘플은 12×10칸이며 기존 배치와 시작 위치를 유지한다. 기존 장애물 칸은 사용자가 삭제했다. `IBIIIS > Create Starter Map`은 기존 샘플을 덮어쓰지 않고 연다.
 3. `새 맵`에서 이름과 저장 위치를 지정하면 같은 폴더에 `이름.asset`(GridMap)과 `이름.unity`(해당 맵을 연결한 씬)를 함께 생성한다. 둘 중 하나라도 같은 이름이 있으면 공통 이름에 번호를 붙여 기존 파일을 보존한다. 기본 크기는 12×12이고 모든 칸이 비어 있다. 시작 위치도 아직 없으므로 편집용 씬만 생성하고, Play 전에는 바닥과 시작 위치를 지정해야 한다. 씬에는 공용 플레이어·카메라 설정과 기본 머티리얼을 자동 연결한다. 생성된 씬은 Project에서 선택되며 더블클릭해 연다. 현재 열린 씬을 자동으로 교체하지 않는다. 이름 없는 씬이 열려 있으면 먼저 저장하라는 안내가 나오며 맵만 생성하지 않는다. 씬 생성 실패 시 이번에 만든 맵·씬을 정리한다.
 4. 왼쪽 도구에서 `이동 영역 배치`를 선택하고 클릭·드래그한다. `지우기`는 이동 영역만 제거하고 배경 바닥은 남긴다. 빈칸은 이동 불가다. 드래그 한 번은 Undo 한 번으로 복구한다. 이동 가능한 바닥 팔레트에서 종류를 선택해 칠한다. 이동 불가 타일은 등록·배치할 수 없다.
 5. `시작 위치` 도구로 이동 가능한 칸을 클릭한다. 노란 테두리가 시작 위치다. 시작 칸을 지우면 시작 위치도 해제되고 재지정 안내가 나온다. 다시 칠하기만 해서는 시작 위치가 복원되지 않는다. 잘못된 시작 위치는 플레이 준비 검증에서 거부한다.
@@ -94,7 +115,7 @@
 6. 사용자 확인: 서로 다른 바닥 두 종류를 인접 배치 → Scene/Play의 재질 차이 확인 → 두 칸 모두 이동 가능 확인 → 덧칠·Undo·지우기 확인. 실제 화면과 직접 플레이는 사용자 확인 대기다.
 ### 사용자 플레이 확인
 
-1. 샘플은 `Assets/IBIIIS/Content/StarterMap_Test.unity`를 연다. 새 맵은 함께 생성된 같은 이름의 `.unity` 씬을 연다. 상단의 `테스트 씬 만들기` 버튼은 제거했다. 기존 열린 씬은 새 맵 생성 과정에서 덮어쓰거나 저장하지 않는다.
+1. 샘플은 `Assets/IBIIIS/Maps/StarterMap/StarterMap_Test.unity`를 연다. 새 맵은 함께 생성된 같은 이름의 `.unity` 씬을 연다. 상단의 `테스트 씬 만들기` 버튼은 제거했다. 기존 열린 씬은 새 맵 생성 과정에서 덮어쓰거나 저장하지 않는다.
 2. 테스트 씬의 `Grid Map Player` 오브젝트에서 Map, Cell Size, Player Settings 연결을 확인한다. 플레이어 외형·이동 시간은 아래 공용 플레이어 설정에서 수정한다. 기본 임시 규칙은 [기획서](IBIIIS_게임시스템_기획서.md)에 있다.
 3. Play 후 Game 창을 클릭하고 WASD를 누른다. W/S는 격자 +Y/-Y, A/D는 -X/+X다. 화면상 방향은 카메라 구도에 따라 달라진다. 한 번 누를 때 한 칸 이동하고, 동시에 여러 키를 누르면 W→S→A→D 중 하나만 처리한다. 키를 계속 누르고 있어도 반복 이동하지 않는다.
 4. 대기 중에는 게임 시간이 정지하고, 유효한 이동 입력 시 설정된 시간 동안 한 칸을 보간 이동하며 게임 시간이 흐른다. 도착 후 적 행동·판정을 처리하고 다시 정지한다. 빈칸·경계 입력과 이동 중 추가 입력은 무시한다. 화면 왼쪽 위에는 Moving/Waiting과 도착 완료 좌표가 표시된다.
@@ -115,7 +136,7 @@
 
 ### 공용 카메라 설정 — 2026-10-02
 
-- `Assets/IBIIIS/Content/GlobalCameraSettings.asset`을 선택해 Inspector에서 편집한다. Orthographic 끔 = Perspective, Rotation = `(55, 0, 0)`, Field Of View = `60`이 현재 값이다. 정면은 좌우 회전 Y=0을 의미하며, 바닥을 볼 수 있도록 내려다보는 X=55°를 유지했다.
+- `Assets/IBIIIS/Settings/GlobalCameraSettings.asset`을 선택해 Inspector에서 편집한다. Orthographic 끔 = Perspective, Rotation = `(55, 0, 0)`, Field Of View = `60`이 현재 값이다. 정면은 좌우 회전 Y=0을 의미하며, 바닥을 볼 수 있도록 내려다보는 X=55°를 유지했다.
 - 현재 `StarterMap_Test.unity`와 앞으로 생성하는 테스트 씬은 이 에셋을 참조한다. 별도로 만든 기존 씬은 Grid Map Player의 Camera Settings에 같은 에셋을 연결하고 Auto Fit Camera를 켜면 함께 적용된다.
 - Perspective에서는 맵 크기·화각·화면 비율에 따라 거리를, Orthographic에서는 Size를 계산한다. 그리드 범위와 플레이어 표시 높이를 포함하며 임의로 매우 크게 만든 외형까지 자동으로 맞추지는 않는다.
 - Auto Fit Camera를 끄면 씬 Camera의 개별 설정을 유지한다. 공용 값은 설정 에셋에, 설정 참조와 개별 카메라 값은 씬에 저장한다.
@@ -147,10 +168,11 @@
 
 ## 공용 플레이어 설정 — 2026-10-03
 
-1. `IBIIIS > Player Settings` 또는 `Assets/IBIIIS/Content/GlobalPlayerSettings.asset`을 연다. 같은 설정을 사용하는 씬 전체에 적용된다.
+1. `IBIIIS > Player Settings` 또는 `Assets/IBIIIS/Settings/GlobalPlayerSettings.asset`을 연다. 같은 설정을 사용하는 씬 전체에 적용된다.
 2. `Visual Prefab`은 기존 외형 슬롯이다. 이번 이동 모션은 위치 보간이며 전용 걷기 애니메이션 클립·Animator 상태 전환은 추가하지 않았다.
 3. `Move Duration`은 한 칸 이동 시간(초), 임시 기본값 0.25, 최소 0.01이다. 매 이동 시작 시 읽으므로 진행 중인 이동은 기존 시간을 유지하고 다음 이동부터 변경된다. 턴 카운터·정상/막힌 이동 비용은 제거했다.
 4. `Show Move Hints`로 표시를 켜고 끈다. `Move Hint Color`는 이동 가능한 상하좌우 칸, `Destination Color`는 이동 중 목적지 색상이다. `Move Hint Material`은 선택 재질이며 표시용 사본을 사용한다. Scene 미리보기에도 시작 위치 기준의 이동 가능 칸이 표시된다. 표시 색상·재질·외형은 Play 재시작 시 반영한다.
+   - 추가 설정: `Show Enemy Ranges`(기본 켬)는 Play 시작 시 적 인식·공격 범위 표시 여부이며 Play 중 Tab으로 전환한다. 되돌리기(Backspace/U)와 함께 [전투 및 적 배치 가이드](IBIIIS_전투_및_적배치_가이드.md)에 설명한다.
 5. 대기 중에는 인접한 이동 가능 칸만 테두리를 표시한다. 이동 중에는 목적지만 표시하고 도착 후 새 위치 기준으로 갱신한다. 판정과 표시는 같은 이동 검사를 사용한다. 표시 높이는 Y=0.025, 타일은 Y=0.01이다.
 6. 실제 게임에서는 `MovementWorldTime`이 `Time.timeScale`을 입력 대기·승패 0 / 플레이어·적 행동 1로 관리한다. 마지막 플레이어가 비활성화·제거되거나 Play를 종료할 때 이전 timeScale을 복구한다. 입력과 위치 보간은 정지 상태에서도 시작할 수 있다. 앞으로 게임 진행 요소는 `Time.deltaTime`, 일반 Animator/물리 등 스케일된 시간을 사용해야 한다. unscaled 시간·외부 타이머·오디오까지 자동 정지시키지는 않는다.
 7. 도착 전 논리 좌표는 출발 칸에 유지하고 목적지를 별도로 보관한다. 설정 원본에 위치·진행률을 기록하지 않는다. 실행 맵 판정은 시작 시 복사한다. 중도 비활성화 시 이동은 취소되고 다시 활성화하면 맵 시작 위치에서 시작한다.
@@ -165,7 +187,7 @@
 2. `새 환경 프리팹 만들고 연결`을 누르고 저장 경로를 정한다. 빈 `Environment` 루트 프리팹을 생성한다. 기존 에셋을 덮어쓰지 않는다. 기존 환경 프리팹을 슬롯에 직접 연결할 수도 있다.
 3. 해당 맵이 연결된 씬을 열면 `Grid Map Player` 아래에 환경 프리팹 인스턴스가 생성된다. `Scene 환경 선택` 버튼으로 선택할 수 있다. 자동 생성되어 숨겨진 타일 미리보기와 별개의 저장 가능한 오브젝트다.
 
-   현재 샘플은 `Assets/IBIIIS/Content/StarterMap_Environment.prefab`을 연결하고 `StarterMap_Test.unity`에 빈 환경 인스턴스를 저장했다. 장식 에셋은 사용자가 자식으로 배치한다.
+   현재 샘플은 `Assets/IBIIIS/Environments/StarterMap_Environment.prefab`을 연결하고 `StarterMap_Test.unity`에 빈 환경 인스턴스를 저장했다. 장식 에셋은 사용자가 자식으로 배치한다.
 4. Environment 아래에 장식 프리팹을 자식으로 배치하고 Unity 이동·회전·크기 도구로 편집한다. 맵 내부·외부 모두 허용한다. 환경 루트는 위치·회전 0, 크기 1을 유지하고 자식에서 보정한다. 원점은 맵 (0,0) 칸 중심, XZ는 바닥, Y는 높이다. Cell Size 변경은 장식 배치를 자동 확대·축소하지 않는다.
 5. `Grid Map Player > 환경 배치를 프리팹에 적용` 또는 Unity의 Prefab Overrides 적용 기능으로 배치를 원본에 반영한다. 적용은 이 환경을 참조하는 다른 맵·씬에도 영향을 준다. 씬도 저장한다. 씬 저장만 한 변경은 해당 씬의 override이며 다른 테스트 씬에 전파되지 않는다.
 6. 새 테스트 씬에는 맵에 연결된 환경 프리팹이 자동 배치·저장된다. 이름 없는 씬이 열려 있으면 먼저 사용자가 저장해야 한다. 생성기는 현재 씬을 임의로 저장하지 않는다.
@@ -187,7 +209,7 @@
 
 ## 플레이어 스프라이트 외형 — 2026-10-06
 
-1. 원본: `Content/Player/Sprites`(500×500 PNG 17장, 임시 러프 스케치). 외형 프리팹: `Content/Player/PlayerVisual.prefab`, `GlobalPlayerSettings > Visual Prefab`에 연결됨. 메뉴 `IBIIIS > Create Default Player Visual`은 스프라이트 가져오기 설정(Sprite, PPU 500, Pivot 아래 중앙)을 맞추고, 프리팹이 없을 때만 만들며, 외형 슬롯이 비어 있을 때만 연결한다. 이미 있는 프리팹·연결은 덮어쓰지 않는다.
+1. 원본: `Characters/Player/Sprites`(500×500 PNG 17장, 임시 러프 스케치). 외형 프리팹: `Characters/Player/PlayerVisual.prefab`, `GlobalPlayerSettings > Visual Prefab`에 연결됨. 메뉴 `IBIIIS > Create Default Player Visual`은 스프라이트 가져오기 설정(Sprite, PPU 500, Pivot 아래 중앙)을 맞추고, 프리팹이 없을 때만 만들며, 외형 슬롯이 비어 있을 때만 연결한다. 이미 있는 프리팹·연결은 덮어쓰지 않는다.
 2. 프리팹의 `PlayerVisual`에서 대기·이동·대시(뒤/오른쪽/앞/왼쪽)와 구르기(뒤왼쪽·뒤오른쪽·앞왼쪽·앞오른쪽, First/Second) 슬롯의 스프라이트를 교체한다. 외형·표시 크기를 바꿔도 이동 가능 칸·판정은 변하지 않는다(표시 전용).
 3. 방향은 카메라 Y 회전 0 기준 화면 방향이다: 격자 +Y=뒤(back), +X=오른쪽, -Y=앞(front), -X=왼쪽. 대기는 마지막 이동 방향을 유지한다. 구르기는 앞 절반에 First, 뒤 절반에 Second를 표시하고 이후 좌/우를 바라본다. 플레이어 표시는 Cell Size에 비례하고 카메라를 향한다. 크기는 프리팹의 `Sprite` 자식 Scale로 조정하며(현재 1.5, 사용자 확인 후 임시 확대) 발밑 기준점은 유지된다.
 4. 임시 대체: 정면 대기, 뒤·앞 대시는 해당 그림이 없어 `c_basic_right`를 쓴다. 그림이 제작되면 `PlayerVisual`의 해당 슬롯만 교체한다. 슬롯이 비면 이전 표시를 유지하고 콘솔에 경고를 남긴다.

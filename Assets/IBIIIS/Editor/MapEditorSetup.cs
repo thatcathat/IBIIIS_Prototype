@@ -9,11 +9,10 @@ namespace IBIIIS.Editor
 {
     public static class MapEditorSetup
     {
-        public const string Root = "Assets/IBIIIS/Content";
         public static IBIIIS.PlayerSettings EnsurePlayerSettings(GridMapPlayer legacySource = null)
         {
-            Directory.CreateDirectory(Root); AssetDatabase.Refresh();
-            var path = Root + "/GlobalPlayerSettings.asset";
+            Directory.CreateDirectory(AssetPaths.Settings); AssetDatabase.Refresh();
+            var path = AssetPaths.PlayerSettings;
             var settings = AssetDatabase.LoadAssetAtPath<IBIIIS.PlayerSettings>(path);
             if (settings != null) return settings;
             settings = ScriptableObject.CreateInstance<IBIIIS.PlayerSettings>();
@@ -33,8 +32,8 @@ namespace IBIIIS.Editor
         }
         public static MapCameraSettings EnsureCameraSettings()
         {
-            Directory.CreateDirectory(Root); AssetDatabase.Refresh();
-            var path = Root + "/GlobalCameraSettings.asset";
+            Directory.CreateDirectory(AssetPaths.Settings); AssetDatabase.Refresh();
+            var path = AssetPaths.CameraSettings;
             var settings = AssetDatabase.LoadAssetAtPath<MapCameraSettings>(path);
             if (settings != null) return settings;
             settings = ScriptableObject.CreateInstance<MapCameraSettings>();
@@ -43,7 +42,7 @@ namespace IBIIIS.Editor
         }
         public static Material EnsureGroundMaterial()
         {
-            const string folder = "Assets/IBIIIS/Resources/IBIIIS";
+            const string folder = AssetPaths.DefaultResources;
             const string path = folder + "/DefaultGround.mat";
             var material = AssetDatabase.LoadAssetAtPath<Material>(path);
             if (material != null) return material;
@@ -58,15 +57,16 @@ namespace IBIIIS.Editor
         public static void CreateStarter()
         {
             EnsureGroundMaterial();
-            var map = AssetDatabase.LoadAssetAtPath<GridMap>(Root + "/StarterMap.asset");
+            var map = AssetDatabase.LoadAssetAtPath<GridMap>(AssetPaths.StarterMap);
             if (map == null)
             {
+                Directory.CreateDirectory(Path.GetDirectoryName(AssetPaths.StarterMap)); AssetDatabase.Refresh();
                 map = ScriptableObject.CreateInstance<GridMap>();
                 map.Resize(12, 10);
                 for (int y = 0; y < map.Height; y++) for (int x = 0; x < map.Width; x++)
                     map.SetWalkable(new Vector2Int(x, y), x > 0 && y > 0 && x < map.Width - 1 && y < map.Height - 1);
                 map.SetWalkable(new Vector2Int(5, 4), false); map.SetStart(new Vector2Int(2, 2));
-                AssetDatabase.CreateAsset(map, AssetDatabase.GenerateUniqueAssetPath(Root + "/StarterMap.asset")); AssetDatabase.SaveAssetIfDirty(map);
+                AssetDatabase.CreateAsset(map, AssetDatabase.GenerateUniqueAssetPath(AssetPaths.StarterMap)); AssetDatabase.SaveAssetIfDirty(map);
             }
             MapEditorWindow.OpenMap(map);
         }
@@ -117,11 +117,11 @@ namespace IBIIIS.Editor
             path = AssetDatabase.GenerateUniqueAssetPath(path);
             AssetDatabase.SaveAssetIfDirty(map);
             EnsureGroundMaterial();
-            var materialPath = Root + "/PrototypeUnlit.mat";
+            var materialPath = AssetPaths.PrototypeMaterial;
             var material = AssetDatabase.LoadAssetAtPath<Material>(materialPath);
             if (material == null)
             {
-                Directory.CreateDirectory(Root); AssetDatabase.Refresh();
+                Directory.CreateDirectory(AssetPaths.Materials); AssetDatabase.Refresh();
                 var shader = Shader.Find("Universal Render Pipeline/Unlit");
                 if (shader == null) throw new InvalidOperationException("URP/Unlit 셰이더가 없습니다.");
                 material = new Material(shader); AssetDatabase.CreateAsset(material, AssetDatabase.GenerateUniqueAssetPath(materialPath)); AssetDatabase.SaveAssetIfDirty(material);

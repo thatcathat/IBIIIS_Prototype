@@ -8,15 +8,15 @@ namespace IBIIIS.Editor
 {
     public static class EnemyPrefabSetup
     {
-        public const string Folder = "Assets/IBIIIS/Content/Enemies";
+        public const string Folder = AssetPaths.Enemies;
         [MenuItem("IBIIIS/Create Default Enemy Prefabs")]
         public static void EnsureDefaults()
         {
-            Directory.CreateDirectory(Folder); AssetDatabase.Refresh();
             for (int type = 1; type <= 3; type++)
             {
-                string name = "Enemy00" + type, path = Folder + "/" + name + ".prefab";
+                string name = "Enemy00" + type, folder = Folder + "/" + name, path = folder + "/" + name + ".prefab";
                 if (AssetDatabase.LoadAssetAtPath<GameObject>(path) != null) continue;
+                Directory.CreateDirectory(folder); AssetDatabase.Refresh();
                 var scene = EditorSceneManager.NewPreviewScene();
                 try
                 {
@@ -31,7 +31,7 @@ namespace IBIIIS.Editor
                     SetOffsets(so.FindProperty("recognizedAttack"), type == 1 ? new[] { Vector2Int.zero, Vector2Int.up } : type == 2 ? new[] { Vector2Int.zero, Vector2Int.up, Vector2Int.up * 2 } : new[] { Vector2Int.zero, Vector2Int.right, Vector2Int.up, Vector2Int.one });
                     var shader = Shader.Find("Universal Render Pipeline/Unlit");
                     if (shader == null) throw new System.InvalidOperationException("URP/Unlit 셰이더가 없습니다.");
-                    string matPath = Folder + "/" + name + ".mat";
+                    string matPath = folder + "/" + name + ".mat";
                     var mat = AssetDatabase.LoadAssetAtPath<Material>(matPath);
                     if (mat == null) { mat = new Material(shader) { color = color }; AssetDatabase.CreateAsset(mat, matPath); }
                     var visual = GameObject.CreatePrimitive(PrimitiveType.Quad); visual.name = "Visual"; visual.transform.SetParent(root.transform, false);

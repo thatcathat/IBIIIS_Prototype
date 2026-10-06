@@ -13,5 +13,5 @@ MonoBehaviour:
   m_Name: GlobalCameraSettings
   m_EditorClassIdentifier: IBIIIS.Runtime::IBIIIS.MapCameraSettings
   orthographic: 0
-  rotation: {x: 50, y: 0, z: 0}
+  rotation: {x: 40, y: 0, z: 0}
   fieldOfView: 75

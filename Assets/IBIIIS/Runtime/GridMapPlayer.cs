@@ -25,6 +25,13 @@ namespace IBIIIS
         private Vector2Int lastDirection;
         private Transform[] moveHints;
         private readonly List<EnemyDefinition> enemyViews = new List<EnemyDefinition>();
+        // 되돌리기 시 외형(마지막 행동·방향)을 복원하기 위해 GridSession의 행동 기록과 같은 순서로 쌓는다.
+        private readonly Stack<KeyValuePair<PlayerAction, Vector2Int>> actionHistory = new Stack<KeyValuePair<PlayerAction, Vector2Int>>();
+        private Transform rangeRoot;
+        private readonly List<Transform> attackMarks = new List<Transform>(), recognitionMarks = new List<Transform>();
+        private Material attackMaterial, recognitionMaterial;
+        private bool showRanges, rangesInitialized;
+        public bool ShowEnemyRanges => showRanges;
         private static readonly Vector2Int[] Directions = { Vector2Int.up, Vector2Int.right, Vector2Int.down, Vector2Int.left };
         private static readonly Vector2Int[] RollDirections = { new Vector2Int(-1,1), new Vector2Int(1,1), new Vector2Int(-1,-1), new Vector2Int(1,-1) };
         public float MoveDuration => playerSettings != null ? playerSettings.MoveDuration : .25f;
@@ -66,6 +73,7 @@ namespace IBIIIS
             ClearGenerated();
             try { session = new GridSession(map); }
             catch (Exception e) { Debug.LogError($"[IBIIIS] {name}: {e.Message}", this); enabled = false; return; }
+            if (!rangesInitialized) { showRanges = playerSettings == null || playerSettings.ShowEnemyRanges; rangesInitialized = true; }
             CreateVisuals(false);
             EnsureRuntimeEnvironment();
             if (Application.IsPlaying(gameObject)) MovementWorldTime.Register(this);
@@ -82,6 +90,7 @@ namespace IBIIIS
             if (generated != null) { generated.gameObject.SetActive(false); Release(generated.gameObject); }
             MovementWorldTime.Unregister(this);
             generated = null; player = null; playerView = null; lastAction = PlayerAction.Wait; lastDirection = Vector2Int.zero; session = null; moveHints = null; enemyViews.Clear();
+            actionHistory.Clear(); rangeRoot = null; attackMarks.Clear(); recognitionMarks.Clear(); attackMaterial = recognitionMaterial = null;
             foreach (var material in materials) if (material != null) Release(material);
             materials.Clear();
         }
@@ -223,8 +232,70 @@ namespace IBIIIS
                 }
             }
         }
+        public void ToggleEnemyRanges() { showRanges = !showRanges; RefreshRanges(); }
+        private Material OverlayMaterial(Color color)
+        {
+            var basis = playerSettings != null ? playerSettings.MoveHintMaterial : null;
+            if (basis == null) basis = fallbackMaterial != null ? fallbackMaterial : Resources.Load<Material>("IBIIIS/DefaultGround");
+            var shader = basis != null ? basis.shader : Shader.Find("Universal Render Pipeline/Unlit");
+            if (shader == null) return null;
+            var material = basis != null ? new Material(basis) : new Material(shader);
+            material.hideFlags = HideFlags.HideAndDontSave; material.color = color; materials.Add(material);
+            return material;
+        }
+        private Transform CreateAttackMark()
+        {
+            var mark = FlatSurface("Attack Mark", new Vector3(cellSize * .7f, cellSize * .7f, 1)); mark.SetParent(rangeRoot, false);
+            if (attackMaterial != null) mark.GetComponent<Renderer>().sharedMaterial = attackMaterial;
+            return mark;
+        }
+        private Transform CreateRecognitionMark()
+        {
+            var ring = new GameObject("Recognition Mark").transform; ring.SetParent(rangeRoot, false);
+            for (int edge = 0; edge < 4; edge++)
+            {
+                bool horizontal = edge < 2; float sign = edge % 2 == 0 ? -1 : 1;
+                var strip = FlatSurface("Border", new Vector3(cellSize * (horizontal ? .96f : .04f), cellSize * (horizontal ? .04f : .96f), 1));
+                strip.SetParent(ring, false);
+                strip.localPosition = horizontal ? new Vector3(0, 0, sign * cellSize * .46f) : new Vector3(sign * cellSize * .46f, 0, 0);
+                if (recognitionMaterial != null) strip.GetComponent<Renderer>().sharedMaterial = recognitionMaterial;
+            }
+            return ring;
+        }
+        private static void PlaceMarks(List<Transform> marks, HashSet<Vector2Int> cells, Func<Transform> create, Func<Vector2Int, Vector3> position)
+        {
+            int used = 0;
+            foreach (var cell in cells)
+            {
+                if (used == marks.Count) marks.Add(create());
+                marks[used].gameObject.SetActive(true); marks[used].localPosition = position(cell); used++;
+            }
+            for (; used < marks.Count; used++) marks[used].gameObject.SetActive(false);
+        }
+        /// <summary>입력 대기·승패 상태에서 적의 현재 인식 범위(노란 테두리)와 공격 범위(빨간 칸)를 표시한다. 표시 전용이며 판정에 쓰지 않는다.</summary>
+        private void RefreshRanges()
+        {
+            bool show = showRanges && session != null && !session.IsBusy;
+            if (!show) { if (rangeRoot != null) rangeRoot.gameObject.SetActive(false); return; }
+            if (rangeRoot == null)
+            {
+                rangeRoot = new GameObject("Enemy Ranges").transform; rangeRoot.SetParent(generated, false);
+                attackMaterial = OverlayMaterial(new Color(.95f, .2f, .2f)); recognitionMaterial = OverlayMaterial(new Color(.95f, .88f, .25f));
+            }
+            rangeRoot.gameObject.SetActive(true);
+            var attack = new HashSet<Vector2Int>(); var recognition = new HashSet<Vector2Int>();
+            foreach (var enemy in session.Enemies)
+            {
+                if (!enemy.Alive) continue;
+                foreach (var cell in session.RangeCells(enemy, EnemyRange.Attack)) attack.Add(cell);
+                foreach (var cell in session.RangeCells(enemy, EnemyRange.Recognition)) recognition.Add(cell);
+            }
+            PlaceMarks(attackMarks, attack, CreateAttackMark, c => LocalPosition(c) + Vector3.up * .015f);
+            PlaceMarks(recognitionMarks, recognition, CreateRecognitionMark, c => LocalPosition(c) + Vector3.up * .02f);
+        }
         public void RefreshMoveHints()
         {
+            RefreshRanges();
             if (moveHints == null) return;
             bool enabledHints = playerSettings == null || playerSettings.ShowMoveHints;
             bool valid = session != null || (map != null && map.HasStart && map.IsWalkable(map.Start));
@@ -248,8 +319,19 @@ namespace IBIIIS
             float duration = MoveDuration * (action == PlayerAction.Dash ? 2 : 1);
             if (session == null || !session.TryAct(action, direction, duration, playerSettings != null ? playerSettings.EnemyStepDuration : .25f)) return false;
             if (Application.IsPlaying(gameObject)) MovementWorldTime.SetMoving(this, true);
+            actionHistory.Push(new KeyValuePair<PlayerAction, Vector2Int>(lastAction, lastDirection));
             lastAction = action; lastDirection = direction; ShowPlayerVisual();
             UpdateEnemyViews(); RefreshMoveHints(); return true;
+        }
+        /// <summary>마지막 플레이어 행동 한 번을 되돌린다. 행동 진행 중에는 무시한다.</summary>
+        public bool TryUndo()
+        {
+            if (session == null || !session.TryUndo()) return false;
+            var previous = actionHistory.Count > 0 ? actionHistory.Pop() : new KeyValuePair<PlayerAction, Vector2Int>(PlayerAction.Wait, Vector2Int.zero);
+            lastAction = previous.Key; lastDirection = previous.Value;
+            if (player != null) player.localPosition = LocalPosition(session.Position);
+            if (Application.IsPlaying(gameObject)) MovementWorldTime.SetMoving(this, false);
+            ShowPlayerVisual(); UpdateEnemyViews(); RefreshMoveHints(); return true;
         }
         private void ShowPlayerVisual()
         {
@@ -273,6 +355,8 @@ namespace IBIIIS
             if (Keyboard.current == null) return;
             var k = Keyboard.current;
             if (k.rKey.wasPressedThisFrame) { ClearGenerated(); Build(); return; }
+            if (k.tabKey.wasPressedThisFrame) { ToggleEnemyRanges(); return; }
+            if (k.backspaceKey.wasPressedThisFrame || k.uKey.wasPressedThisFrame) { TryUndo(); return; }
             if (k.spaceKey.wasPressedThisFrame) { TryBeginAction(PlayerAction.Wait, Vector2Int.zero); return; }
             var roll = k.qKey.wasPressedThisFrame ? RollDirections[0] : k.eKey.wasPressedThisFrame ? RollDirections[1] : k.zKey.wasPressedThisFrame ? RollDirections[2] : k.cKey.wasPressedThisFrame ? RollDirections[3] : Vector2Int.zero;
             if (roll != Vector2Int.zero) { TryBeginAction(PlayerAction.Roll, roll); return; }
@@ -282,8 +366,8 @@ namespace IBIIIS
         }
         private void OnGUI()
         {
-            if (Application.IsPlaying(gameObject) && session != null) GUI.Box(new Rect(12, 12, 520, 76),
-                $"{session.Phase} | Enemies {session.AliveCount} | Evasion {(session.EvasionLocked ? "cooldown" : "ready")}\nWASD/Arrows Move | Shift Dash | Q/E/Z/C Roll | Space Wait | R Restart\nCell ({session.Position.x}, {session.Position.y})");
+            if (Application.IsPlaying(gameObject) && session != null) GUI.Box(new Rect(12, 12, 520, 96),
+                $"{session.Phase} | Enemies {session.AliveCount} | Evasion {(session.EvasionLocked ? "cooldown" : "ready")}\nWASD/Arrows Move | Shift Dash | Q/E/Z/C Roll | Space Wait | R Restart\nBackspace/U Undo ({session.UndoCount}) | Tab Enemy ranges {(showRanges ? "ON" : "OFF")} (red=attack, yellow=recognition)\nCell ({session.Position.x}, {session.Position.y})");
         }
         private void OnDisable() { ClearGenerated(); }
         private void OnDestroy() { ClearGenerated(); }

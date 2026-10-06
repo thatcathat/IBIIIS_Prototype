@@ -12,6 +12,8 @@ namespace IBIIIS
         [SerializeField] private Color destinationColor = new Color(1f, .8f, .15f, 1f);
         [SerializeField, Tooltip("선택. 이동 표시의 테두리 재질. 원본은 변경하지 않습니다.")] private Material moveHintMaterial;
         [SerializeField, Min(.01f), Tooltip("적 한 칸 이동 연출 시간(초). 두 칸 적은 두 번 진행합니다.")] private float enemyStepDuration = .25f;
+        [SerializeField, Tooltip("Play 시작 시 적의 인식 범위(노란 테두리)와 공격 범위(빨간 칸)를 표시합니다. Play 중 Tab으로 전환합니다.")] private bool showEnemyRanges = true;
+        public bool ShowEnemyRanges => showEnemyRanges;
         public float EnemyStepDuration => float.IsNaN(enemyStepDuration) || float.IsInfinity(enemyStepDuration) ? .25f : Mathf.Max(.01f, enemyStepDuration);
         public GameObject VisualPrefab => visualPrefab;
         public float MoveDuration => float.IsNaN(moveDuration) || float.IsInfinity(moveDuration) ? .25f : Mathf.Max(.01f, moveDuration);

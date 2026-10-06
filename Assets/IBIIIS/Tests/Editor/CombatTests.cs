@@ -96,6 +96,57 @@ namespace IBIIIS.Tests
             Assert.AreEqual(new Vector2Int(3,2),s.Position); Assert.True(s.EvasionLocked); Assert.False(s.CanAct(PlayerAction.Roll,Vector2Int.one));
             WaitRound(s); Assert.False(s.EvasionLocked); Assert.True(s.TryAct(PlayerAction.Roll,Vector2Int.one)); s.Advance(1); Assert.AreEqual(new Vector2Int(4,3),s.Position);
         }
+        [Test] public void UndoRestoresFullBattleStateAndAllowsAnotherChoice()
+        {
+            map.SetStart(new Vector2Int(1,3)); Enemy(0,3,Vector2Int.right,2); Enemy(5,5,Vector2Int.left);
+            var s=new GridSession(map); Assert.False(s.CanUndo); Assert.False(s.TryUndo());
+            WaitRound(s); Assert.AreEqual(BattlePhase.Lost,s.Phase); Assert.AreEqual(1,s.UndoCount); Assert.True(s.CanUndo);
+            Assert.True(s.TryUndo()); Assert.AreEqual(0,s.UndoCount);
+            var fresh=new GridSession(map);
+            Assert.AreEqual(BattlePhase.Waiting,s.Phase); Assert.AreEqual(fresh.Position,s.Position); Assert.AreEqual(fresh.Destination,s.Destination); Assert.AreEqual(0,new List<Vector2Int>(s.AttackCells).Count);
+            for(int i=0;i<2;i++){ Assert.AreEqual(fresh.Enemies[i].Position,s.Enemies[i].Position); Assert.AreEqual(fresh.Enemies[i].Direction,s.Enemies[i].Direction); Assert.True(s.Enemies[i].Alive); Assert.False(s.Enemies[i].Recognized); }
+            Assert.True(s.TryAct(PlayerAction.Move,Vector2Int.up)); s.Advance(2); Assert.AreEqual(BattlePhase.Waiting,s.Phase);
+        }
+        [Test] public void UndoStepsBackThroughEvasionLockAndKilledEnemiesAndIsBlockedWhileMoving()
+        {
+            Enemy(1,3,Vector2Int.right); Enemy(3,3,Vector2Int.left);
+            var s=new GridSession(map); Assert.True(s.TryAct(PlayerAction.Dash,Vector2Int.up)); Assert.False(s.CanUndo); Assert.False(s.TryUndo()); s.Advance(1);
+            Assert.True(s.EvasionLocked); Assert.AreEqual(0,s.AliveCount); Assert.AreEqual(BattlePhase.Won,s.Phase);
+            Assert.True(s.TryUndo()); Assert.False(s.EvasionLocked); Assert.AreEqual(2,s.AliveCount); Assert.AreEqual(new Vector2Int(3,0),s.Position); Assert.AreEqual(BattlePhase.Waiting,s.Phase);
+            Assert.AreEqual(0,s.UndoCount); WaitRound(s); Assert.AreEqual(BattlePhase.Won,s.Phase); Assert.AreEqual(1,s.UndoCount);
+            Assert.True(s.TryUndo()); Assert.False(s.TryUndo()); Assert.True(s.CanAct(PlayerAction.Dash,Vector2Int.up));
+        }
+        [Test] public void RangeCellsUseLiveRecognitionAndSkipCellsOutsideTheMap()
+        {
+            map.SetStart(new Vector2Int(3,3)); Enemy(3,2,Vector2Int.up,1,new[]{Vector2Int.up},new[]{Vector2Int.zero,Vector2Int.up,Vector2Int.up*2});
+            var s=new GridSession(map); var e=s.Enemies[0];
+            Assert.That(new List<Vector2Int>(s.RangeCells(e,EnemyRange.Recognition)),Is.EqualTo(new[]{new Vector2Int(3,3)}));
+            Assert.That(new List<Vector2Int>(s.RangeCells(e,EnemyRange.Attack)),Is.EqualTo(new[]{new Vector2Int(3,2),new Vector2Int(3,3),new Vector2Int(3,4)}));
+            map.SetStart(new Vector2Int(0,0)); s=new GridSession(map);
+            Assert.That(new List<Vector2Int>(s.RangeCells(s.Enemies[0],EnemyRange.Attack)),Is.EqualTo(new[]{new Vector2Int(3,2)}));
+            map.RemoveEnemy(new Vector2Int(3,2)); map.SetStart(new Vector2Int(3,0)); Enemy(3,6,Vector2Int.up,1,new[]{Vector2Int.up},new[]{Vector2Int.up});
+            s=new GridSession(map); Assert.That(new List<Vector2Int>(s.RangeCells(s.Enemies[0],EnemyRange.Recognition)),Is.Empty);
+        }
+        [Test] public void PlayerViewUndoRestoresAnchorEnemiesHintsAndRangeOverlay()
+        {
+            Enemy(3,3,Vector2Int.down,1,new[]{Vector2Int.up});
+            var go=new GameObject("Player"); SceneManager.MoveGameObjectToScene(go,scene); var player=go.AddComponent<GridMapPlayer>(); player.Configure(map,null,null);
+            try
+            {
+                player.Build(); var ranges=player.Generated.Find("Enemy Ranges"); Assert.NotNull(ranges); Assert.True(ranges.gameObject.activeSelf);
+                int Active(string n){ int c=0; foreach(Transform t in ranges) if(t.gameObject.activeSelf&&t.name==n) c++; return c; }
+                Assert.AreEqual(1,Active("Attack Mark")); Assert.AreEqual(1,Active("Recognition Mark"));
+                Assert.True(player.TryBeginMove(Vector2Int.right)); Assert.False(ranges.gameObject.activeSelf); Assert.False(player.TryUndo());
+                player.AdvanceMovement(2); Assert.AreEqual(new Vector2Int(4,0),player.Session.Position); Assert.True(ranges.gameObject.activeSelf);
+                Assert.True(player.TryUndo()); Assert.AreEqual(new Vector2Int(3,0),player.Session.Position);
+                Assert.That(player.Generated.Find("Player Logic Anchor").localPosition.x,Is.EqualTo(3).Within(.001f));
+                Assert.That(player.Generated.Find("Enemies").GetChild(0).localPosition.z,Is.EqualTo(3).Within(.001f));
+                Assert.True(player.Generated.Find("Movement Hints/Adjacent (1, 0)").gameObject.activeSelf);
+                player.ToggleEnemyRanges(); Assert.False(ranges.gameObject.activeSelf); player.ToggleEnemyRanges(); Assert.True(ranges.gameObject.activeSelf);
+                Assert.False(player.TryUndo());
+            }
+            finally { Object.DestroyImmediate(go); }
+        }
         [Test] public void PlacementUndoEraseResizeAndSnapshotKeepAssetIndependent()
         {
             var prefab=Enemy(1,3,Vector2Int.right); Assert.Throws<ArgumentException>(()=>map.PlaceEnemy(map.Start,prefab,Vector2Int.up));

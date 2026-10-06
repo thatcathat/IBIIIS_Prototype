@@ -26,7 +26,7 @@ namespace IBIIIS.Editor
         public void CreateGUI()
         {
             rootVisualElement.Clear(); minSize = new Vector2(760, 520);
-            var tree = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>("Assets/IBIIIS/Editor/MapEditor.uxml");
+            var tree = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(AssetPaths.MapEditorLayout);
             if (tree == null) { rootVisualElement.Add(new Label("MapEditor.uxml을 찾을 수 없습니다.")); return; }
             tree.CloneTree(rootVisualElement);
             var picker = rootVisualElement.Q<ObjectField>("map"); picker.objectType = typeof(GridMap); picker.allowSceneObjects = false;
@@ -62,7 +62,7 @@ namespace IBIIIS.Editor
             });
             var facing = rootVisualElement.Q<DropdownField>("enemy-facing"); facing.choices = new List<string> { "위 (+Z)", "오른쪽 (+X)", "아래 (-Z)", "왼쪽 (-X)" }; facing.SetValueWithoutNotify(enemyFacing);
             facing.RegisterValueChangedCallback(e => enemyFacing = e.newValue);
-            Hook("default-enemies", () => { EnemyPrefabSetup.EnsureDefaults(); status.text = "기본 적 3종: Assets/IBIIIS/Content/Enemies — 적 프리팹 슬롯에서 선택하세요."; });
+            Hook("default-enemies", () => { EnemyPrefabSetup.EnsureDefaults(); status.text = $"기본 적 3종: {AssetPaths.Enemies} — 적 프리팹 슬롯에서 선택하세요."; });
             Refresh(); PlayModeChanged(default);
         }
         private void Hook(string name, Action action) { rootVisualElement.Q<Button>(name).clicked += action; }
@@ -74,10 +74,17 @@ namespace IBIIIS.Editor
         }
         private void NewMap()
         {
-            var path = EditorUtility.SaveFilePanelInProject("새 맵과 씬", "NewMap", "asset", "같은 폴더에 같은 이름의 GridMap(.asset)과 씬(.unity)을 생성합니다.");
+            var path = EditorUtility.SaveFilePanelInProject("새 맵과 씬", "NewMap", "asset", "같은 폴더에 같은 이름의 GridMap(.asset)과 씬(.unity)을 생성합니다. Maps 폴더를 고르면 맵 이름 폴더를 만들어 넣습니다.", AssetPaths.Maps);
             if (string.IsNullOrEmpty(path)) return;
             try
             {
+                // Maps 바로 아래를 고르면 Maps/<이름>/ 폴더에 맵·씬 쌍을 둔다.
+                if (System.IO.Path.GetDirectoryName(path).Replace('\\', '/') == AssetPaths.Maps)
+                {
+                    var name = System.IO.Path.GetFileNameWithoutExtension(path);
+                    if (!AssetDatabase.IsValidFolder(AssetPaths.Maps + "/" + name)) AssetDatabase.CreateFolder(AssetPaths.Maps, name);
+                    path = $"{AssetPaths.Maps}/{name}/{name}.asset";
+                }
                 var next = MapEditorSetup.CreateMapWithScene(path, out var scenePath);
                 map = next; selectedFloor = null; rootVisualElement.Q<ObjectField>("map").SetValueWithoutNotify(map); canvas.ResetView(); Refresh();
                 status.text = $"맵·씬 생성 완료: {scenePath} · 타일과 시작 위치를 지정하세요.";
@@ -87,7 +94,7 @@ namespace IBIIIS.Editor
         private void NewFloor()
         {
             if (map == null) { status.text = "먼저 맵을 선택하세요."; return; }
-            var path = EditorUtility.SaveFilePanelInProject("새 바닥", "NewFloor", "asset", "바닥 종류의 이름과 저장 위치를 지정하세요.");
+            var path = EditorUtility.SaveFilePanelInProject("새 바닥", "NewFloor", "asset", "바닥 종류의 이름과 저장 위치를 지정하세요.", AssetPaths.Tiles);
             if (string.IsNullOrEmpty(path)) return;
             var tile = CreateInstance<TileDefinition>();
             tile.Initialize(Guid.NewGuid().ToString("N"), System.IO.Path.GetFileNameWithoutExtension(path), true, map.MovementColor);

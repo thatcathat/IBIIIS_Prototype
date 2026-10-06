@@ -19,8 +19,25 @@ namespace IBIIIS
         internal Vector2Int[] Recognition, Attack, RecognizedAttack;
         internal readonly List<Vector2Int> Path = new List<Vector2Int>();
     }
+    public enum EnemyRange { Recognition, Attack }
     public sealed class GridSession
     {
+        // 플레이어 행동 시작 직전의 전체 전투 상태. 행동 한 번마다 하나를 쌓아 되돌린다.
+        private sealed class Snapshot
+        {
+            public Vector2Int Position, Destination;
+            public BattlePhase Phase;
+            public bool EvasionLocked;
+            public Vector2Int[] AttackCells;
+            public EnemyMemo[] Enemies;
+        }
+        private struct EnemyMemo
+        {
+            public Vector2Int Position, Direction, StepFrom, StepTo;
+            public bool Alive, Recognized;
+            public Vector2Int[] Path;
+        }
+        private readonly Stack<Snapshot> history = new Stack<Snapshot>();
         private readonly bool[,] walkable;
         private readonly List<EnemyState> enemies = new List<EnemyState>();
         private readonly HashSet<Vector2Int> attackCells = new HashSet<Vector2Int>();
@@ -81,9 +98,53 @@ namespace IBIIIS
         {
             if (!CanAct(action, direction)) return false;
             if (!ValidTime(moveDuration) || !ValidTime(enemyStepDuration)) throw new ArgumentOutOfRangeException(nameof(moveDuration));
+            history.Push(Capture());
             evasion = action == PlayerAction.Dash || action == PlayerAction.Roll;
             Destination = Position + direction * (action == PlayerAction.Dash ? 2 : 1);
             duration = moveDuration; enemyDuration = enemyStepDuration; elapsed = 0; Phase = BattlePhase.Moving; attackCells.Clear(); BeginEnemies(); return true;
+        }
+        public int UndoCount => history.Count;
+        /// <summary>행동이 진행 중이 아니고 되돌릴 행동이 있을 때 true. 승리·패배 상태에서도 되돌릴 수 있다.</summary>
+        public bool CanUndo => !IsBusy && history.Count > 0;
+        public bool TryUndo()
+        {
+            if (!CanUndo) return false;
+            var snapshot = history.Pop();
+            Position = snapshot.Position; Destination = snapshot.Destination; Phase = snapshot.Phase; EvasionLocked = snapshot.EvasionLocked;
+            attackCells.Clear(); foreach (var cell in snapshot.AttackCells) attackCells.Add(cell);
+            for (int i = 0; i < enemies.Count; i++)
+            {
+                var memo = snapshot.Enemies[i]; var e = enemies[i];
+                e.Position = memo.Position; e.Direction = memo.Direction; e.StepFrom = memo.StepFrom; e.StepTo = memo.StepTo;
+                e.Alive = memo.Alive; e.Recognized = memo.Recognized;
+                e.Path.Clear(); e.Path.AddRange(memo.Path);
+            }
+            elapsed = enemyElapsed = 0; enemyStep = 0; enemiesComplete = true; evasion = false;
+            return true;
+        }
+        private Snapshot Capture()
+        {
+            var snapshot = new Snapshot { Position = Position, Destination = Destination, Phase = Phase, EvasionLocked = EvasionLocked,
+                AttackCells = new List<Vector2Int>(attackCells).ToArray(), Enemies = new EnemyMemo[enemies.Count] };
+            for (int i = 0; i < enemies.Count; i++)
+            {
+                var e = enemies[i];
+                snapshot.Enemies[i] = new EnemyMemo { Position = e.Position, Direction = e.Direction, StepFrom = e.StepFrom, StepTo = e.StepTo,
+                    Alive = e.Alive, Recognized = e.Recognized, Path = e.Path.ToArray() };
+            }
+            return snapshot;
+        }
+        /// <summary>적의 현재 위치·방향 기준 범위. 공격 범위는 지금 플레이어를 인식하는지에 따라 기본/인식 후 범위를 고른다.
+        /// 적이 이동·재조준한 뒤의 예측이 아니며, 이동 가능한 칸만 반환한다.</summary>
+        public IEnumerable<Vector2Int> RangeCells(EnemyState enemy, EnemyRange kind)
+        {
+            if (enemy == null) throw new ArgumentNullException(nameof(enemy));
+            var offsets = kind == EnemyRange.Recognition ? enemy.Recognition : Recognizes(enemy, Position) ? enemy.RecognizedAttack : enemy.Attack;
+            foreach (var offset in offsets)
+            {
+                var cell = enemy.Position + LocalToGrid(offset, enemy.Direction);
+                if (IsWalkable(cell)) yield return cell;
+            }
         }
         private static bool ValidTime(float value) => !float.IsNaN(value) && !float.IsInfinity(value) && value > 0;
         public static Vector2Int LocalToGrid(Vector2Int local, Vector2Int facing) => new Vector2Int(facing.y, -facing.x) * local.x + facing * local.y;

@@ -97,7 +97,7 @@ namespace IBIIIS.Editor
             root.TrackPropertyValue(serialized.FindProperty("environmentPrefab"), _ => field.SetValueWithoutNotify(map.EnvironmentPrefab));
             root.Add(new Button(() =>
             {
-                var path = EditorUtility.SaveFilePanelInProject("환경 프리팹 생성", map.name + "_Environment", "prefab", "환경 배치 저장 위치");
+                var path = EditorUtility.SaveFilePanelInProject("환경 프리팹 생성", map.name + "_Environment", "prefab", "환경 배치 저장 위치", AssetPaths.Environments);
                 if (string.IsNullOrEmpty(path)) return;
                 CreateEnvironment(map, path); field.SetValueWithoutNotify(map.EnvironmentPrefab); GridMapPreview.RefreshAll();
             }) { text = "새 환경 프리팹 만들고 연결" });
