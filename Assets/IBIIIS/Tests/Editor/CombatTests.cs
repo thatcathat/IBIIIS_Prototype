@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using IBIIIS.Editor;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -29,6 +30,16 @@ namespace IBIIIS.Tests
             SetOffsets(so.FindProperty("recognition"), recognition ?? Array.Empty<Vector2Int>());
             SetOffsets(so.FindProperty("recognizedAttack"), enhanced ?? new[]{Vector2Int.zero});
             so.ApplyModifiedPropertiesWithoutUndo(); map.PlaceEnemy(new Vector2Int(x,y),go,facing); return go;
+        }
+        private static void SetActions(GameObject enemy, params EnemyActionStep[] steps)
+        {
+            var so=new SerializedObject(enemy.GetComponent<EnemyDefinition>()); var list=so.FindProperty("actions"); list.arraySize=steps.Length;
+            for(int i=0;i<steps.Length;i++)
+            {
+                var element=list.GetArrayElementAtIndex(i);
+                element.FindPropertyRelative("type").enumValueIndex=(int)steps[i].Type; element.FindPropertyRelative("cells").intValue=steps[i].Cells; element.FindPropertyRelative("turn").enumValueIndex=(int)steps[i].Turn;
+            }
+            so.ApplyModifiedPropertiesWithoutUndo();
         }
         private static void SetOffsets(SerializedProperty p, Vector2Int[] values)
         { p.arraySize=values.Length; for(int i=0;i<values.Length;i++)p.GetArrayElementAtIndex(i).vector2IntValue=values[i]; }
@@ -146,6 +157,64 @@ namespace IBIIIS.Tests
                 Assert.False(player.TryUndo());
             }
             finally { Object.DestroyImmediate(go); }
+        }
+        [Test] public void ComposedActionsRunTurnBetweenMovesAndTurnOnlyEnemyStaysPut()
+        {
+            Assert.AreEqual(new Vector2Int(1,0),EnemyActionStep.Rotate(Vector2Int.up,EnemyTurn.Right)); Assert.AreEqual(new Vector2Int(-1,0),EnemyActionStep.Rotate(Vector2Int.up,EnemyTurn.Left)); Assert.AreEqual(Vector2Int.down,EnemyActionStep.Rotate(Vector2Int.up,EnemyTurn.Around));
+            var go=Enemy(0,3,Vector2Int.up); SetActions(go,EnemyActionStep.Move(1),EnemyActionStep.TurnBy(EnemyTurn.Right),EnemyActionStep.Move(1));
+            var s=new GridSession(map); Assert.AreEqual(2,s.Enemies[0].MoveCells); Assert.True(s.TryAct(PlayerAction.Wait,Vector2Int.zero)); s.Advance(.25f);
+            Assert.AreEqual(new Vector2Int(0,4),s.Enemies[0].Position); Assert.AreEqual(Vector2Int.right,s.Enemies[0].Direction); Assert.True(s.IsEnemiesMoving);
+            s.Advance(.25f); Assert.AreEqual(new Vector2Int(1,4),s.Enemies[0].Position); Assert.AreEqual(BattlePhase.Waiting,s.Phase);
+            SetActions(go,EnemyActionStep.TurnBy(EnemyTurn.Around)); s=new GridSession(map); WaitRound(s);
+            Assert.AreEqual(new Vector2Int(0,3),s.Enemies[0].Position); Assert.AreEqual(Vector2Int.down,s.Enemies[0].Direction); Assert.AreEqual(BattlePhase.Waiting,s.Phase);
+        }
+        [Test] public void AimActionUsesEnemyPositionAtItsOwnTurnInTheSequence()
+        {
+            map.SetStart(new Vector2Int(2,4)); var rec=new[]{Vector2Int.left}; var go=Enemy(1,3,Vector2Int.right,1,rec);
+            SetActions(go,EnemyActionStep.Move(1),EnemyActionStep.Aim()); var s=new GridSession(map); WaitRound(s);
+            Assert.AreEqual(new Vector2Int(2,3),s.Enemies[0].Position); Assert.AreEqual(Vector2Int.up,s.Enemies[0].Direction);
+            SetActions(go,EnemyActionStep.Aim(),EnemyActionStep.Move(1)); s=new GridSession(map); WaitRound(s);
+            Assert.AreEqual(new Vector2Int(2,3),s.Enemies[0].Position); Assert.AreEqual(Vector2Int.right,s.Enemies[0].Direction);
+        }
+        [Test] public void EnemiesAimOnlyAtThePlayerPositionBeforeTheAction()
+        {
+            // 인식 범위: 적의 위쪽 한 칸(3,4). 플레이어가 그 칸에서 떠나는 행동이면 인식하고, 그 칸으로 들어오는 행동이면 인식하지 못한다.
+            var rec=new[]{Vector2Int.right}; map.SetStart(new Vector2Int(3,4)); Enemy(3,3,Vector2Int.left,1,rec);
+            var s=new GridSession(map); Assert.True(s.TryAct(PlayerAction.Move,Vector2Int.right)); s.Advance(2);
+            Assert.AreEqual(Vector2Int.up,s.Enemies[0].Direction); Assert.AreEqual(new Vector2Int(3,4),s.Enemies[0].Position); Assert.AreEqual(BattlePhase.Waiting,s.Phase);
+            map.RemoveEnemy(new Vector2Int(3,3)); map.SetStart(new Vector2Int(2,4)); Enemy(3,3,Vector2Int.left,1,rec);
+            s=new GridSession(map); Assert.True(s.TryAct(PlayerAction.Move,Vector2Int.right)); s.Advance(2);
+            Assert.AreEqual(new Vector2Int(3,4),s.Position); Assert.AreEqual(Vector2Int.left,s.Enemies[0].Direction); Assert.AreEqual(new Vector2Int(2,3),s.Enemies[0].Position);
+        }
+        [Test] public void MidSequenceAimStillUsesTheOriginEvenIfThePlayerAlreadyArrived()
+        {
+            map.SetStart(new Vector2Int(3,4)); var go=Enemy(3,2,Vector2Int.up,1,new[]{Vector2Int.down}); SetActions(go,EnemyActionStep.Move(1),EnemyActionStep.TurnBy(EnemyTurn.Around),EnemyActionStep.Aim());
+            var s=new GridSession(map); Assert.True(s.TryAct(PlayerAction.Move,Vector2Int.right,.05f,.25f)); s.Advance(1);
+            Assert.AreEqual(new Vector2Int(4,4),s.Position); Assert.AreEqual(Vector2Int.up,s.Enemies[0].Direction);
+        }
+        [Test] public void LegacyMoveCellsAndEquivalentActionsPlayIdentically()
+        {
+            var go=Enemy(0,3,Vector2Int.right,2,new[]{Vector2Int.up,Vector2Int.up*2,Vector2Int.left,Vector2Int.right}); Enemy(6,6,Vector2Int.down);
+            var legacy=new GridSession(map); Assert.True(go.GetComponent<EnemyDefinition>().UsesLegacyActions);
+            SetActions(go,EnemyActionStep.Aim(),EnemyActionStep.Move(2)); Assert.False(go.GetComponent<EnemyDefinition>().UsesLegacyActions);
+            var explicitActions=new GridSession(map);
+            var script=new[]{(PlayerAction.Wait,Vector2Int.zero),(PlayerAction.Move,Vector2Int.up),(PlayerAction.Move,Vector2Int.right),(PlayerAction.Wait,Vector2Int.zero),(PlayerAction.Dash,Vector2Int.up),(PlayerAction.Wait,Vector2Int.zero)};
+            foreach(var (action,direction) in script)
+            {
+                Assert.AreEqual(legacy.TryAct(action,direction),explicitActions.TryAct(action,direction)); legacy.Advance(2); explicitActions.Advance(2);
+                Assert.AreEqual(legacy.Phase,explicitActions.Phase); Assert.AreEqual(legacy.Position,explicitActions.Position);
+                for(int i=0;i<2;i++){ Assert.AreEqual(legacy.Enemies[i].Position,explicitActions.Enemies[i].Position); Assert.AreEqual(legacy.Enemies[i].Direction,explicitActions.Enemies[i].Direction); Assert.AreEqual(legacy.Enemies[i].Alive,explicitActions.Enemies[i].Alive); }
+            }
+        }
+        [Test] public void InvalidMoveActionIsRejectedAndLegacyConversionOnlyFillsAnEmptyList()
+        {
+            var go=Enemy(5,5,Vector2Int.up); var definition=go.GetComponent<EnemyDefinition>();
+            SetActions(go,EnemyActionStep.Move(1)); var so=new SerializedObject(definition); so.FindProperty("actions").GetArrayElementAtIndex(0).FindPropertyRelative("cells").intValue=3; so.ApplyModifiedPropertiesWithoutUndo();
+            Assert.False(definition.IsValid); Assert.Throws<ArgumentException>(()=>map.PlaceEnemy(new Vector2Int(4,5),go,Vector2Int.up));
+            var legacy=Enemy(2,5,Vector2Int.up,2).GetComponent<EnemyDefinition>(); Assert.True(legacy.UsesLegacyActions);
+            Assert.True(EnemyDefinitionEditor.ConvertLegacy(new SerializedObject(legacy))); Assert.False(legacy.UsesLegacyActions);
+            var converted=legacy.Actions; Assert.AreEqual(2,converted.Length); Assert.AreEqual(EnemyActionType.AimAtPlayer,converted[0].Type); Assert.AreEqual(2,converted[1].Cells);
+            Assert.False(EnemyDefinitionEditor.ConvertLegacy(new SerializedObject(legacy))); Assert.AreEqual(2,legacy.Actions.Length);
         }
         [Test] public void PlacementUndoEraseResizeAndSnapshotKeepAssetIndependent()
         {

@@ -16,6 +16,10 @@ namespace IBIIIS
         public bool Alive { get; internal set; } = true;
         public bool Recognized { get; internal set; }
         public int MoveCells { get; internal set; }
+        internal EnemyActionStep[] Actions;
+        // 이번 행동에서 실행 중인 행동 목록의 위치와, 현재 전진 단위에서 남은 칸 수. GridSession이 행동마다 초기화한다.
+        internal int ActionIndex, CellsLeft;
+        internal bool Moving;
         internal Vector2Int[] Recognition, Attack, RecognizedAttack;
         internal readonly List<Vector2Int> Path = new List<Vector2Int>();
     }
@@ -43,8 +47,9 @@ namespace IBIIIS
         private readonly HashSet<Vector2Int> attackCells = new HashSet<Vector2Int>();
         private float elapsed, duration, enemyDuration, enemyElapsed;
         private bool enemiesComplete;
-        private int enemyStep;
         private bool evasion;
+        // 적은 플레이어가 이번 행동으로 어디로 갈지 모른다. 인식·조준은 행동 시작 직전의 플레이어 위치만 사용한다.
+        private Vector2Int aimOrigin;
         public IReadOnlyList<EnemyState> Enemies => enemies;
         public IEnumerable<Vector2Int> AttackCells => attackCells;
         public Vector2Int Position { get; private set; }
@@ -70,7 +75,7 @@ namespace IBIIIS
             {
                 var d = spawn.Prefab.GetComponent<EnemyDefinition>();
                 enemies.Add(new EnemyState { Prefab = spawn.Prefab, Position = spawn.Position, StepFrom = spawn.Position, StepTo = spawn.Position,
-                    Direction = spawn.Direction, MoveCells = d.MoveCells, Recognition = d.Recognition, Attack = d.Attack, RecognizedAttack = d.RecognizedAttack });
+                    Direction = spawn.Direction, MoveCells = d.MoveCells, Actions = d.Actions, Recognition = d.Recognition, Attack = d.Attack, RecognizedAttack = d.RecognizedAttack });
             }
         }
         public static bool CanStep(Vector2Int position, Vector2Int direction, Func<Vector2Int, bool> available)
@@ -101,7 +106,7 @@ namespace IBIIIS
             history.Push(Capture());
             evasion = action == PlayerAction.Dash || action == PlayerAction.Roll;
             Destination = Position + direction * (action == PlayerAction.Dash ? 2 : 1);
-            duration = moveDuration; enemyDuration = enemyStepDuration; elapsed = 0; Phase = BattlePhase.Moving; attackCells.Clear(); BeginEnemies(); return true;
+            aimOrigin = Position; duration = moveDuration; enemyDuration = enemyStepDuration; elapsed = 0; Phase = BattlePhase.Moving; attackCells.Clear(); BeginEnemies(); return true;
         }
         public int UndoCount => history.Count;
         /// <summary>행동이 진행 중이 아니고 되돌릴 행동이 있을 때 true. 승리·패배 상태에서도 되돌릴 수 있다.</summary>
@@ -119,7 +124,7 @@ namespace IBIIIS
                 e.Alive = memo.Alive; e.Recognized = memo.Recognized;
                 e.Path.Clear(); e.Path.AddRange(memo.Path);
             }
-            elapsed = enemyElapsed = 0; enemyStep = 0; enemiesComplete = true; evasion = false;
+            elapsed = enemyElapsed = 0; enemiesComplete = true; evasion = false;
             return true;
         }
         private Snapshot Capture()
@@ -164,16 +169,32 @@ namespace IBIIIS
         {
             enemiesComplete = AliveCount == 0; enemyElapsed = 0;
             if (enemiesComplete) return;
-            foreach (var e in enemies) if (e.Alive) { e.Path.Clear(); e.Recognized = false; if (Recognizes(e, Destination)) Aim(e, Destination); }
-            enemyStep = 1; PlanEnemyStep();
+            foreach (var e in enemies) if (e.Alive) { e.Path.Clear(); e.Recognized = false; e.ActionIndex = 0; e.CellsLeft = 0; }
+            foreach (var e in enemies) if (e.Alive) RunInstantActions(e);
+            PlanEnemyStep();
+        }
+        // 시간을 쓰지 않는 행동(조준·회전)을 다음 전진 단위 직전까지 실행한다. 전진 단위를 만나면 남은 칸 수를 설정하고 멈춘다.
+        private void RunInstantActions(EnemyState e)
+        {
+            while (e.CellsLeft == 0 && e.ActionIndex < e.Actions.Length)
+            {
+                var step = e.Actions[e.ActionIndex++];
+                switch (step.Type)
+                {
+                    case EnemyActionType.AimAtPlayer: if (Recognizes(e, aimOrigin)) Aim(e, aimOrigin); break;
+                    case EnemyActionType.Turn: e.Direction = EnemyActionStep.Rotate(e.Direction, step.Turn); break;
+                    case EnemyActionType.MoveForward: e.CellsLeft = step.Cells; break;
+                }
+            }
         }
         private void PlanEnemyStep()
         {
             enemyElapsed = 0;
             foreach (var e in enemies)
             {
-                e.StepFrom = e.StepTo = e.Position;
-                if (!e.Alive || e.MoveCells < enemyStep) continue;
+                e.StepFrom = e.StepTo = e.Position; e.Moving = false;
+                if (!e.Alive || e.CellsLeft == 0) continue;
+                e.Moving = true;
                 var next = e.Position + e.Direction;
                 if (!IsWalkable(next)) { e.Direction = -e.Direction; next = e.Position + e.Direction; }
                 if (IsWalkable(next)) e.StepTo = next;
@@ -186,14 +207,14 @@ namespace IBIIIS
             {
                 if (!e.Alive) continue;
                 e.Position = e.StepTo;
-                if (e.MoveCells >= enemyStep) e.Path.Add(e.Position);
+                if (e.Moving) { e.Path.Add(e.Position); e.CellsLeft--; }
                 if (!occupied.TryGetValue(e.Position, out var group)) occupied[e.Position] = group = new List<EnemyState>();
                 group.Add(e);
             }
             foreach (var group in occupied.Values) if (group.Count > 1) foreach (var e in group) e.Alive = false;
             bool another = false;
-            foreach (var e in enemies) if (e.Alive && e.MoveCells > enemyStep) another = true;
-            if (another) { enemyStep++; PlanEnemyStep(); } else enemiesComplete = true;
+            foreach (var e in enemies) if (e.Alive) { RunInstantActions(e); if (e.CellsLeft > 0) another = true; }
+            if (another) PlanEnemyStep(); else enemiesComplete = true;
         }
         private void FinishAction()
         {

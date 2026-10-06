@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 namespace IBIIIS
 {
@@ -31,6 +30,7 @@ namespace IBIIIS
         private readonly List<Transform> attackMarks = new List<Transform>(), recognitionMarks = new List<Transform>();
         private Material attackMaterial, recognitionMaterial;
         private bool showRanges, rangesInitialized;
+        private BattleInput input;
         public bool ShowEnemyRanges => showRanges;
         private static readonly Vector2Int[] Directions = { Vector2Int.up, Vector2Int.right, Vector2Int.down, Vector2Int.left };
         private static readonly Vector2Int[] RollDirections = { new Vector2Int(-1,1), new Vector2Int(1,1), new Vector2Int(-1,-1), new Vector2Int(1,-1) };
@@ -76,6 +76,7 @@ namespace IBIIIS
             if (!rangesInitialized) { showRanges = playerSettings == null || playerSettings.ShowEnemyRanges; rangesInitialized = true; }
             CreateVisuals(false);
             EnsureRuntimeEnvironment();
+            if (Application.IsPlaying(gameObject)) { input = new BattleInput(playerSettings != null ? playerSettings.InputActions : null); input.Enable(); }
             if (Application.IsPlaying(gameObject)) MovementWorldTime.Register(this);
         }
         public void RefreshPreview()
@@ -90,6 +91,7 @@ namespace IBIIIS
             if (generated != null) { generated.gameObject.SetActive(false); Release(generated.gameObject); }
             MovementWorldTime.Unregister(this);
             generated = null; player = null; playerView = null; lastAction = PlayerAction.Wait; lastDirection = Vector2Int.zero; session = null; moveHints = null; enemyViews.Clear();
+            if (input != null) { input.Dispose(); input = null; }
             actionHistory.Clear(); rangeRoot = null; attackMarks.Clear(); recognitionMarks.Clear(); attackMaterial = recognitionMaterial = null;
             foreach (var material in materials) if (material != null) Release(material);
             materials.Clear();
@@ -352,22 +354,30 @@ namespace IBIIIS
         {
             if (!Application.IsPlaying(gameObject) || session == null) return;
             if (session.IsBusy) { AdvanceMovement(Time.unscaledDeltaTime); return; }
-            if (Keyboard.current == null) return;
-            var k = Keyboard.current;
-            if (k.rKey.wasPressedThisFrame) { ClearGenerated(); Build(); return; }
-            if (k.tabKey.wasPressedThisFrame) { ToggleEnemyRanges(); return; }
-            if (k.backspaceKey.wasPressedThisFrame || k.uKey.wasPressedThisFrame) { TryUndo(); return; }
-            if (k.spaceKey.wasPressedThisFrame) { TryBeginAction(PlayerAction.Wait, Vector2Int.zero); return; }
-            var roll = k.qKey.wasPressedThisFrame ? RollDirections[0] : k.eKey.wasPressedThisFrame ? RollDirections[1] : k.zKey.wasPressedThisFrame ? RollDirections[2] : k.cKey.wasPressedThisFrame ? RollDirections[3] : Vector2Int.zero;
-            if (roll != Vector2Int.zero) { TryBeginAction(PlayerAction.Roll, roll); return; }
-            var direction = k.wKey.wasPressedThisFrame || k.upArrowKey.wasPressedThisFrame ? Vector2Int.up : k.sKey.wasPressedThisFrame || k.downArrowKey.wasPressedThisFrame ? Vector2Int.down :
-                k.aKey.wasPressedThisFrame || k.leftArrowKey.wasPressedThisFrame ? Vector2Int.left : k.dKey.wasPressedThisFrame || k.rightArrowKey.wasPressedThisFrame ? Vector2Int.right : Vector2Int.zero;
-            if (direction != Vector2Int.zero) TryBeginAction(k.leftShiftKey.isPressed || k.rightShiftKey.isPressed ? PlayerAction.Dash : PlayerAction.Move, direction);
+            if (input == null) return;
+            var command = input.Read();
+            switch (command.Kind)
+            {
+                case BattleCommandKind.Restart: ClearGenerated(); Build(); break;
+                case BattleCommandKind.ToggleRanges: ToggleEnemyRanges(); break;
+                case BattleCommandKind.Undo: TryUndo(); break;
+                case BattleCommandKind.Wait: TryBeginAction(PlayerAction.Wait, Vector2Int.zero); break;
+                case BattleCommandKind.Roll: TryBeginAction(PlayerAction.Roll, command.Direction); break;
+                case BattleCommandKind.Move: TryBeginAction(PlayerAction.Move, command.Direction); break;
+                case BattleCommandKind.Dash: TryBeginAction(PlayerAction.Dash, command.Direction); break;
+            }
         }
         private void OnGUI()
         {
-            if (Application.IsPlaying(gameObject) && session != null) GUI.Box(new Rect(12, 12, 520, 96),
-                $"{session.Phase} | Enemies {session.AliveCount} | Evasion {(session.EvasionLocked ? "cooldown" : "ready")}\nWASD/Arrows Move | Shift Dash | Q/E/Z/C Roll | Space Wait | R Restart\nBackspace/U Undo ({session.UndoCount}) | Tab Enemy ranges {(showRanges ? "ON" : "OFF")} (red=attack, yellow=recognition)\nCell ({session.Position.x}, {session.Position.y})");
+            if (Application.IsPlaying(gameObject) && session != null) GUI.Box(new Rect(12, 12, 560, 96),
+                $"{session.Phase} | Enemies {session.AliveCount} | Evasion {(session.EvasionLocked ? "cooldown" : "ready")}\n{ControlsHint()}\nUndo ({session.UndoCount}) | Enemy ranges {(showRanges ? "ON" : "OFF")} (red=attack, yellow=recognition)\nCell ({session.Position.x}, {session.Position.y})");
+        }
+        // 안내 문구는 현재 입력 에셋의 첫 번째 바인딩을 보여 준다(재바인딩 반영).
+        private string ControlsHint()
+        {
+            if (input == null) return "";
+            return $"Move {input.Key(BattleInput.MoveUp)}{input.Key(BattleInput.MoveLeft)}{input.Key(BattleInput.MoveDown)}{input.Key(BattleInput.MoveRight)} | {input.Key(BattleInput.DashModifier)}+Move Dash | " +
+                $"Roll {input.Key(BattleInput.RollUpLeft)}/{input.Key(BattleInput.RollUpRight)}/{input.Key(BattleInput.RollDownLeft)}/{input.Key(BattleInput.RollDownRight)} | {input.Key(BattleInput.Wait)} Wait | {input.Key(BattleInput.Undo)} Undo | {input.Key(BattleInput.ToggleRanges)} Ranges | {input.Key(BattleInput.Restart)} Restart";
         }
         private void OnDisable() { ClearGenerated(); }
         private void OnDestroy() { ClearGenerated(); }

@@ -24,6 +24,7 @@ namespace IBIIIS.Editor
                     var definition = root.AddComponent<EnemyDefinition>();
                     var so = new SerializedObject(definition);
                     so.FindProperty("enemyId").stringValue = name; so.FindProperty("moveCells").intValue = type == 2 ? 2 : 1;
+                    so.ApplyModifiedPropertiesWithoutUndo(); EnemyDefinitionEditor.ConvertLegacy(so);
                     var color = type == 1 ? new Color(.95f,.5f,.3f) : type == 2 ? new Color(.3f,.8f,.4f) : new Color(.35f,.5f,1f);
                     so.FindProperty("editorColor").colorValue = color;
                     if (type == 3) SetOffsets(so.FindProperty("recognition"), new[] { Vector2Int.left, Vector2Int.right, new Vector2Int(-1,1), Vector2Int.up, Vector2Int.one });

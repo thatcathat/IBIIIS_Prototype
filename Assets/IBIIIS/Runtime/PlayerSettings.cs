@@ -13,6 +13,9 @@ namespace IBIIIS
         [SerializeField, Tooltip("선택. 이동 표시의 테두리 재질. 원본은 변경하지 않습니다.")] private Material moveHintMaterial;
         [SerializeField, Min(.01f), Tooltip("적 한 칸 이동 연출 시간(초). 두 칸 적은 두 번 진행합니다.")] private float enemyStepDuration = .25f;
         [SerializeField, Tooltip("Play 시작 시 적의 인식 범위(노란 테두리)와 공격 범위(빨간 칸)를 표시합니다. Play 중 Tab으로 전환합니다.")] private bool showEnemyRanges = true;
+        [SerializeField, Tooltip("선택. 전투 입력(키 배치)이 정의된 Input Actions 에셋. 비우면 코드의 기본 키 배치를 사용합니다. 액션 맵 'Battle'과 필수 액션이 있어야 합니다. `IBIIIS > Create Default Input Actions`로 기본 에셋을 만듭니다.")]
+        private UnityEngine.InputSystem.InputActionAsset inputActions;
+        public UnityEngine.InputSystem.InputActionAsset InputActions => inputActions;
         public bool ShowEnemyRanges => showEnemyRanges;
         public float EnemyStepDuration => float.IsNaN(enemyStepDuration) || float.IsInfinity(enemyStepDuration) ? .25f : Mathf.Max(.01f, enemyStepDuration);
         public GameObject VisualPrefab => visualPrefab;

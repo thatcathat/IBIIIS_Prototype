@@ -7,6 +7,7 @@ namespace IBIIIS.Editor
         public const string Settings = Root + "/Settings";
         public const string PlayerSettings = Settings + "/GlobalPlayerSettings.asset";
         public const string CameraSettings = Settings + "/GlobalCameraSettings.asset";
+        public const string InputActions = Settings + "/IBIIISInput.inputactions";
         public const string Player = Root + "/Characters/Player";
         // 적은 개체별 폴더(Enemies/EnemyNNN/)에 프리팹·재질·스프라이트를 함께 둔다.
         public const string Enemies = Root + "/Characters/Enemies";

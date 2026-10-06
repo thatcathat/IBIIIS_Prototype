@@ -49,6 +49,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: IBIIIS.Runtime::IBIIIS.EnemyDefinition
   enemyId: Enemy002
+  actions:
+  - type: 0
+    cells: 1
+    turn: 0
+  - type: 1
+    cells: 2
+    turn: 0
   moveCells: 2
   recognition:
   - {x: -2, y: 0}

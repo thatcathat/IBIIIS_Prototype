@@ -1,1 +1,1 @@
-{"name":"IBIIIS.Tests","references":["IBIIIS.Runtime","IBIIIS.Editor"],"includePlatforms":["Editor"],"optionalUnityReferences":["TestAssemblies"]}
+{"name":"IBIIIS.Tests","references":["IBIIIS.Runtime","IBIIIS.Editor","Unity.InputSystem","Unity.InputSystem.TestFramework"],"includePlatforms":["Editor"],"optionalUnityReferences":["TestAssemblies"]}

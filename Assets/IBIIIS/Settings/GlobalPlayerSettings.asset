@@ -19,3 +19,5 @@ MonoBehaviour:
   destinationColor: {r: 1, g: 0.8, b: 0.15, a: 1}
   moveHintMaterial: {fileID: 0}
   enemyStepDuration: 0.25
+  showEnemyRanges: 1
+  inputActions: {fileID: -944628639613478452, guid: fa661a5dcc9c90b4b979d2fd35b9d307, type: 3}
