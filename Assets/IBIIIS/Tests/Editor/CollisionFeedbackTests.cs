@@ -109,6 +109,42 @@ namespace IBIIIS.Tests
             Assert.True(EnemyView(0).gameObject.activeSelf); Assert.That(EnemyView(0).localPosition.x, Is.EqualTo(1).Within(1e-4f));
             Assert.AreEqual(Vector3.one, EnemyView(0).Find("Visual").localScale); Assert.AreEqual(Color.white, EnemyView(0).Find("Visual").GetComponent<SpriteRenderer>().color);
         }
+        private Transform PlayerAnchor => player.Generated.Find("Player Logic Anchor");
+        [Test] public void DefeatSendsOnlyThePlayerFlyingAwayFromTheAttackerUntilUndo()
+        {
+            map.SetStart(new Vector2Int(1, 3)); Enemy(0, 3, Vector2Int.right, 2); Build();
+            Assert.True(player.TryBeginAction(PlayerAction.Wait, Vector2Int.zero)); player.AdvanceMovement(.5f);
+            Assert.AreEqual(BattlePhase.Lost, player.Session.Phase); Assert.True(player.IsPresenting); Assert.True(player.Feedback.OwnsPlayer);
+            Assert.False(player.Feedback.Owns(0), "공격한 적은 날아가지 않는다"); Assert.NotNull(Impact);
+            player.AdvanceMovement(settings.HoldTime + settings.FlyTime * .5f);
+            Assert.Greater(PlayerAnchor.localPosition.x, 1 + 1e-3f, "적이 바라보는 오른쪽으로 날아감");
+            Assert.That(PlayerAnchor.localPosition.z, Is.EqualTo(3).Within(1e-3f));
+            Assert.That(EnemyView(0).localPosition.x, Is.EqualTo(2).Within(1e-4f)); Assert.True(EnemyView(0).gameObject.activeSelf);
+            player.AdvanceMovement(1f);
+            Assert.False(player.IsPresenting); Assert.False(PlayerAnchor.gameObject.activeSelf, "날아가 사라진 채 유지"); Assert.True(player.Feedback.OwnsPlayer);
+            Assert.True(player.TryUndo());
+            Assert.True(PlayerAnchor.gameObject.activeSelf); Assert.False(player.Feedback.OwnsPlayer);
+            Assert.That(PlayerAnchor.localPosition.x, Is.EqualTo(1).Within(1e-4f)); Assert.That(PlayerAnchor.localPosition.y, Is.EqualTo(0).Within(1e-4f));
+        }
+        [Test] public void DefeatedPlayerFliesAlongTheAttackerFacingNotAwayFromItsPosition()
+        {
+            // 위를 보는 적이 앞오른쪽 칸(대각선)을 공격: 위치 기준이면 대각선이지만 바라보는 방향(위, +Z)으로 날아가야 한다.
+            map.SetStart(new Vector2Int(4, 4)); Enemy(3, 2, Vector2Int.up);
+            var definition = map.EnemyAt(new Vector2Int(3, 2)).Prefab.GetComponent<EnemyDefinition>();
+            var so = new SerializedObject(definition); var attack = so.FindProperty("attack"); attack.arraySize = 1; attack.GetArrayElementAtIndex(0).vector2IntValue = Vector2Int.one; so.ApplyModifiedPropertiesWithoutUndo();
+            Build();
+            Assert.True(player.TryBeginAction(PlayerAction.Wait, Vector2Int.zero)); player.AdvanceMovement(.5f);
+            Assert.AreEqual(BattlePhase.Lost, player.Session.Phase); CollectionAssert.AreEqual(new[] { 0 }, player.Session.Attackers);
+            player.AdvanceMovement(settings.HoldTime + settings.FlyTime * .5f);
+            Assert.Greater(PlayerAnchor.localPosition.z, 4 + 1e-3f); Assert.That(PlayerAnchor.localPosition.x, Is.EqualTo(4).Within(1e-3f));
+        }
+        [Test] public void DisabledFeedbackLeavesTheDefeatedPlayerInPlace()
+        {
+            var so = new SerializedObject(settings); so.FindProperty("enabledFeedback").boolValue = false; so.ApplyModifiedPropertiesWithoutUndo();
+            map.SetStart(new Vector2Int(1, 3)); Enemy(0, 3, Vector2Int.right, 2); Build();
+            Assert.True(player.TryBeginAction(PlayerAction.Wait, Vector2Int.zero)); player.AdvanceMovement(.5f);
+            Assert.AreEqual(BattlePhase.Lost, player.Session.Phase); Assert.False(player.IsPresenting); Assert.True(PlayerAnchor.gameObject.activeSelf);
+        }
         [Test] public void DisabledFeedbackOrMissingSettingsStillHidesEnemies()
         {
             var so = new SerializedObject(settings); so.FindProperty("enabledFeedback").boolValue = false; so.ApplyModifiedPropertiesWithoutUndo();

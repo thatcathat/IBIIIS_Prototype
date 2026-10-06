@@ -4,8 +4,9 @@ using UnityEngine;
 
 namespace IBIIIS
 {
-    /// <summary>적 충돌 연출(맞닿음 → 멈춤 → 충격·흔들림·효과음 → 튕겨 날아가며 퇴장)을 재생한다.
-    /// GridSession의 충돌 기록을 받아 표시만 바꾸며 판정에는 관여하지 않는다. 연출 중인 적의 외형은 이 클래스가 맡는다.</summary>
+    /// <summary>충돌 연출(맞닿음 → 멈춤 → 충격·흔들림·효과음 → 튕겨 날아가며 퇴장)을 재생한다.
+    /// 적끼리 충돌하면 충돌한 적들에, 플레이어가 패배하면 플레이어에게만 같은 연출을 적용한다.
+    /// GridSession의 기록을 받아 표시만 바꾸며 판정에는 관여하지 않는다. 연출 중인 외형은 이 클래스가 맡는다.</summary>
     public sealed class CollisionFeedback : IDisposable
     {
         private sealed class Actor
@@ -36,6 +37,9 @@ namespace IBIIIS
         private readonly Camera camera;
         private readonly List<Effect> effects = new List<Effect>();
         private readonly HashSet<int> owned = new HashSet<int>();
+        private const int PlayerIndex = -1;
+        // 패배 연출 뒤 숨긴 플레이어. 되돌리기·재시작 때 다시 보이게 한다.
+        private Transform hiddenPlayer;
         private AudioSource audio;
         private bool shaking;
         private float shakeTime;
@@ -61,7 +65,9 @@ namespace IBIIIS
             get { float hold = 0; foreach (var effect in effects) hold = Mathf.Max(hold, settings.HoldTime - effect.Time); return hold; }
         }
         /// <summary>해당 인덱스의 적 외형을 연출이 맡고 있으면 true. 그동안 일반 위치·표시 갱신을 건너뛴다.</summary>
-        public bool Owns(int enemyIndex) => owned.Contains(enemyIndex);
+        public bool Owns(int enemyIndex) => enemyIndex >= 0 && owned.Contains(enemyIndex);
+        /// <summary>플레이어 외형을 연출이 맡고 있으면 true(날아가 사라진 뒤 포함). 그동안 일반 위치·표시 갱신을 건너뛴다.</summary>
+        public bool OwnsPlayer => owned.Contains(PlayerIndex) || hiddenPlayer != null;
 
         public void Begin(EnemyCollision collision, IReadOnlyList<EnemyDefinition> views, IReadOnlyList<EnemyState> states)
         {
@@ -72,27 +78,42 @@ namespace IBIIIS
             {
                 int index = collision.Enemies[n];
                 if (index < 0 || index >= views.Count || views[index] == null || owned.Contains(index)) continue;
-                var view = views[index]; var visual = view.Visual;
                 var direction = states[index].Direction;
-                var actor = new Actor
-                {
-                    Index = index, Root = view.transform, Visual = visual,
-                    RootPosition = center, RootRotation = view.transform.localRotation,
-                    VisualScale = visual != null ? visual.localScale : Vector3.one, VisualRotation = visual != null ? visual.localRotation : Quaternion.identity,
-                    // 들어온 방향의 반대로 튕긴다. 같은 쪽으로 겹치면 옆으로 벌린다.
-                    Away = -new Vector3(direction.x, 0, direction.y),
-                    Spin = (n % 2 == 0 ? 1 : -1) * settings.SpinTurns.Sample(), Distance = settings.FlyDistance.Sample(), Height = settings.FlyHeight.Sample(),
-                };
-                foreach (var other in effect.Actors) if (Vector3.Dot(other.Away, actor.Away) > .9f) actor.Away = Quaternion.Euler(0, n % 2 == 0 ? 70 : -70, 0) * actor.Away;
-                if (actor.Away == Vector3.zero) actor.Away = Vector3.forward;
-                var bodies = new List<SpriteRenderer>(); var markers = new List<SpriteRenderer>();
-                foreach (var renderer in view.GetComponentsInChildren<SpriteRenderer>(true))
-                    (visual != null && renderer.transform.IsChildOf(visual) ? bodies : markers).Add(renderer);
-                actor.Bodies = bodies.ToArray(); actor.Markers = markers.ToArray();
-                actor.BodyColors = Array.ConvertAll(actor.Bodies, r => r.color);
-                view.gameObject.SetActive(true); view.transform.localPosition = center;
-                owned.Add(index); effect.Actors.Add(actor);
+                // 들어온 방향의 반대로 튕긴다. 같은 쪽으로 겹치면 옆으로 벌린다.
+                var away = -new Vector3(direction.x, 0, direction.y);
+                foreach (var other in effect.Actors) if (Vector3.Dot(other.Away, away) > .9f) away = Quaternion.Euler(0, n % 2 == 0 ? 70 : -70, 0) * away;
+                effect.Actors.Add(CreateActor(index, views[index].transform, views[index].Visual, center, away, n % 2 == 0 ? 1 : -1));
             }
+            Start(effect, center);
+        }
+        /// <summary>플레이어 패배 연출: 같은 연출을 플레이어에게만 적용한다. away는 튕겨 나갈 수평 방향(맵 기준), root는 플레이어 위치 루트, visual은 카메라를 향하는 외형.</summary>
+        public void BeginPlayer(Vector2Int cell, Transform root, Transform visual, Vector3 away)
+        {
+            if (!settings.Enabled || root == null || OwnsPlayer) return;
+            var effect = new Effect(); var center = cellPosition(cell);
+            effect.Actors.Add(CreateActor(PlayerIndex, root, visual, center, away, 1));
+            Start(effect, center);
+        }
+        private Actor CreateActor(int index, Transform root, Transform visual, Vector3 center, Vector3 away, float spinSign)
+        {
+            away.y = 0; away = away.sqrMagnitude < 1e-6f ? Vector3.forward : away.normalized;
+            var actor = new Actor
+            {
+                Index = index, Root = root, Visual = visual, RootPosition = center, RootRotation = root.localRotation,
+                VisualScale = visual != null ? visual.localScale : Vector3.one, VisualRotation = visual != null ? visual.localRotation : Quaternion.identity,
+                Away = away, Spin = spinSign * settings.SpinTurns.Sample(), Distance = settings.FlyDistance.Sample(), Height = settings.FlyHeight.Sample(),
+            };
+            var bodies = new List<SpriteRenderer>(); var markers = new List<SpriteRenderer>();
+            foreach (var renderer in root.GetComponentsInChildren<SpriteRenderer>(true))
+                (visual != null && renderer.transform.IsChildOf(visual) ? bodies : markers).Add(renderer);
+            actor.Bodies = bodies.ToArray(); actor.Markers = markers.ToArray();
+            actor.BodyColors = Array.ConvertAll(actor.Bodies, r => r.color);
+            root.gameObject.SetActive(true); root.localPosition = center;
+            owned.Add(index);
+            return actor;
+        }
+        private void Start(Effect effect, Vector3 center)
+        {
             if (effect.Actors.Count == 0) return;
             if (settings.ImpactPrefab != null)
             {
@@ -187,7 +208,7 @@ namespace IBIIIS
                 if (actor.Visual != null) { actor.Visual.localScale = actor.VisualScale; actor.Visual.localRotation = actor.VisualRotation; }
                 for (int b = 0; b < actor.Bodies.Length; b++) if (actor.Bodies[b] != null) actor.Bodies[b].color = actor.BodyColors[b];
                 foreach (var marker in actor.Markers) if (marker != null) marker.enabled = true;
-                if (finished) actor.Root.gameObject.SetActive(false);
+                if (finished) { actor.Root.gameObject.SetActive(false); if (actor.Index == PlayerIndex) hiddenPlayer = actor.Root; }
                 owned.Remove(actor.Index);
             }
             if (effect.Impact != null) { Release(effect.Impact); effect.Impact = null; }
@@ -202,6 +223,7 @@ namespace IBIIIS
         {
             foreach (var effect in effects) Finish(effect, false);
             effects.Clear(); owned.Clear(); StopShake();
+            if (hiddenPlayer != null) { hiddenPlayer.gameObject.SetActive(true); hiddenPlayer = null; }
         }
         public void Dispose()
         {

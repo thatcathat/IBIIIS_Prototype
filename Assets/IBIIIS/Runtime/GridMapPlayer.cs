@@ -32,8 +32,10 @@ namespace IBIIIS
         private bool showRanges, rangesInitialized;
         private BattleInput input;
         private CollisionFeedback feedback;
-        // 이번 행동의 충돌 기록 중 연출을 시작한 개수
+        // 이번 행동의 충돌 기록 중 연출을 시작한 개수와 패배 연출 시작 여부
         private int shownCollisions;
+        private bool shownDefeat;
+        private Transform fallbackPlayerVisual;
         /// <summary>충돌 연출이 재생 중이면 true. 이 동안 입력을 받지 않는다.</summary>
         public bool IsPresenting => feedback != null && feedback.IsPlaying;
         public CollisionFeedback Feedback => feedback;
@@ -96,7 +98,7 @@ namespace IBIIIS
         public void ClearGenerated()
         {
             if (feedback != null) { feedback.Dispose(); feedback = null; }
-            shownCollisions = 0;
+            shownCollisions = 0; shownDefeat = false; fallbackPlayerVisual = null;
             if (generated != null) { generated.gameObject.SetActive(false); Release(generated.gameObject); }
             MovementWorldTime.Unregister(this);
             generated = null; player = null; playerView = null; lastAction = PlayerAction.Wait; lastDirection = Vector2Int.zero; session = null; moveHints = null; enemyViews.Clear();
@@ -173,7 +175,7 @@ namespace IBIIIS
             else
             {
                 var visual = GameObject.CreatePrimitive(PrimitiveType.Quad);
-                visual.name = "Temporary Player Visual"; visual.transform.SetParent(player, false);
+                visual.name = "Temporary Player Visual"; visual.transform.SetParent(player, false); fallbackPlayerVisual = visual.transform;
                 visual.transform.localPosition = new Vector3(0, cellSize * .45f, 0);
                 visual.transform.localScale = Vector3.one * cellSize * .7f;
                 if (viewCamera != null) visual.transform.rotation = viewCamera.transform.rotation;
@@ -331,7 +333,7 @@ namespace IBIIIS
             float duration = MoveDuration * (action == PlayerAction.Dash ? 2 : 1);
             if (session == null || !session.TryAct(action, direction, duration, playerSettings != null ? playerSettings.EnemyStepDuration : .25f)) return false;
             if (Application.IsPlaying(gameObject)) MovementWorldTime.SetMoving(this, true);
-            shownCollisions = 0;
+            shownCollisions = 0; shownDefeat = false;
             actionHistory.Push(new KeyValuePair<PlayerAction, Vector2Int>(lastAction, lastDirection));
             lastAction = action; lastDirection = direction; ShowPlayerVisual();
             UpdateEnemyViews(); RefreshMoveHints(); return true;
@@ -340,7 +342,7 @@ namespace IBIIIS
         public bool TryUndo()
         {
             if (session == null || !session.TryUndo()) return false;
-            feedback?.Clear(); shownCollisions = 0;
+            feedback?.Clear(); shownCollisions = 0; shownDefeat = false;
             var previous = actionHistory.Count > 0 ? actionHistory.Pop() : new KeyValuePair<PlayerAction, Vector2Int>(PlayerAction.Wait, Vector2Int.zero);
             lastAction = previous.Key; lastDirection = previous.Value;
             if (player != null) player.localPosition = LocalPosition(session.Position);
@@ -349,7 +351,7 @@ namespace IBIIIS
         }
         private void ShowPlayerVisual()
         {
-            if (playerView == null) return;
+            if (playerView == null || (feedback != null && feedback.OwnsPlayer)) return;
             bool moving = session != null && session.IsMoving;
             playerView.Show(lastAction, lastDirection, session != null ? session.Progress : 0, moving, viewCamera);
         }
@@ -363,10 +365,26 @@ namespace IBIIIS
             if (left > 0 && session.IsBusy) session.Advance(left, feedback != null && feedback.Settings.Enabled);
             for (; feedback != null && shownCollisions < session.Collisions.Count; shownCollisions++)
                 feedback.Begin(session.Collisions[shownCollisions], enemyViews, session.Enemies);
-            player.localPosition = session.IsMoving ? Vector3.Lerp(LocalPosition(session.Position), LocalPosition(session.Destination), session.Progress) : LocalPosition(session.Position);
+            if (!shownDefeat && feedback != null && player != null && session.Phase == BattlePhase.Lost)
+            {
+                shownDefeat = true;
+                feedback.BeginPlayer(session.Position, player, playerView != null && playerView.Renderer != null ? playerView.Renderer.transform : fallbackPlayerVisual, DefeatAway());
+            }
+            if (feedback == null || !feedback.OwnsPlayer) player.localPosition = session.IsMoving ? Vector3.Lerp(LocalPosition(session.Position), LocalPosition(session.Destination), session.Progress) : LocalPosition(session.Position);
             ShowPlayerVisual(); UpdateEnemyViews();
             if (Application.IsPlaying(gameObject)) MovementWorldTime.SetMoving(this, session.IsBusy || IsPresenting);
             RefreshMoveHints();
+        }
+        // 플레이어가 튕겨 나갈 방향: 맞힌 적들이 바라보는 방향(여럿이면 합).
+        // 서로 반대를 봐서 상쇄되면 적에게서 멀어지는 쪽, 그것도 없으면 마지막 이동의 반대 방향을 쓴다.
+        private Vector3 DefeatAway()
+        {
+            var away = Vector2.zero;
+            foreach (var index in session.Attackers) away += (Vector2)session.Enemies[index].Direction;
+            if (away.sqrMagnitude < 1e-6f)
+                foreach (var index in session.Attackers) { var delta = session.Position - session.Enemies[index].Position; if (delta != Vector2Int.zero) away += ((Vector2)delta).normalized; }
+            if (away.sqrMagnitude < 1e-6f) away = -(Vector2)lastDirection;
+            return new Vector3(away.x, 0, away.y);
         }
         private void Update()
         {

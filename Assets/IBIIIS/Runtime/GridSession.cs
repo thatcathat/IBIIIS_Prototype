@@ -64,6 +64,9 @@ namespace IBIIIS
         private int enemyStepIndex;
         /// <summary>현재(또는 마지막) 플레이어 행동 동안 일어난 적 충돌. 다음 행동 시작·되돌리기 때 비운다.</summary>
         public IReadOnlyList<EnemyCollision> Collisions => collisions;
+        private readonly List<int> attackers = new List<int>();
+        /// <summary>마지막 행동으로 패배했다면 플레이어를 맞힌 적의 인덱스(공격 범위 또는 이동 경로). 연출용이며 다음 행동 시작·되돌리기 때 비운다.</summary>
+        public IReadOnlyList<int> Attackers => attackers;
         public IReadOnlyList<EnemyState> Enemies => enemies;
         public IEnumerable<Vector2Int> AttackCells => attackCells;
         public Vector2Int Position { get; private set; }
@@ -120,7 +123,7 @@ namespace IBIIIS
             if (RecordHistory) history.Push(Capture());
             evasion = action == PlayerAction.Dash || action == PlayerAction.Roll;
             Destination = Position + direction * (action == PlayerAction.Dash ? 2 : 1);
-            collisions.Clear(); enemyStepIndex = 0; aimOrigin = Position; duration = moveDuration; enemyDuration = enemyStepDuration; elapsed = 0; Phase = BattlePhase.Moving; attackCells.Clear(); BeginEnemies(); return true;
+            collisions.Clear(); attackers.Clear(); enemyStepIndex = 0; aimOrigin = Position; duration = moveDuration; enemyDuration = enemyStepDuration; elapsed = 0; Phase = BattlePhase.Moving; attackCells.Clear(); BeginEnemies(); return true;
         }
         // 맵 분석기가 같은 세션으로 수많은 행동을 시험할 때 되돌리기 기록이 쌓이지 않게 끈다.
         internal bool RecordHistory = true;
@@ -146,7 +149,7 @@ namespace IBIIIS
                 e.Position = e.StepFrom = e.StepTo = new Vector2Int(core[at] - 1, core[at + 1] - 1);
                 e.Direction = new Vector2Int(core[at + 2] - 1, core[at + 3] - 1); e.Alive = core[at + 4] == 1; e.Recognized = false; e.Path.Clear();
             }
-            attackCells.Clear(); collisions.Clear(); elapsed = enemyElapsed = 0; enemiesComplete = true; evasion = false;
+            attackCells.Clear(); collisions.Clear(); attackers.Clear(); elapsed = enemyElapsed = 0; enemiesComplete = true; evasion = false;
         }
         public int UndoCount => history.Count;
         /// <summary>행동이 진행 중이 아니고 되돌릴 행동이 있을 때 true. 승리·패배 상태에서도 되돌릴 수 있다.</summary>
@@ -164,7 +167,7 @@ namespace IBIIIS
                 e.Alive = memo.Alive; e.Recognized = memo.Recognized;
                 e.Path.Clear(); e.Path.AddRange(memo.Path);
             }
-            collisions.Clear(); elapsed = enemyElapsed = 0; enemiesComplete = true; evasion = false;
+            collisions.Clear(); attackers.Clear(); elapsed = enemyElapsed = 0; enemiesComplete = true; evasion = false;
             return true;
         }
         private Snapshot Capture()
@@ -265,17 +268,19 @@ namespace IBIIIS
         }
         private void FinishAction()
         {
-            bool hit = false;
-            foreach (var e in enemies)
+            for (int i = 0; i < enemies.Count; i++)
             {
+                var e = enemies[i];
                 if (!e.Alive) continue;
                 e.Recognized = Recognizes(e, Position);
+                bool struck = e.Path.Contains(Position);
                 foreach (var offset in e.Recognized ? e.RecognizedAttack : e.Attack)
                 {
-                    var p = e.Position + LocalToGrid(offset, e.Direction); attackCells.Add(p); if (p == Position) hit = true;
+                    var p = e.Position + LocalToGrid(offset, e.Direction); attackCells.Add(p); if (p == Position) struck = true;
                 }
-                if (e.Path.Contains(Position)) hit = true;
+                if (struck) attackers.Add(i);
             }
+            bool hit = attackers.Count > 0;
             EvasionLocked = evasion;
             Phase = hit ? BattlePhase.Lost : enemies.Count > 0 && AliveCount == 0 ? BattlePhase.Won : BattlePhase.Waiting;
         }

@@ -254,6 +254,19 @@ namespace IBIIIS.Tests
             var b=new GridSession(map); Assert.True(b.TryAct(PlayerAction.Wait,Vector2Int.zero,.25f,.25f)); b.Advance(1f);
             Assert.AreEqual(BattlePhase.Won,a.Phase); Assert.AreEqual(b.Phase,a.Phase); Assert.AreEqual(b.AliveCount,a.AliveCount);
         }
+        [Test] public void AttackersAreRecordedForAttackOrPathHitsAndClearedOnUndo()
+        {
+            // 공격으로 패배: 적이 (3,3)으로 내려온 뒤 앞 1칸(3,2)을 공격, 플레이어는 (3,2)로 이동
+            map.SetStart(new Vector2Int(3,1)); var go=Enemy(3,4,Vector2Int.down); Enemy(6,6,Vector2Int.left);
+            var so=new SerializedObject(go.GetComponent<EnemyDefinition>()); SetOffsets(so.FindProperty("attack"),new[]{Vector2Int.up}); so.ApplyModifiedPropertiesWithoutUndo();
+            var s=new GridSession(map); Assert.True(s.TryAct(PlayerAction.Move,Vector2Int.up)); s.Advance(2);
+            Assert.AreEqual(BattlePhase.Lost,s.Phase); CollectionAssert.AreEqual(new[]{0},s.Attackers);
+            Assert.True(s.TryUndo()); Assert.IsEmpty(s.Attackers);
+            // 경로로 패배: 두 칸 적이 플레이어 칸을 지나감. 패배가 아니면 비어 있다.
+            map.RemoveEnemy(new Vector2Int(3,4)); map.RemoveEnemy(new Vector2Int(6,6)); map.SetStart(new Vector2Int(1,3)); Enemy(0,3,Vector2Int.right,2);
+            s=new GridSession(map); WaitRound(s); Assert.AreEqual(BattlePhase.Lost,s.Phase); CollectionAssert.AreEqual(new[]{0},s.Attackers);
+            map.SetStart(new Vector2Int(5,0)); s=new GridSession(map); WaitRound(s); Assert.AreEqual(BattlePhase.Waiting,s.Phase); Assert.IsEmpty(s.Attackers);
+        }
         [Test] public void LegacyMoveCellsAndEquivalentActionsPlayIdentically()
         {
             var go=Enemy(0,3,Vector2Int.right,2,new[]{Vector2Int.up,Vector2Int.up*2,Vector2Int.left,Vector2Int.right}); Enemy(6,6,Vector2Int.down);
