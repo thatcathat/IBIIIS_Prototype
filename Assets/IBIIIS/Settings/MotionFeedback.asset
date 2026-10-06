@@ -1,0 +1,58 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 557ca0e3adc9721488958afe18608d43, type: 3}
+  m_Name: MotionFeedback
+  m_EditorClassIdentifier: IBIIIS.Runtime::IBIIIS.MotionFeedbackSettings
+  enabledFeedback: 1
+  hopHeight: 0.25
+  takeoffSquash: 0.22
+  takeoffPortion: 0.18
+  airStretch: 0.15
+  landingSquash: 0.3
+  landingTime: 0.14
+  landingDust: {fileID: 2564972601397587237, guid: 3c9040284ce35de48873e611507ddf88, type: 3}
+  dustScale: 0.55
+  dustTime: 0.3
+  footstepSound: {fileID: 8300000, guid: f200f0320ef2c3246b1448504389f467, type: 3}
+  footstepVolume: 0.6
+  dashLean: 12
+  dashSquash: 0.12
+  afterimageCount: 3
+  afterimageColor: {r: 0.55, g: 0.8, b: 1, a: 0.5}
+  afterimageTime: 0.22
+  dashStopSquash: 0.22
+  dashSound: {fileID: 8300000, guid: 775a074157742424dbf69e96ed29bb89, type: 3}
+  dashVolume: 0.6
+  rollHopHeight: 0.15
+  rollLandingSquash: 0.22
+  rollSound: {fileID: 8300000, guid: edace7a05ba7b7646896040acf879f2d, type: 3}
+  rollVolume: 0.6
+  waitSquash: 0.14
+  breathAmount: 0.03
+  breathPeriod: 1.6
+  enemyHopHeight: 0.12
+  enemyTakeoffSquash: 0.18
+  enemyAirStretch: 0.08
+  enemyLandingSquash: 0.3
+  enemyLandingTime: 0.16
+  enemyDustScale: 0.7
+  enemyFootstepSound: {fileID: 8300000, guid: 93e5034e67be8024b8408624307bdb90, type: 3}
+  enemyFootstepVolume: 0.5
+  turnSquash: 0.18
+  turnTime: 0.12
+  wallBumpDistance: 0.15
+  wallBumpTime: 0.14
+  bumpDistance: 0.14
+  bumpTime: 0.16
+  bumpSquash: 0.15
+  bumpSound: {fileID: 8300000, guid: 22f58808cd856ce438b3c196aa9ff2da, type: 3}
+  bumpVolume: 0.6

@@ -32,6 +32,8 @@ namespace IBIIIS
         private bool showRanges, rangesInitialized;
         private BattleInput input;
         private CollisionFeedback feedback;
+        private MotionFeedback motion;
+        public MotionFeedback Motion => motion;
         // 이번 행동의 충돌 기록 중 연출을 시작한 개수와 패배 연출 시작 여부
         private int shownCollisions;
         private bool shownDefeat;
@@ -84,6 +86,8 @@ namespace IBIIIS
             if (!rangesInitialized) { showRanges = playerSettings == null || playerSettings.ShowEnemyRanges; rangesInitialized = true; }
             CreateVisuals(false);
             feedback = new CollisionFeedback(playerSettings != null ? playerSettings.CollisionFeedback : null, generated, LocalPosition, cellSize, viewCamera);
+            motion = new MotionFeedback(playerSettings != null ? playerSettings.MotionFeedback : null, generated, LocalPosition, cellSize, viewCamera);
+            UpdateMotion(0); // 적 방향 등 현재 상태를 기준으로 기억해 첫 행동의 방향 전환도 반응하게 한다
             EnsureRuntimeEnvironment();
             if (Application.IsPlaying(gameObject)) { input = new BattleInput(playerSettings != null ? playerSettings.InputActions : null); input.Enable(); }
             if (Application.IsPlaying(gameObject)) MovementWorldTime.Register(this);
@@ -98,6 +102,7 @@ namespace IBIIIS
         public void ClearGenerated()
         {
             if (feedback != null) { feedback.Dispose(); feedback = null; }
+            if (motion != null) { motion.Dispose(); motion = null; }
             shownCollisions = 0; shownDefeat = false; fallbackPlayerVisual = null;
             if (generated != null) { generated.gameObject.SetActive(false); Release(generated.gameObject); }
             MovementWorldTime.Unregister(this);
@@ -333,7 +338,7 @@ namespace IBIIIS
             float duration = MoveDuration * (action == PlayerAction.Dash ? 2 : 1);
             if (session == null || !session.TryAct(action, direction, duration, playerSettings != null ? playerSettings.EnemyStepDuration : .25f)) return false;
             if (Application.IsPlaying(gameObject)) MovementWorldTime.SetMoving(this, true);
-            shownCollisions = 0; shownDefeat = false;
+            shownCollisions = 0; shownDefeat = false; motion?.BeginAction(action, session.Position, direction);
             actionHistory.Push(new KeyValuePair<PlayerAction, Vector2Int>(lastAction, lastDirection));
             lastAction = action; lastDirection = direction; ShowPlayerVisual();
             UpdateEnemyViews(); RefreshMoveHints(); return true;
@@ -342,7 +347,8 @@ namespace IBIIIS
         public bool TryUndo()
         {
             if (session == null || !session.TryUndo()) return false;
-            feedback?.Clear(); shownCollisions = 0; shownDefeat = false;
+            feedback?.Clear(); motion?.Clear(); shownCollisions = 0; shownDefeat = false;
+            if (playerView != null) playerView.SetPose(MotionPose.Identity, viewCamera);
             var previous = actionHistory.Count > 0 ? actionHistory.Pop() : new KeyValuePair<PlayerAction, Vector2Int>(PlayerAction.Wait, Vector2Int.zero);
             lastAction = previous.Key; lastDirection = previous.Value;
             if (player != null) player.localPosition = LocalPosition(session.Position);
@@ -386,10 +392,28 @@ namespace IBIIIS
             if (away.sqrMagnitude < 1e-6f) away = -(Vector2)lastDirection;
             return new Vector3(away.x, 0, away.y);
         }
+        /// <summary>플레이어 이동 손맛 자세를 갱신한다(매 프레임). 충돌·패배 연출이 플레이어를 맡고 있으면 건드리지 않는다.</summary>
+        public void UpdateMotion(float seconds)
+        {
+            if (motion == null || session == null) return;
+            motion.TickEffects(seconds);
+            motion.TickEnemies(seconds, session, enemyViews, i => feedback != null && feedback.Owns(i), p => map != null && map.IsWalkable(p));
+            if (playerView == null || (feedback != null && feedback.OwnsPlayer)) return;
+            playerView.SetPose(motion.Tick(seconds, session, lastAction, lastDirection, playerView.Renderer), viewCamera);
+        }
+        /// <summary>행동을 시작한다. 입력 대기 중인데 갈 수 없는 방향이면 그쪽으로 부딪히는 반응만 보이고 false를 돌려준다(시간·판정 변화 없음).</summary>
+        public bool TryActionOrBump(PlayerAction action, Vector2Int direction)
+        {
+            if (TryBeginAction(action, direction)) return true;
+            if (session != null && session.Phase == BattlePhase.Waiting && !IsPresenting && action != PlayerAction.Wait) motion?.Bump(direction);
+            return false;
+        }
         private void Update()
         {
             if (!Application.IsPlaying(gameObject) || session == null) return;
-            if (session.IsBusy || IsPresenting) { AdvanceMovement(Time.unscaledDeltaTime); return; }
+            float dt = Time.unscaledDeltaTime;
+            if (session.IsBusy || IsPresenting) { AdvanceMovement(dt); UpdateMotion(dt); return; }
+            UpdateMotion(dt);
             if (input == null) return;
             var command = input.Read();
             switch (command.Kind)
@@ -398,9 +422,9 @@ namespace IBIIIS
                 case BattleCommandKind.ToggleRanges: ToggleEnemyRanges(); break;
                 case BattleCommandKind.Undo: TryUndo(); break;
                 case BattleCommandKind.Wait: TryBeginAction(PlayerAction.Wait, Vector2Int.zero); break;
-                case BattleCommandKind.Roll: TryBeginAction(PlayerAction.Roll, command.Direction); break;
-                case BattleCommandKind.Move: TryBeginAction(PlayerAction.Move, command.Direction); break;
-                case BattleCommandKind.Dash: TryBeginAction(PlayerAction.Dash, command.Direction); break;
+                case BattleCommandKind.Roll: TryActionOrBump(PlayerAction.Roll, command.Direction); break;
+                case BattleCommandKind.Move: TryActionOrBump(PlayerAction.Move, command.Direction); break;
+                case BattleCommandKind.Dash: TryActionOrBump(PlayerAction.Dash, command.Direction); break;
             }
         }
         private void OnGUI()

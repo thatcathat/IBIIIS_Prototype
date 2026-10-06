@@ -62,6 +62,8 @@ namespace IBIIIS
         private Vector2Int aimOrigin;
         private readonly List<EnemyCollision> collisions = new List<EnemyCollision>();
         private int enemyStepIndex;
+        /// <summary>이번 행동에서 끝난 적 이동 단계 수. 연출이 단계별 착지를 알기 위해 읽는다.</summary>
+        public int EnemyStepsCompleted => enemyStepIndex;
         /// <summary>현재(또는 마지막) 플레이어 행동 동안 일어난 적 충돌. 다음 행동 시작·되돌리기 때 비운다.</summary>
         public IReadOnlyList<EnemyCollision> Collisions => collisions;
         private readonly List<int> attackers = new List<int>();

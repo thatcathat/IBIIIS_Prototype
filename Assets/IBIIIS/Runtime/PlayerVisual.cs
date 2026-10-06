@@ -12,6 +12,16 @@ namespace IBIIIS
         public Sprite back, right, front, left;
         public Sprite Get(PlayerFacing facing) => facing == PlayerFacing.Back ? back : facing == PlayerFacing.Right ? right : facing == PlayerFacing.Front ? front : left;
     }
+    /// <summary>표시 전용 손맛 자세. Lift=위로 뜬 높이(칸), Shift=맵 평면 기준 밀림(칸, x=맵 X, z=맵 Y), Squash=가로·세로 배율(발밑 기준),
+    /// Tilt=화면 기준 기울기(도, 양수=반시계, 발밑 기준).</summary>
+    public struct MotionPose
+    {
+        public float Lift, Tilt;
+        public Vector3 Shift;
+        public Vector2 Squash;
+        public static MotionPose Identity => new MotionPose { Squash = Vector2.one };
+        public bool IsIdentity => Lift == 0 && Tilt == 0 && Shift == Vector3.zero && Squash == Vector2.one;
+    }
     [Serializable]
     public sealed class RollFrames { public Sprite first, second; }
     /// <summary>플레이어 외형 프리팹에 붙이는 표시 전용 컴포넌트. 격자 위치·판정에는 관여하지 않습니다.</summary>
@@ -30,7 +40,9 @@ namespace IBIIIS
         private float footOffset;
         // 프리팹에서 지정한 스프라이트 자식의 원래 위치. 발 보정은 이 위치에서 더한다.
         [NonSerialized] private bool hasBasePosition;
-        [NonSerialized] private Vector3 basePosition;
+        [NonSerialized] private Vector3 basePosition, baseScale;
+        [NonSerialized] private MotionPose pose = MotionPose.Identity;
+        [NonSerialized] private Camera lastCamera;
         public float FootOffset => footOffset;
         private readonly HashSet<string> warned = new HashSet<string>();
         private PlayerFacing facing = PlayerFacing.Front;
@@ -62,14 +74,24 @@ namespace IBIIIS
             }
             slot = "Idle " + facing; return idle.Get(facing);
         }
-        // 카메라를 향하게 돌린 뒤, 카메라 화면의 아래쪽 방향으로 footOffset만큼 옮긴다.
+        public MotionPose Pose => pose;
+        /// <summary>손맛 자세를 바꾸고 바로 적용한다. 자세는 다음에 바꿀 때까지 유지된다.</summary>
+        public void SetPose(MotionPose value, Camera camera)
+        {
+            pose = value;
+            if (spriteRenderer != null && (camera != null || lastCamera != null)) Face(camera != null ? camera : lastCamera);
+        }
+        // 카메라를 향하게 돌린 뒤, 카메라 화면의 아래쪽 방향으로 footOffset만큼 옮기고 손맛 자세(뜸·밀림·납작함)를 더한다.
         private void Face(Camera camera)
         {
-            var t = spriteRenderer.transform;
-            if (!hasBasePosition) { basePosition = t.localPosition; hasBasePosition = true; }
-            t.rotation = camera.transform.rotation;
-            var down = t.parent != null ? t.parent.InverseTransformDirection(t.rotation * Vector3.down) : t.rotation * Vector3.down;
-            t.localPosition = basePosition + down * footOffset;
+            var t = spriteRenderer.transform; lastCamera = camera;
+            if (!hasBasePosition) { basePosition = t.localPosition; baseScale = t.localScale; hasBasePosition = true; }
+            t.rotation = camera.transform.rotation * Quaternion.Euler(0, 0, pose.Tilt);
+            var screenDown = camera.transform.rotation * Vector3.down; // 기울기와 무관하게 화면 아래 방향으로 발 보정
+            var down = t.parent != null ? t.parent.InverseTransformDirection(screenDown) : screenDown;
+            var up = t.parent != null ? t.parent.InverseTransformDirection(Vector3.up) : Vector3.up;
+            t.localPosition = basePosition + down * footOffset + up * pose.Lift + pose.Shift;
+            t.localScale = new Vector3(baseScale.x * pose.Squash.x, baseScale.y * pose.Squash.y, baseScale.z);
         }
         private void Warn(string slot)
         {
