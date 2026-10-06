@@ -31,6 +31,12 @@ namespace IBIIIS
         private Material attackMaterial, recognitionMaterial;
         private bool showRanges, rangesInitialized;
         private BattleInput input;
+        private CollisionFeedback feedback;
+        // 이번 행동의 충돌 기록 중 연출을 시작한 개수
+        private int shownCollisions;
+        /// <summary>충돌 연출이 재생 중이면 true. 이 동안 입력을 받지 않는다.</summary>
+        public bool IsPresenting => feedback != null && feedback.IsPlaying;
+        public CollisionFeedback Feedback => feedback;
         public bool ShowEnemyRanges => showRanges;
         private static readonly Vector2Int[] Directions = { Vector2Int.up, Vector2Int.right, Vector2Int.down, Vector2Int.left };
         private static readonly Vector2Int[] RollDirections = { new Vector2Int(-1,1), new Vector2Int(1,1), new Vector2Int(-1,-1), new Vector2Int(1,-1) };
@@ -75,6 +81,7 @@ namespace IBIIIS
             catch (Exception e) { Debug.LogError($"[IBIIIS] {name}: {e.Message}", this); enabled = false; return; }
             if (!rangesInitialized) { showRanges = playerSettings == null || playerSettings.ShowEnemyRanges; rangesInitialized = true; }
             CreateVisuals(false);
+            feedback = new CollisionFeedback(playerSettings != null ? playerSettings.CollisionFeedback : null, generated, LocalPosition, cellSize, viewCamera);
             EnsureRuntimeEnvironment();
             if (Application.IsPlaying(gameObject)) { input = new BattleInput(playerSettings != null ? playerSettings.InputActions : null); input.Enable(); }
             if (Application.IsPlaying(gameObject)) MovementWorldTime.Register(this);
@@ -88,6 +95,8 @@ namespace IBIIIS
         }
         public void ClearGenerated()
         {
+            if (feedback != null) { feedback.Dispose(); feedback = null; }
+            shownCollisions = 0;
             if (generated != null) { generated.gameObject.SetActive(false); Release(generated.gameObject); }
             MovementWorldTime.Unregister(this);
             generated = null; player = null; playerView = null; lastAction = PlayerAction.Wait; lastDirection = Vector2Int.zero; session = null; moveHints = null; enemyViews.Clear();
@@ -202,6 +211,7 @@ namespace IBIIIS
             if (session == null) return;
             for (int i = 0; i < enemyViews.Count; i++)
             {
+                if (feedback != null && feedback.Owns(i)) continue;
                 var state = session.Enemies[i]; var view = enemyViews[i]; view.gameObject.SetActive(state.Alive);
                 view.transform.localPosition = session.IsEnemiesMoving ? Vector3.Lerp(LocalPosition(state.StepFrom), LocalPosition(state.StepTo), session.EnemyProgress) : LocalPosition(state.Position);
                 view.transform.localRotation = Quaternion.LookRotation(new Vector3(state.Direction.x, 0, state.Direction.y)); view.FaceCamera(viewCamera);
@@ -277,7 +287,7 @@ namespace IBIIIS
         /// <summary>입력 대기·승패 상태에서 적의 현재 인식 범위(노란 테두리)와 공격 범위(빨간 칸)를 표시한다. 표시 전용이며 판정에 쓰지 않는다.</summary>
         private void RefreshRanges()
         {
-            bool show = showRanges && session != null && !session.IsBusy;
+            bool show = showRanges && session != null && !session.IsBusy && !IsPresenting;
             if (!show) { if (rangeRoot != null) rangeRoot.gameObject.SetActive(false); return; }
             if (rangeRoot == null)
             {
@@ -306,7 +316,7 @@ namespace IBIIIS
             for (int i = 0; i < moveHints.Length; i++)
             {
                 if (moveHints[i] == null) continue;
-                bool waiting = session == null || session.Phase == BattlePhase.Waiting;
+                bool waiting = session == null || (session.Phase == BattlePhase.Waiting && !IsPresenting);
                 var direction = i < 4 ? Directions[i] : i == 4 ? Vector2Int.zero : i < 9 ? Directions[i - 5] : RollDirections[i - 9];
                 var action = i < 5 ? PlayerAction.Move : i < 9 ? PlayerAction.Dash : PlayerAction.Roll;
                 bool can = i != 4 && waiting && (session != null ? session.CanAct(action, direction) : i < 4 && GridSession.CanStep(position, direction, p => map.IsWalkable(p) && map.EnemyAt(p) == null));
@@ -321,6 +331,7 @@ namespace IBIIIS
             float duration = MoveDuration * (action == PlayerAction.Dash ? 2 : 1);
             if (session == null || !session.TryAct(action, direction, duration, playerSettings != null ? playerSettings.EnemyStepDuration : .25f)) return false;
             if (Application.IsPlaying(gameObject)) MovementWorldTime.SetMoving(this, true);
+            shownCollisions = 0;
             actionHistory.Push(new KeyValuePair<PlayerAction, Vector2Int>(lastAction, lastDirection));
             lastAction = action; lastDirection = direction; ShowPlayerVisual();
             UpdateEnemyViews(); RefreshMoveHints(); return true;
@@ -329,6 +340,7 @@ namespace IBIIIS
         public bool TryUndo()
         {
             if (session == null || !session.TryUndo()) return false;
+            feedback?.Clear(); shownCollisions = 0;
             var previous = actionHistory.Count > 0 ? actionHistory.Pop() : new KeyValuePair<PlayerAction, Vector2Int>(PlayerAction.Wait, Vector2Int.zero);
             lastAction = previous.Key; lastDirection = previous.Value;
             if (player != null) player.localPosition = LocalPosition(session.Position);
@@ -341,19 +353,25 @@ namespace IBIIIS
             bool moving = session != null && session.IsMoving;
             playerView.Show(lastAction, lastDirection, session != null ? session.Progress : 0, moving, viewCamera);
         }
+        /// <summary>행동과 충돌 연출을 진행한다. 충돌 직후 맞닿음·멈춤 시간 동안은 다른 움직임을 멈춘다(연출 전용, 판정 결과는 같다).</summary>
         public void AdvanceMovement(float seconds)
         {
-            if (session == null || !session.IsBusy) return;
-            session.Advance(seconds);
+            if (session == null || (!session.IsBusy && !IsPresenting)) return;
+            float hold = feedback != null ? feedback.HoldRemaining : 0;
+            feedback?.Tick(seconds);
+            float left = Mathf.Max(0, seconds - hold);
+            if (left > 0 && session.IsBusy) session.Advance(left, feedback != null && feedback.Settings.Enabled);
+            for (; feedback != null && shownCollisions < session.Collisions.Count; shownCollisions++)
+                feedback.Begin(session.Collisions[shownCollisions], enemyViews, session.Enemies);
             player.localPosition = session.IsMoving ? Vector3.Lerp(LocalPosition(session.Position), LocalPosition(session.Destination), session.Progress) : LocalPosition(session.Position);
             ShowPlayerVisual(); UpdateEnemyViews();
-            if (Application.IsPlaying(gameObject)) MovementWorldTime.SetMoving(this, session.IsBusy);
+            if (Application.IsPlaying(gameObject)) MovementWorldTime.SetMoving(this, session.IsBusy || IsPresenting);
             RefreshMoveHints();
         }
         private void Update()
         {
             if (!Application.IsPlaying(gameObject) || session == null) return;
-            if (session.IsBusy) { AdvanceMovement(Time.unscaledDeltaTime); return; }
+            if (session.IsBusy || IsPresenting) { AdvanceMovement(Time.unscaledDeltaTime); return; }
             if (input == null) return;
             var command = input.Read();
             switch (command.Kind)

@@ -165,7 +165,7 @@ MonoBehaviour:
   rollFrontRight:
     first: {fileID: 21300000, guid: 8952de8f6cd288f43821bbd63c44f1ab, type: 3}
     second: {fileID: 21300000, guid: 718bd9c477e4934418a0aaacc8449e94, type: 3}
-  footOffset: 0.15
+  footOffset: 0.1
 --- !u!1001 &9048460886877336197
 PrefabInstance:
   m_ObjectHideFlags: 0

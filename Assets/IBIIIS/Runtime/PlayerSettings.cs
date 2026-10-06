@@ -16,6 +16,9 @@ namespace IBIIIS
         [SerializeField, Tooltip("선택. 전투 입력(키 배치)이 정의된 Input Actions 에셋. 비우면 코드의 기본 키 배치를 사용합니다. 액션 맵 'Battle'과 필수 액션이 있어야 합니다. `IBIIIS > Create Default Input Actions`로 기본 에셋을 만듭니다.")]
         private UnityEngine.InputSystem.InputActionAsset inputActions;
         public UnityEngine.InputSystem.InputActionAsset InputActions => inputActions;
+        [SerializeField, Tooltip("선택. 적 충돌 연출 설정. 비우면 기본 수치로 납작해짐·멈춤·흔들림·날아가기만 하고 이펙트·효과음은 없습니다. `IBIIIS > Create Default Collision Feedback`로 기본 에셋을 만듭니다.")]
+        private CollisionFeedbackSettings collisionFeedback;
+        public CollisionFeedbackSettings CollisionFeedback => collisionFeedback;
         public bool ShowEnemyRanges => showEnemyRanges;
         public float EnemyStepDuration => float.IsNaN(enemyStepDuration) || float.IsInfinity(enemyStepDuration) ? .25f : Mathf.Max(.01f, enemyStepDuration);
         public GameObject VisualPrefab => visualPrefab;

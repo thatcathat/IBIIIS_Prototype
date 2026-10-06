@@ -24,6 +24,16 @@ namespace IBIIIS
         internal readonly List<Vector2Int> Path = new List<Vector2Int>();
     }
     public enum EnemyRange { Recognition, Attack }
+    /// <summary>적끼리 같은 칸에 도착해 함께 사라진 사건. 연출용 기록이며 판정에는 쓰지 않는다.</summary>
+    public sealed class EnemyCollision
+    {
+        public Vector2Int Cell { get; }
+        /// <summary>이번 플레이어 행동 안에서 몇 번째 적 이동 단계였는지(1부터).</summary>
+        public int Step { get; }
+        /// <summary>충돌한 적의 GridSession.Enemies 인덱스.</summary>
+        public IReadOnlyList<int> Enemies { get; }
+        public EnemyCollision(Vector2Int cell, int step, IReadOnlyList<int> enemies) { Cell = cell; Step = step; Enemies = enemies; }
+    }
     public sealed class GridSession
     {
         // 플레이어 행동 시작 직전의 전체 전투 상태. 행동 한 번마다 하나를 쌓아 되돌린다.
@@ -50,6 +60,10 @@ namespace IBIIIS
         private bool evasion;
         // 적은 플레이어가 이번 행동으로 어디로 갈지 모른다. 인식·조준은 행동 시작 직전의 플레이어 위치만 사용한다.
         private Vector2Int aimOrigin;
+        private readonly List<EnemyCollision> collisions = new List<EnemyCollision>();
+        private int enemyStepIndex;
+        /// <summary>현재(또는 마지막) 플레이어 행동 동안 일어난 적 충돌. 다음 행동 시작·되돌리기 때 비운다.</summary>
+        public IReadOnlyList<EnemyCollision> Collisions => collisions;
         public IReadOnlyList<EnemyState> Enemies => enemies;
         public IEnumerable<Vector2Int> AttackCells => attackCells;
         public Vector2Int Position { get; private set; }
@@ -106,7 +120,7 @@ namespace IBIIIS
             if (RecordHistory) history.Push(Capture());
             evasion = action == PlayerAction.Dash || action == PlayerAction.Roll;
             Destination = Position + direction * (action == PlayerAction.Dash ? 2 : 1);
-            aimOrigin = Position; duration = moveDuration; enemyDuration = enemyStepDuration; elapsed = 0; Phase = BattlePhase.Moving; attackCells.Clear(); BeginEnemies(); return true;
+            collisions.Clear(); enemyStepIndex = 0; aimOrigin = Position; duration = moveDuration; enemyDuration = enemyStepDuration; elapsed = 0; Phase = BattlePhase.Moving; attackCells.Clear(); BeginEnemies(); return true;
         }
         // 맵 분석기가 같은 세션으로 수많은 행동을 시험할 때 되돌리기 기록이 쌓이지 않게 끈다.
         internal bool RecordHistory = true;
@@ -132,7 +146,7 @@ namespace IBIIIS
                 e.Position = e.StepFrom = e.StepTo = new Vector2Int(core[at] - 1, core[at + 1] - 1);
                 e.Direction = new Vector2Int(core[at + 2] - 1, core[at + 3] - 1); e.Alive = core[at + 4] == 1; e.Recognized = false; e.Path.Clear();
             }
-            attackCells.Clear(); elapsed = enemyElapsed = 0; enemiesComplete = true; evasion = false;
+            attackCells.Clear(); collisions.Clear(); elapsed = enemyElapsed = 0; enemiesComplete = true; evasion = false;
         }
         public int UndoCount => history.Count;
         /// <summary>행동이 진행 중이 아니고 되돌릴 행동이 있을 때 true. 승리·패배 상태에서도 되돌릴 수 있다.</summary>
@@ -150,7 +164,7 @@ namespace IBIIIS
                 e.Alive = memo.Alive; e.Recognized = memo.Recognized;
                 e.Path.Clear(); e.Path.AddRange(memo.Path);
             }
-            elapsed = enemyElapsed = 0; enemiesComplete = true; evasion = false;
+            collisions.Clear(); elapsed = enemyElapsed = 0; enemiesComplete = true; evasion = false;
             return true;
         }
         private Snapshot Capture()
@@ -228,16 +242,23 @@ namespace IBIIIS
         }
         private void CommitEnemyStep()
         {
-            var occupied = new Dictionary<Vector2Int, List<EnemyState>>();
-            foreach (var e in enemies)
+            enemyStepIndex++;
+            var occupied = new Dictionary<Vector2Int, List<int>>();
+            for (int i = 0; i < enemies.Count; i++)
             {
+                var e = enemies[i];
                 if (!e.Alive) continue;
                 e.Position = e.StepTo;
                 if (e.Moving) { e.Path.Add(e.Position); e.CellsLeft--; }
-                if (!occupied.TryGetValue(e.Position, out var group)) occupied[e.Position] = group = new List<EnemyState>();
-                group.Add(e);
+                if (!occupied.TryGetValue(e.Position, out var group)) occupied[e.Position] = group = new List<int>();
+                group.Add(i);
             }
-            foreach (var group in occupied.Values) if (group.Count > 1) foreach (var e in group) e.Alive = false;
+            foreach (var pair in occupied)
+            {
+                if (pair.Value.Count < 2) continue;
+                foreach (var i in pair.Value) enemies[i].Alive = false;
+                collisions.Add(new EnemyCollision(pair.Key, enemyStepIndex, pair.Value.ToArray()));
+            }
             bool another = false;
             foreach (var e in enemies) if (e.Alive) { RunInstantActions(e); if (e.CellsLeft > 0) another = true; }
             if (another) PlanEnemyStep(); else enemiesComplete = true;
@@ -258,7 +279,10 @@ namespace IBIIIS
             EvasionLocked = evasion;
             Phase = hit ? BattlePhase.Lost : enemies.Count > 0 && AliveCount == 0 ? BattlePhase.Won : BattlePhase.Waiting;
         }
-        public void Advance(float seconds)
+        public void Advance(float seconds) => Advance(seconds, false);
+        /// <summary>시간을 진행한다. stopAfterCollision이면 적 충돌이 일어난 단계에서 멈추고 남은 시간을 돌려준다(연출의 일시 정지용).
+        /// 시간을 어떻게 나눠 진행해도 판정 결과는 같다.</summary>
+        public float Advance(float seconds, bool stopAfterCollision)
         {
             if (float.IsNaN(seconds) || float.IsInfinity(seconds) || seconds < 0) throw new ArgumentOutOfRangeException(nameof(seconds));
             while (IsBusy && seconds > 0)
@@ -271,9 +295,12 @@ namespace IBIIIS
                 if (enemyMoving) enemyElapsed = Mathf.Min(enemyDuration, enemyElapsed + step);
                 seconds -= step;
                 if (playerMoving && elapsed >= duration) Position = Destination;
+                int before = collisions.Count;
                 if (enemyMoving && enemyElapsed >= enemyDuration) CommitEnemyStep();
                 if (!IsMoving && enemiesComplete) FinishAction();
+                if (stopAfterCollision && collisions.Count > before) return seconds;
             }
+            return 0;
         }
     }
     public static class MovementWorldTime

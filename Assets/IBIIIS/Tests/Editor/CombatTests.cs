@@ -235,6 +235,25 @@ namespace IBIIIS.Tests
             var broken=ScriptableObject.CreateInstance<GridMap>();
             try { broken.Resize(3,3); var bad=MapSolver.Analyze(broken); Assert.That(bad.Errors,Is.Not.Empty); Assert.AreEqual(0,bad.States); } finally { Object.DestroyImmediate(broken); }
         }
+        [Test] public void CollisionsAreRecordedWithCellStepAndMembersAndClearedOnUndo()
+        {
+            Enemy(1,3,Vector2Int.right); Enemy(3,3,Vector2Int.left); Enemy(2,4,Vector2Int.down);
+            var s=new GridSession(map); WaitRound(s);
+            Assert.AreEqual(1,s.Collisions.Count); var c=s.Collisions[0];
+            Assert.AreEqual(new Vector2Int(2,3),c.Cell); Assert.AreEqual(1,c.Step); CollectionAssert.AreEquivalent(new[]{0,1,2},c.Enemies);
+            Assert.True(s.TryUndo()); Assert.AreEqual(0,s.Collisions.Count);
+            map.RemoveEnemy(new Vector2Int(3,3)); map.RemoveEnemy(new Vector2Int(2,4)); Enemy(2,3,Vector2Int.left);
+            s=new GridSession(map); WaitRound(s); Assert.AreEqual(0,s.Collisions.Count,"자리 맞바꾸기는 충돌 아님");
+        }
+        [Test] public void StopAfterCollisionReturnsLeftoverTimeWithoutChangingTheResult()
+        {
+            Enemy(0,3,Vector2Int.right,2); Enemy(3,3,Vector2Int.left);
+            var a=new GridSession(map); Assert.True(a.TryAct(PlayerAction.Wait,Vector2Int.zero,.25f,.25f));
+            Assert.That(a.Advance(1f,true),Is.EqualTo(.5f).Within(1e-4f));
+            Assert.AreEqual(1,a.Collisions.Count); Assert.AreEqual(2,a.Collisions[0].Step); Assert.AreEqual(new Vector2Int(2,3),a.Collisions[0].Cell);
+            var b=new GridSession(map); Assert.True(b.TryAct(PlayerAction.Wait,Vector2Int.zero,.25f,.25f)); b.Advance(1f);
+            Assert.AreEqual(BattlePhase.Won,a.Phase); Assert.AreEqual(b.Phase,a.Phase); Assert.AreEqual(b.AliveCount,a.AliveCount);
+        }
         [Test] public void LegacyMoveCellsAndEquivalentActionsPlayIdentically()
         {
             var go=Enemy(0,3,Vector2Int.right,2,new[]{Vector2Int.up,Vector2Int.up*2,Vector2Int.left,Vector2Int.right}); Enemy(6,6,Vector2Int.down);
