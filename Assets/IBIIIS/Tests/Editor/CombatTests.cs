@@ -192,6 +192,37 @@ namespace IBIIIS.Tests
             var s=new GridSession(map); Assert.True(s.TryAct(PlayerAction.Move,Vector2Int.right,.05f,.25f)); s.Advance(1);
             Assert.AreEqual(new Vector2Int(4,4),s.Position); Assert.AreEqual(Vector2Int.up,s.Enemies[0].Direction);
         }
+        private static GridSession Replay(GridMap map, System.Collections.Generic.IEnumerable<SolverMove> path)
+        {
+            var s=new GridSession(map); foreach(var m in path){ Assert.True(s.TryAct(m.Action,m.Direction)); s.Advance(2); } return s;
+        }
+        [Test] public void SolverFindsShortestWinAndItsPathReplaysToVictory()
+        {
+            Enemy(1,3,Vector2Int.right); Enemy(5,3,Vector2Int.left);
+            var r=MapSolver.Analyze(map); Assert.True(r.Completed); Assert.True(r.Solvable); Assert.AreEqual(2,r.ShortestWin); Assert.AreEqual(2,r.WinPath.Count);
+            Assert.AreEqual(BattlePhase.Won,Replay(map,r.WinPath).Phase); Assert.AreEqual(0,r.DeadStates); StringAssert.Contains("최단 2행동",r.ToReport());
+        }
+        [Test] public void SolverReportsUnwinnableMapAndEveryStateAsDead()
+        {
+            Enemy(1,3,Vector2Int.right); var r=MapSolver.Analyze(map);
+            Assert.True(r.Completed); Assert.False(r.Solvable); Assert.AreEqual(-1,r.ShortestWin); Assert.Null(r.WinPath); Assert.Greater(r.States,1); Assert.AreEqual(r.States,r.DeadStates);
+            StringAssert.Contains("클리어: 불가능",r.ToReport());
+        }
+        [Test] public void SolverFindsEarliestLossAndItsPathReplaysToDefeat()
+        {
+            map.SetStart(new Vector2Int(1,3)); Enemy(0,3,Vector2Int.right,2);
+            var r=MapSolver.Analyze(map); Assert.AreEqual(1,r.EarliestLoss); Assert.AreEqual(PlayerAction.Wait,r.LossPath[0].Action); Assert.AreEqual(BattlePhase.Lost,Replay(map,r.LossPath).Phase);
+        }
+        [Test] public void SolverStopsAtLimitsAndCancelAndRejectsMapsItCannotRun()
+        {
+            Enemy(1,3,Vector2Int.right);
+            var limited=MapSolver.Analyze(map,new MapAnalysisOptions{MaxStates=5}); Assert.False(limited.Completed); Assert.AreEqual(-1,limited.DeadStates); StringAssert.Contains("불완전",limited.ToReport());
+            var shallow=MapSolver.Analyze(map,new MapAnalysisOptions{MaxDepth=1}); Assert.False(shallow.Completed); Assert.LessOrEqual(shallow.MaxDepthReached,1);
+            var cancelled=MapSolver.Analyze(map,new MapAnalysisOptions{Progress=(done,found)=>false}); Assert.True(cancelled.Cancelled); Assert.False(cancelled.Completed);
+            map.RemoveEnemy(new Vector2Int(1,3)); var none=MapSolver.Analyze(map); Assert.AreEqual(0,none.States); Assert.That(none.Notes,Is.Not.Empty);
+            var broken=ScriptableObject.CreateInstance<GridMap>();
+            try { broken.Resize(3,3); var bad=MapSolver.Analyze(broken); Assert.That(bad.Errors,Is.Not.Empty); Assert.AreEqual(0,bad.States); } finally { Object.DestroyImmediate(broken); }
+        }
         [Test] public void LegacyMoveCellsAndEquivalentActionsPlayIdentically()
         {
             var go=Enemy(0,3,Vector2Int.right,2,new[]{Vector2Int.up,Vector2Int.up*2,Vector2Int.left,Vector2Int.right}); Enemy(6,6,Vector2Int.down);

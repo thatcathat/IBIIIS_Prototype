@@ -1,13 +1,44 @@
-.map-root { flex-grow: 1; background-color: #222831; color: #eeeeee; }
-.toolbar { flex-direction: row; flex-wrap: wrap; padding: 6px; background-color: #303945; }
-.toolbar > Button { margin-right: 5px; }
-.map-picker { flex-grow: 1; min-width: 260px; }
-.body { flex-direction: row; flex-grow: 1; }
-.sidebar { width: 220px; padding: 10px; background-color: #303945; }
-.sidebar > * { margin-bottom: 8px; }
-.heading { -unity-font-style: bold; font-size: 16px; }
-.help { white-space: normal; }
-.canvas { flex-grow: 1; overflow: hidden; min-width: 160px; background-color: #1c222a; }
-.status { white-space: normal; padding: 8px; background-color: #303945; }
-.palette { max-height: 250px; }
-.selected-tile { background-color: #24695d; color: #ffffff; }
+/* 색은 Unity 에디터 테마 변수를 사용해 라이트·다크 스킨 모두에서 읽히게 한다. */
+.map-root { flex-grow: 1; background-color: var(--unity-colors-window-background); color: var(--unity-colors-default-text); }
+.toolbar { flex-direction: row; flex-wrap: wrap; align-items: center; padding: 4px 6px; background-color: var(--unity-colors-toolbar-background); border-bottom-width: 1px; border-color: var(--unity-colors-toolbar-border); }
+.toolbar > Button { margin-right: 3px; }
+.toolbar > Toggle { margin: 0 6px; }
+.toolbar-gap { width: 10px; }
+.map-picker { flex-grow: 1; min-width: 240px; }
+.body { flex-grow: 1; }
+.work-area { flex-direction: row; flex-grow: 1; min-height: 160px; }
+
+.tool-rail { width: 88px; padding: 6px 4px; background-color: var(--unity-colors-toolbar-background); border-right-width: 1px; border-color: var(--unity-colors-toolbar-border); }
+.tool-button { height: 34px; margin: 2px 0; -unity-text-align: middle-left; padding-left: 6px; }
+.tool-button--active { background-color: var(--unity-colors-highlight-background); color: var(--unity-colors-highlight-text); }
+
+.canvas-host { flex-grow: 1; min-width: 160px; }
+.canvas { flex-grow: 1; overflow: hidden; background-color: #1c222a; }
+.legend { position: absolute; left: 6px; right: 6px; bottom: 4px; font-size: 10px; color: #c8ccd2; white-space: normal; background-color: rgba(0, 0, 0, 0.45); padding: 2px 6px; border-radius: 3px; }
+
+.bottom-panel { flex-direction: row; min-height: 120px; border-top-width: 1px; border-color: var(--unity-colors-toolbar-border); background-color: var(--unity-colors-inspector_titlebar-background); }
+.cell-info { width: 230px; padding: 8px; border-right-width: 1px; border-color: var(--unity-colors-toolbar-border); }
+.tabs { flex-grow: 1; }
+.tab-body { flex-grow: 1; padding: 6px 8px; }
+.tab-body > * { margin-bottom: 6px; }
+.section-title { -unity-font-style: bold; font-size: 13px; margin-top: 4px; }
+.help { white-space: normal; font-size: 11px; color: var(--unity-colors-label-text); }
+.result { -unity-font-style: normal; font-size: 12px; color: var(--unity-colors-default-text); padding: 6px; background-color: var(--unity-colors-helpbox-background); border-radius: 3px; }
+.row { flex-direction: row; flex-wrap: wrap; }
+.row > Button { flex-grow: 1; }
+
+.palette { flex-direction: row; flex-wrap: wrap; }
+.swatch { width: 84px; height: 44px; margin: 2px; padding: 2px; -unity-text-align: lower-center; font-size: 11px; border-width: 2px; border-color: rgba(0, 0, 0, 0); white-space: normal; }
+.swatch--selected { border-color: var(--unity-colors-highlight-background); }
+.swatch-color { position: absolute; left: 4px; right: 4px; top: 4px; height: 16px; border-radius: 2px; }
+.facing-button--active { background-color: var(--unity-colors-highlight-background); color: var(--unity-colors-highlight-text); }
+
+.status-bar { flex-direction: row; flex-wrap: wrap; align-items: center; padding: 3px 6px; background-color: var(--unity-colors-toolbar-background); border-top-width: 1px; border-color: var(--unity-colors-toolbar-border); }
+.chip { padding: 1px 6px; margin-right: 4px; border-radius: 8px; background-color: var(--unity-colors-helpbox-background); font-size: 11px; }
+.chip--warn { background-color: #8a5a00; color: #ffffff; }
+.chip--ok { background-color: #2f6b3a; color: #ffffff; }
+.status-message { flex-grow: 1; white-space: normal; font-size: 11px; margin-left: 4px; }
+.swatch--enemy { width: 84px; height: 76px; }
+.swatch-image { position: absolute; left: 4px; right: 4px; top: 8px; height: 42px; -unity-background-scale-mode: scale-to-fit; }
+.swatch--enemy > .swatch-color { top: 4px; height: 4px; }
+.swatch--invalid { opacity: 0.5; }

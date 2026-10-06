@@ -103,10 +103,36 @@ namespace IBIIIS
         {
             if (!CanAct(action, direction)) return false;
             if (!ValidTime(moveDuration) || !ValidTime(enemyStepDuration)) throw new ArgumentOutOfRangeException(nameof(moveDuration));
-            history.Push(Capture());
+            if (RecordHistory) history.Push(Capture());
             evasion = action == PlayerAction.Dash || action == PlayerAction.Roll;
             Destination = Position + direction * (action == PlayerAction.Dash ? 2 : 1);
             aimOrigin = Position; duration = moveDuration; enemyDuration = enemyStepDuration; elapsed = 0; Phase = BattlePhase.Moving; attackCells.Clear(); BeginEnemies(); return true;
+        }
+        // 맵 분석기가 같은 세션으로 수많은 행동을 시험할 때 되돌리기 기록이 쌓이지 않게 끈다.
+        internal bool RecordHistory = true;
+        /// <summary>앞으로의 전개를 정하는 상태만 문자열로 저장한다: 플레이어 위치, 회피기 쿨다운, 적의 위치·방향·생존. 입력 대기 상태에서만 의미가 있다.</summary>
+        internal string SaveCore()
+        {
+            var data = new char[3 + enemies.Count * 5];
+            data[0] = (char)(Position.x + 1); data[1] = (char)(Position.y + 1); data[2] = (char)(EvasionLocked ? 1 : 0);
+            for (int i = 0; i < enemies.Count; i++)
+            {
+                var e = enemies[i]; int at = 3 + i * 5;
+                data[at] = (char)(e.Position.x + 1); data[at + 1] = (char)(e.Position.y + 1);
+                data[at + 2] = (char)(e.Direction.x + 1); data[at + 3] = (char)(e.Direction.y + 1); data[at + 4] = (char)(e.Alive ? 1 : 0);
+            }
+            return new string(data);
+        }
+        internal void LoadCore(string core)
+        {
+            Position = Destination = new Vector2Int(core[0] - 1, core[1] - 1); EvasionLocked = core[2] == 1; Phase = BattlePhase.Waiting;
+            for (int i = 0; i < enemies.Count; i++)
+            {
+                var e = enemies[i]; int at = 3 + i * 5;
+                e.Position = e.StepFrom = e.StepTo = new Vector2Int(core[at] - 1, core[at + 1] - 1);
+                e.Direction = new Vector2Int(core[at + 2] - 1, core[at + 3] - 1); e.Alive = core[at + 4] == 1; e.Recognized = false; e.Path.Clear();
+            }
+            attackCells.Clear(); elapsed = enemyElapsed = 0; enemiesComplete = true; evasion = false;
         }
         public int UndoCount => history.Count;
         /// <summary>행동이 진행 중이 아니고 되돌릴 행동이 있을 때 true. 승리·패배 상태에서도 되돌릴 수 있다.</summary>
