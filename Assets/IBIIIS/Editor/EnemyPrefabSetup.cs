@@ -39,18 +39,12 @@ namespace IBIIIS.Editor
                     visual.transform.localPosition = new Vector3(0,.45f,0); visual.transform.localScale = Vector3.one * .65f;
                     Object.DestroyImmediate(visual.GetComponent<Collider>()); visual.GetComponent<Renderer>().sharedMaterial = mat;
                     so.FindProperty("visual").objectReferenceValue = visual.transform; so.ApplyModifiedPropertiesWithoutUndo();
-                    for (int i = 0; i < 3; i++)
-                    {
-                        var line = GameObject.CreatePrimitive(PrimitiveType.Quad); line.name = "Direction"; line.transform.SetParent(root.transform, false);
-                        line.transform.localPosition = new Vector3(i == 0 ? 0 : i == 1 ? -.07f : .07f, .035f, i == 0 ? .25f : .36f);
-                        line.transform.localRotation = Quaternion.Euler(90, i == 0 ? 0 : i == 1 ? -45 : 45, 0);
-                        line.transform.localScale = new Vector3(.04f, i == 0 ? .4f : .2f, 1);
-                        Object.DestroyImmediate(line.GetComponent<Collider>()); line.GetComponent<Renderer>().sharedMaterial = mat;
-                    }
                     PrefabUtility.SaveAsPrefabAsset(root, path); AssetDatabase.SaveAssetIfDirty(mat);
                 }
                 finally { EditorSceneManager.ClosePreviewScene(scene); }
             }
+            // 진행 방향은 공용 발밑 화살표로 표시한다(4방향 스프라이트 도입 전 임시). 그림자도 함께 붙인다.
+            GroundMarkerSetup.EnsureAll();
         }
         private static void SetOffsets(SerializedProperty property, Vector2Int[] offsets)
         {

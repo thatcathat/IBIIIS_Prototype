@@ -26,6 +26,12 @@ namespace IBIIIS
         [SerializeField] private RollFrames rollBackRight = new RollFrames();
         [SerializeField] private RollFrames rollFrontLeft = new RollFrames();
         [SerializeField] private RollFrames rollFrontRight = new RollFrames();
+        [SerializeField, Tooltip("표시 전용 발 위치 보정(칸 단위). 스프라이트 아래 여백만큼 그림이 떠 보일 때 양수로 하면 화면상 아래(카메라 기준)로 내립니다. 격자 위치·판정에는 영향이 없습니다.")]
+        private float footOffset;
+        // 프리팹에서 지정한 스프라이트 자식의 원래 위치. 발 보정은 이 위치에서 더한다.
+        [NonSerialized] private bool hasBasePosition;
+        [NonSerialized] private Vector3 basePosition;
+        public float FootOffset => footOffset;
         private readonly HashSet<string> warned = new HashSet<string>();
         private PlayerFacing facing = PlayerFacing.Front;
         public PlayerFacing Facing => facing;
@@ -40,7 +46,7 @@ namespace IBIIIS
             var sprite = Select(action, direction, progress, moving, out var slot);
             if (sprite == null) Warn(slot);
             else if (spriteRenderer != null) spriteRenderer.sprite = sprite;
-            if (spriteRenderer != null && camera != null) spriteRenderer.transform.rotation = camera.transform.rotation;
+            if (spriteRenderer != null && camera != null) Face(camera);
         }
         public Sprite Select(PlayerAction action, Vector2Int direction, float progress, bool moving, out string slot)
         {
@@ -55,6 +61,15 @@ namespace IBIIIS
                 return second ? frames.second : frames.first;
             }
             slot = "Idle " + facing; return idle.Get(facing);
+        }
+        // 카메라를 향하게 돌린 뒤, 카메라 화면의 아래쪽 방향으로 footOffset만큼 옮긴다.
+        private void Face(Camera camera)
+        {
+            var t = spriteRenderer.transform;
+            if (!hasBasePosition) { basePosition = t.localPosition; hasBasePosition = true; }
+            t.rotation = camera.transform.rotation;
+            var down = t.parent != null ? t.parent.InverseTransformDirection(t.rotation * Vector3.down) : t.rotation * Vector3.down;
+            t.localPosition = basePosition + down * footOffset;
         }
         private void Warn(string slot)
         {

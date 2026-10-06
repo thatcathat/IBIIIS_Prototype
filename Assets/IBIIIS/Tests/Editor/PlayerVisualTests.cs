@@ -49,6 +49,21 @@ namespace IBIIIS.Tests
             UnityEngine.TestTools.LogAssert.Expect(LogType.Warning, new System.Text.RegularExpressions.Regex("Move Right"));
             visual.Show(PlayerAction.Move, Vector2Int.right, .3f, true, null); Assert.AreEqual("move-back", Shown);
         }
+        [Test] public void FootOffsetMovesSpriteDownOnScreenWithoutMovingTheRoot()
+        {
+            var cam = new GameObject("cam"); cam.transform.rotation = Quaternion.Euler(55, 0, 0);
+            try
+            {
+                root.transform.position = new Vector3(3, 0, 2); root.transform.localScale = Vector3.one * 2;
+                var so = new SerializedObject(visual); so.FindProperty("footOffset").floatValue = .15f; so.ApplyModifiedPropertiesWithoutUndo();
+                var camera = cam.AddComponent<Camera>();
+                visual.Show(PlayerAction.Wait, Vector2Int.zero, 0, false, camera); visual.Show(PlayerAction.Wait, Vector2Int.zero, 0, false, camera);
+                var expected = root.transform.position + cam.transform.rotation * Vector3.down * .15f * 2;
+                Assert.That(Vector3.Distance(expected, visual.Renderer.transform.position), Is.LessThan(1e-4f), "카메라 화면 아래 방향으로 칸 단위 보정, 반복 호출해도 누적되지 않음");
+                Assert.AreEqual(new Vector3(3, 0, 2), root.transform.position);
+            }
+            finally { Object.DestroyImmediate(cam); }
+        }
         [Test] public void SpriteFacesCamera()
         {
             var cam = new GameObject("cam"); cam.transform.rotation = Quaternion.Euler(50, 0, 0);
