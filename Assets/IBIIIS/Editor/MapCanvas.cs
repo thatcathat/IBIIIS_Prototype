@@ -112,16 +112,48 @@ namespace IBIIIS.Editor
                 var tile = Map.GetTile(cell);
                 FillCell(painter, cell, Map.IsWalkable(cell) ? Map.GetFloorColor(cell) : (tile != null || string.IsNullOrEmpty(Map.GetId(cell))) ? EmptyCell : Color.magenta);
             }
-            DrawRanges(painter);
             if (Map.HasStart && Map.Contains(Map.Start)) OutlineCell(painter, Map.Start, Color.yellow, 3, 3);
-            foreach (var enemy in Map.Enemies)
+            if (owner.Replay != null) DrawReplay(painter, owner.Replay.Current);
+            else
             {
-                if (enemy == null) continue;
-                var definition = enemy.Prefab != null ? enemy.Prefab.GetComponent<EnemyDefinition>() : null;
-                Triangle(painter, enemy.Position, enemy.Direction, definition != null ? definition.EditorColor : Color.magenta, Color.black);
+                DrawRanges(painter);
+                foreach (var enemy in Map.Enemies)
+                {
+                    if (enemy == null) continue;
+                    var definition = enemy.Prefab != null ? enemy.Prefab.GetComponent<EnemyDefinition>() : null;
+                    Triangle(painter, enemy.Position, enemy.Direction, definition != null ? definition.EditorColor : Color.magenta, Color.black);
+                }
             }
             if (owner.Selection is Vector2Int selected && Map.Contains(selected)) OutlineCell(painter, selected, SelectionColor, 3, 0);
             DrawHover(painter);
+        }
+        // 검증 경로 재생: 이번 행동 뒤 공격 칸, 플레이어 이동 선, 적(제거된 적은 흐린 ×), 플레이어 원을 그린다. 맵의 정적 적 배치 대신 그린다.
+        private void DrawReplay(Painter2D painter, MapReplay.Frame frame)
+        {
+            foreach (var cell in frame.Attack) if (Map.Contains(cell)) FillCell(painter, cell, new Color(AttackColor.r, AttackColor.g, AttackColor.b, .45f), 4);
+            for (int i = 0; i < frame.EnemyPositions.Length && i < Map.Enemies.Count; i++)
+            {
+                var placement = Map.Enemies[i];
+                var definition = placement != null && placement.Prefab != null ? placement.Prefab.GetComponent<EnemyDefinition>() : null;
+                var color = definition != null ? definition.EditorColor : Color.magenta;
+                if (frame.EnemyAlive[i]) Triangle(painter, frame.EnemyPositions[i], frame.EnemyDirections[i], color, Color.black);
+                else Cross(painter, frame.EnemyPositions[i], new Color(color.r, color.g, color.b, .45f), 3);
+            }
+            Vector2 Center(Vector2Int c) => Origin(c) + Vector2.one * size * .5f;
+            if (frame.From != frame.Player)
+            {
+                painter.strokeColor = Color.white; painter.lineWidth = 3; painter.lineCap = LineCap.Round;
+                painter.BeginPath(); painter.MoveTo(Center(frame.From)); painter.LineTo(Center(frame.Player)); painter.Stroke();
+            }
+            var playerColor = frame.Phase == BattlePhase.Lost ? AttackColor : frame.Phase == BattlePhase.Won ? new Color(.35f, .9f, .45f) : SelectionColor;
+            painter.BeginPath(); painter.Arc(Center(frame.Player), size * .28f, new Angle(0), new Angle(360)); painter.ClosePath();
+            painter.fillColor = playerColor; painter.Fill(); painter.strokeColor = Color.white; painter.lineWidth = 2; painter.Stroke();
+        }
+        private void Cross(Painter2D painter, Vector2Int cell, Color color, float width)
+        {
+            var o = Origin(cell); painter.strokeColor = color; painter.lineWidth = width;
+            painter.BeginPath(); painter.MoveTo(o + Vector2.one * size * .25f); painter.LineTo(o + Vector2.one * size * .75f);
+            painter.MoveTo(o + new Vector2(size * .75f, size * .25f)); painter.LineTo(o + new Vector2(size * .25f, size * .75f)); painter.Stroke();
         }
         // 게임의 범위 표시와 같은 색: 노란 테두리=인식, 빨간 칸=공격, 빨간 테두리=인식 후에만 추가되는 공격 칸. 이동 가능한 칸만 그린다.
         private void DrawRanges(Painter2D painter)

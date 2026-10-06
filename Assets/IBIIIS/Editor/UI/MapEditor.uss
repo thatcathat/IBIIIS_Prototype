@@ -42,3 +42,26 @@
 .swatch-image { position: absolute; left: 4px; right: 4px; top: 8px; height: 42px; -unity-background-scale-mode: scale-to-fit; }
 .swatch--enemy > .swatch-color { top: 4px; height: 4px; }
 .swatch--invalid { opacity: 0.5; }
+
+/* 검증 탭 */
+.grow { flex-grow: 1; }
+.analysis-controls { align-items: center; }
+.analysis-controls > Button { flex-grow: 0; }
+.analysis-head { align-items: center; }
+.analysis-head > Button { flex-grow: 0; }
+.badge { padding: 2px 8px; margin-right: 6px; border-radius: 8px; -unity-font-style: bold; color: #ffffff; background-color: #5a5f66; }
+.badge--ok { background-color: #2f6b3a; }
+.badge--warn { background-color: #8a5a00; }
+.badge--bad { background-color: #8c2f2f; }
+.metrics { padding: 4px 6px; background-color: var(--unity-colors-helpbox-background); border-radius: 3px; }
+.metric { flex-direction: row; }
+.metric-name { width: 120px; font-size: 11px; color: var(--unity-colors-label-text); }
+.metric-value { flex-grow: 1; white-space: normal; font-size: 12px; }
+.replay { padding: 6px; border-width: 1px; border-color: var(--unity-colors-highlight-background); border-radius: 3px; }
+.replay-controls { align-items: center; }
+.replay-controls > Button { flex-grow: 0; min-width: 28px; }
+.replay-steps { flex-direction: row; flex-wrap: wrap; }
+.replay-step-button { flex-grow: 0; margin: 1px; font-size: 11px; }
+.replay-step-button--current { background-color: var(--unity-colors-highlight-background); color: var(--unity-colors-highlight-text); }
+.replay-step-button--won { border-color: #2f6b3a; border-width: 1px; }
+.replay-step-button--lost { border-color: #c04040; border-width: 1px; }

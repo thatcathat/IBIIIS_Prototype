@@ -32,7 +32,10 @@ namespace IBIIIS.Editor
         [SerializeField] private bool hasSelection;
         [SerializeField] private Vector2Int selection;
         private MapCanvas canvas;
-        private Label status, analysisResult;
+        private Label status;
+        private MapAnalysis analysis;
+        private MapReplay replay;
+        internal MapReplay Replay => replay;
         private int undoGroup = -1;
 
         // 캔버스가 읽는 편집 상태
@@ -70,8 +73,14 @@ namespace IBIIIS.Editor
             var allRanges = rootVisualElement.Q<Toggle>("show-all-ranges"); allRanges.SetValueWithoutNotify(showAllRanges);
             allRanges.RegisterValueChangedCallback(e => { showAllRanges = e.newValue; canvas.MarkDirtyRepaint(); });
             Hook("environment", () => { if (map != null) { UnityEditor.Selection.activeObject = map; EditorGUIUtility.PingObject(map); } });
-            analysisResult = rootVisualElement.Q<Label>("analysis-result"); analysisResult.selection.isSelectable = true;
-            Hook("analyze", Analyze); Hook("resize", Resize);
+            Hook("analyze", Analyze);
+            Hook("copy-report", () => { if (analysis != null) { EditorGUIUtility.systemCopyBuffer = $"[{map?.name}]\n{analysis.ToReport()}"; Message("검증 보고서를 클립보드에 복사했습니다."); } });
+            Hook("show-win", () => StartReplay("최단 승리 경로", analysis?.WinPath));
+            Hook("show-loss", () => StartReplay("가장 빠른 패배 경로", analysis?.LossPath));
+            Hook("replay-close", CloseReplay);
+            Hook("replay-first", () => StepReplay(int.MinValue)); Hook("replay-prev", () => StepReplay(-1));
+            Hook("replay-next", () => StepReplay(1)); Hook("replay-last", () => StepReplay(int.MaxValue));
+            rootVisualElement.Q<SliderInt>("replay-slider").RegisterValueChangedCallback(e => { if (replay != null) { replay.Index = e.newValue; RefreshReplay(); } }); Hook("resize", Resize);
             Hook("rotate-cw", () => RotateSelectedEnemy(true)); Hook("rotate-ccw", () => RotateSelectedEnemy(false)); Hook("delete-enemy", DeleteSelectedEnemy);
             rootVisualElement.Q("map-settings").RegisterCallback<SerializedPropertyChangeEvent>(_ => { canvas.MarkDirtyRepaint(); if (map != null) UpdateStatus(); });
             var floorPicker = rootVisualElement.Q<ObjectField>("floor-asset"); floorPicker.objectType = typeof(TileDefinition); floorPicker.allowSceneObjects = false;
@@ -142,7 +151,13 @@ namespace IBIIIS.Editor
                     break;
                 case KeyCode.Delete: case KeyCode.Backspace: if (SelectedEnemyPlacement() == null) return; DeleteSelectedEnemy(); break;
                 case KeyCode.F: canvas.ResetView(); break;
-                case KeyCode.Escape: hasSelection = false; RefreshSelection(); canvas.MarkDirtyRepaint(); break;
+                case KeyCode.LeftArrow: if (replay == null) return; StepReplay(-1); break;
+                case KeyCode.RightArrow: if (replay == null) return; StepReplay(1); break;
+                case KeyCode.Home: if (replay == null) return; StepReplay(int.MinValue); break;
+                case KeyCode.End: if (replay == null) return; StepReplay(int.MaxValue); break;
+                case KeyCode.Escape:
+                    if (replay != null) { CloseReplay(); break; }
+                    hasSelection = false; RefreshSelection(); canvas.MarkDirtyRepaint(); break;
                 default: return;
             }
             e.StopPropagation();
@@ -344,15 +359,105 @@ namespace IBIIIS.Editor
 
         // ---------- 검증 ----------
         private void UndoRedoPerformed() { ClearAnalysis(); Refresh(); }
-        // 맵 검증은 실행 시점의 맵 기준이다. 맵이 바뀌면 오래된 결과가 남지 않도록 지운다.
-        private void ClearAnalysis() { if (analysisResult != null) { analysisResult.text = ""; analysisResult.style.display = DisplayStyle.None; } }
+        // 맵 검증은 실행 시점의 맵 기준이다. 맵이 바뀌면 오래된 결과와 재생이 남지 않도록 지운다.
+        private void ClearAnalysis()
+        {
+            bool hadReplay = replay != null;
+            analysis = null; replay = null; RefreshAnalysisPanel();
+            if (hadReplay) canvas?.MarkDirtyRepaint();
+        }
         private void Analyze()
         {
             if (map == null) { Message("먼저 맵을 선택하세요."); return; }
-            EndStroke(); var analysis = MapAnalysisRunner.Compute(map, rootVisualElement.Q<IntegerField>("max-states").value); string report = analysis.ToReport();
-            analysisResult.text = $"[{map.name}]\n{report}"; analysisResult.style.display = DisplayStyle.Flex;
+            EndStroke(); replay = null;
+            analysis = MapAnalysisRunner.Compute(map, rootVisualElement.Q<IntegerField>("max-states").value);
+            RefreshAnalysisPanel(); canvas.MarkDirtyRepaint();
             Message(analysis.Errors.Count > 0 ? "맵 오류: " + analysis.Errors[0] : analysis.States == 0 && analysis.Notes.Count > 0 ? "맵 검증: " + analysis.Notes[0] : analysis.Solvable ? $"맵 검증: 클리어 가능(최단 {analysis.ShortestWin}행동)" : analysis.Completed ? "맵 검증: 클리어 불가능" : "맵 검증: 결과 불완전");
-            Debug.Log($"[IBIIIS] 맵 분석: {map.name}\n{report}", map);
+            Debug.Log($"[IBIIIS] 맵 분석: {map.name}\n{analysis.ToReport()}", map);
+        }
+        private void RefreshAnalysisPanel()
+        {
+            var panel = rootVisualElement.Q("analysis-panel"); if (panel == null) return;
+            panel.style.display = analysis != null ? DisplayStyle.Flex : DisplayStyle.None;
+            if (analysis == null) { RefreshReplay(); return; }
+            var badge = rootVisualElement.Q<Label>("analysis-badge");
+            string kind, text;
+            if (analysis.Errors.Count > 0) { kind = "bad"; text = "맵 오류"; }
+            else if (analysis.States == 0) { kind = "warn"; text = "검증 대상 아님"; }
+            else if (analysis.Solvable) { kind = "ok"; text = "클리어 가능"; }
+            else if (analysis.Completed) { kind = "bad"; text = "클리어 불가능"; }
+            else { kind = "warn"; text = "결과 불완전"; }
+            badge.text = text;
+            foreach (var k in new[] { "ok", "warn", "bad" }) badge.EnableInClassList("badge--" + k, k == kind);
+            rootVisualElement.Q<Label>("analysis-scope").text = analysis.States == 0 ? "" :
+                $"상태 {analysis.States:N0}개 · 깊이 {analysis.MaxDepthReached}행동 · " + (analysis.Completed ? "끝까지 탐색" : analysis.Cancelled ? "취소됨" : "한도에 도달해 중단");
+            var metrics = rootVisualElement.Q("analysis-metrics"); metrics.Clear();
+            foreach (var error in analysis.Errors) Metric(metrics, "오류", error);
+            foreach (var note in analysis.Notes) Metric(metrics, "참고", note);
+            if (analysis.States > 0)
+            {
+                Metric(metrics, "최단 승리", analysis.Solvable ? $"{analysis.ShortestWin}행동" : analysis.Completed ? "없음 — 어떤 순서로도 적을 모두 제거할 수 없음" : "탐색 범위에서 찾지 못함");
+                Metric(metrics, "가장 빠른 패배", analysis.EarliestLoss > 0 ? $"{analysis.EarliestLoss}행동" : analysis.Completed ? "없음 — 패배할 수 있는 경우가 없음" : "탐색 범위에서 없음");
+                Metric(metrics, "승리 불가 상태", analysis.DeadStates >= 0 ? $"{analysis.DeadStates:N0} / {analysis.States:N0}개 (되돌리기·재시작으로만 복구)" : "탐색이 불완전해 계산하지 않음");
+            }
+            rootVisualElement.Q<Button>("show-win").SetEnabled(analysis.WinPath != null);
+            rootVisualElement.Q<Button>("show-loss").SetEnabled(analysis.LossPath != null);
+            RefreshReplay();
+        }
+        private static void Metric(VisualElement parent, string name, string value)
+        {
+            var row = new VisualElement(); row.AddToClassList("metric");
+            var label = new Label(name); label.AddToClassList("metric-name");
+            var text = new Label(value); text.AddToClassList("metric-value"); text.selection.isSelectable = true;
+            row.Add(label); row.Add(text); parent.Add(row);
+        }
+        private void StartReplay(string title, IReadOnlyList<SolverMove> moves)
+        {
+            if (map == null || analysis == null || moves == null) return;
+            EndStroke();
+            try { replay = MapReplay.Build(map, title, moves); }
+            catch (ArgumentException e) { Message(e.Message); replay = null; }
+            if (replay != null && replay.Problem != null) Message(replay.Problem);
+            RefreshReplay(); canvas.Focus();
+        }
+        private void CloseReplay() { replay = null; RefreshReplay(); }
+        private void StepReplay(int delta)
+        {
+            if (replay == null) return;
+            long next = delta == int.MinValue ? 0 : delta == int.MaxValue ? replay.Frames.Count - 1 : (long)replay.Index + delta;
+            replay.Index = (int)Math.Max(0, Math.Min(replay.Frames.Count - 1, next)); RefreshReplay();
+        }
+        private const string NormalLegend = "노란 테두리: 시작 위치 · 삼각형: 적과 진행 방향 · 범위: 노란 테두리=인식, 빨간 칸=공격, 빨간 테두리=인식 후 추가 공격 · 자홍: 누락 데이터";
+        private void RefreshReplay()
+        {
+            var panel = rootVisualElement.Q("replay"); if (panel == null) return;
+            var legend = rootVisualElement.Q<Label>("legend");
+            if (replay == null)
+            {
+                panel.style.display = DisplayStyle.None;
+                if (legend != null) legend.text = NormalLegend;
+                canvas?.MarkDirtyRepaint(); return;
+            }
+            panel.style.display = DisplayStyle.Flex;
+            if (legend != null) legend.text = "경로 재생 중 — 흰 원: 플레이어 · 흰 선: 이번 행동의 이동 · 빨간 칸: 이번 행동 뒤 공격 범위 · 흐린 ×: 제거된 적 · ←/→ 단계 이동 · Esc 닫기";
+            rootVisualElement.Q<Label>("replay-title").text = $"{replay.Title} ({replay.Frames.Count - 1}행동)";
+            var slider = rootVisualElement.Q<SliderInt>("replay-slider");
+            slider.lowValue = 0; slider.highValue = Mathf.Max(1, replay.Frames.Count - 1); slider.SetValueWithoutNotify(replay.Index);
+            var frame = replay.Current;
+            string phase = frame.Phase == BattlePhase.Won ? "승리" : frame.Phase == BattlePhase.Lost ? "패배" : "진행 중";
+            rootVisualElement.Q<Label>("replay-step").text = $"{replay.Index} / {replay.Frames.Count - 1} · {frame.Label} · {phase} · 남은 적 {frame.AliveCount} · 플레이어 ({frame.Player.x}, {frame.Player.y})" + (replay.Problem != null ? "\n" + replay.Problem : "");
+            var steps = rootVisualElement.Q("replay-steps"); steps.Clear();
+            for (int i = 0; i < replay.Frames.Count; i++)
+            {
+                int index = i; var f = replay.Frames[i];
+                var button = new Button(() => { replay.Index = index; RefreshReplay(); }) { text = f.Label };
+                button.AddToClassList("replay-step-button");
+                button.EnableInClassList("replay-step-button--current", i == replay.Index);
+                button.EnableInClassList("replay-step-button--won", f.Phase == BattlePhase.Won);
+                button.EnableInClassList("replay-step-button--lost", f.Phase == BattlePhase.Lost);
+                steps.Add(button);
+            }
+            canvas?.MarkDirtyRepaint();
         }
 
         // ---------- 갱신 ----------

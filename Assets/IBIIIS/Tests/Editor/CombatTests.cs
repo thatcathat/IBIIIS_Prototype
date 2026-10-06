@@ -202,6 +202,18 @@ namespace IBIIIS.Tests
             var r=MapSolver.Analyze(map); Assert.True(r.Completed); Assert.True(r.Solvable); Assert.AreEqual(2,r.ShortestWin); Assert.AreEqual(2,r.WinPath.Count);
             Assert.AreEqual(BattlePhase.Won,Replay(map,r.WinPath).Phase); Assert.AreEqual(0,r.DeadStates); StringAssert.Contains("최단 2행동",r.ToReport());
         }
+        [Test] public void ReplayRecordsEachStepOfTheSolverPathAndReportsAStalePath()
+        {
+            Enemy(1,3,Vector2Int.right); Enemy(5,3,Vector2Int.left);
+            var r=MapSolver.Analyze(map); var replay=MapReplay.Build(map,"win",r.WinPath);
+            Assert.Null(replay.Problem); Assert.AreEqual(r.WinPath.Count+1,replay.Frames.Count);
+            Assert.AreEqual(map.Start,replay.Frames[0].Player); Assert.AreEqual(2,replay.Frames[0].AliveCount); Assert.AreEqual(BattlePhase.Waiting,replay.Frames[0].Phase);
+            Assert.AreEqual(new Vector2Int(2,3),replay.Frames[1].EnemyPositions[0]); Assert.True(replay.Frames[1].EnemyAlive[0]);
+            var last=replay.Frames[replay.Frames.Count-1]; Assert.AreEqual(BattlePhase.Won,last.Phase); Assert.False(last.EnemyAlive[0]); Assert.False(last.EnemyAlive[1]);
+            replay.Index=99; Assert.AreSame(last,replay.Current);
+            var blocked=MapReplay.Build(map,"stale",new[]{new SolverMove(PlayerAction.Move,Vector2Int.down)});
+            Assert.NotNull(blocked.Problem); Assert.AreEqual(1,blocked.Frames.Count);
+        }
         [Test] public void SolverReportsUnwinnableMapAndEveryStateAsDead()
         {
             Enemy(1,3,Vector2Int.right); var r=MapSolver.Analyze(map);

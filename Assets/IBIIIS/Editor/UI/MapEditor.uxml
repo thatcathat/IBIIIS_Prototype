@@ -74,10 +74,38 @@ F: 화면 맞춤" />
           </ui:Tab>
           <ui:Tab name="tab-validate" label="검증">
             <ui:ScrollView class="tab-body">
-              <ui:IntegerField name="max-states" label="최대 탐색 상태 수" value="200000" tooltip="넘으면 탐색을 멈추고 불완전한 결과를 보여 줍니다. 클수록 정확하지만 오래 걸리고 메모리를 더 씁니다. 대략 초당 1만 상태 안팎입니다." />
-              <ui:Button name="analyze" text="맵 검증 실행" />
-              <ui:Label name="analysis-result" text="" class="help result" />
-              <ui:Label text="가능한 모든 행동 순서를 탐색해 클리어 가능 여부, 최단 경로, 가장 빠른 패배, 승리 불가 상태를 알려 줍니다. 경로는 정답이므로 플레이 전에는 보지 않는 편이 좋습니다. 맵을 수정하면 결과는 지워집니다." class="help" />
+              <ui:VisualElement class="row analysis-controls">
+                <ui:IntegerField name="max-states" label="최대 탐색 상태 수" value="200000" class="grow" tooltip="넘으면 탐색을 멈추고 불완전한 결과를 보여 줍니다. 클수록 정확하지만 오래 걸리고 메모리를 더 씁니다. 대략 초당 1만 상태 안팎입니다." />
+                <ui:Button name="analyze" text="맵 검증 실행" />
+              </ui:VisualElement>
+              <ui:VisualElement name="analysis-panel" class="analysis-panel">
+                <ui:VisualElement class="row analysis-head">
+                  <ui:Label name="analysis-badge" class="badge" />
+                  <ui:Label name="analysis-scope" class="help grow" />
+                  <ui:Button name="copy-report" text="보고서 복사" tooltip="전체 결과(경로 포함)를 클립보드에 복사합니다." />
+                </ui:VisualElement>
+                <ui:VisualElement name="analysis-metrics" class="metrics" />
+                <ui:VisualElement class="row">
+                  <ui:Button name="show-win" text="최단 승리 경로 재생" tooltip="정답 경로입니다. 플레이 전에 보면 퍼즐 답을 알게 됩니다." />
+                  <ui:Button name="show-loss" text="가장 빠른 패배 경로 재생" />
+                </ui:VisualElement>
+                <ui:VisualElement name="replay" class="replay">
+                  <ui:VisualElement class="row analysis-head">
+                    <ui:Label name="replay-title" class="section-title grow" />
+                    <ui:Button name="replay-close" text="재생 닫기 (Esc)" />
+                  </ui:VisualElement>
+                  <ui:VisualElement class="row replay-controls">
+                    <ui:Button name="replay-first" text="⏮" tooltip="처음 (Home)" />
+                    <ui:Button name="replay-prev" text="◀" tooltip="이전 단계 (←)" />
+                    <ui:SliderInt name="replay-slider" low-value="0" high-value="1" class="grow" />
+                    <ui:Button name="replay-next" text="▶" tooltip="다음 단계 (→)" />
+                    <ui:Button name="replay-last" text="⏭" tooltip="마지막 (End)" />
+                  </ui:VisualElement>
+                  <ui:Label name="replay-step" class="result" />
+                  <ui:VisualElement name="replay-steps" class="replay-steps" />
+                </ui:VisualElement>
+              </ui:VisualElement>
+              <ui:Label text="가능한 모든 행동 순서를 탐색해 클리어 가능 여부, 최단 경로, 가장 빠른 패배, 승리 불가 상태를 알려 줍니다. 경로는 정답이므로 플레이 전에는 보지 않는 편이 좋습니다. 경로를 재생하면 캔버스에 각 단계의 플레이어·적 위치와 그 행동 뒤의 공격 범위가 표시됩니다. 맵을 수정하면 결과와 재생은 지워집니다." class="help" />
             </ui:ScrollView>
           </ui:Tab>
         </ui:TabView>
