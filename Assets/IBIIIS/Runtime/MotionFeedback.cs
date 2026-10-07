@@ -18,15 +18,14 @@ namespace IBIIIS
             public float LandTime = -1, TurnTime = -1, BumpTime = -1; public Vector2Int BumpDirection;
             public void Reset() { LandTime = TurnTime = BumpTime = -1; MovingThisStep = false; }
         }
-        private sealed class Fade { public GameObject Go; public SpriteRenderer[] Renderers; public Color[] Colors; public float Time, Duration; public Vector3 Base, Drift; public float Scale; public bool Grow; }
         private readonly MotionFeedbackSettings settings;
         private readonly bool ownsSettings;
         private readonly Transform parent;
         private readonly Func<Vector2Int, Vector3> cellPosition;
         private readonly float cellSize;
         private readonly Camera camera;
-        private readonly List<Fade> puffs = new List<Fade>(), ghosts = new List<Fade>();
-        private AudioSource audio;
+        // 먼지·잔상·효과음은 미니맵과 공유하는 연출 부품이 맡는다.
+        private readonly MotionEffects effects;
         // 이번 행동의 착지를 아직 처리하지 않았으면 true. 중간 프레임을 보지 못해도(긴 프레임) 착지를 놓치지 않는다.
         private bool landingPending;
         private PlayerAction pendingAction;
@@ -43,11 +42,12 @@ namespace IBIIIS
             ownsSettings = settings == null;
             if (settings == null) { settings = ScriptableObject.CreateInstance<MotionFeedbackSettings>(); settings.hideFlags = HideFlags.HideAndDontSave; }
             this.settings = settings; this.parent = parent; this.cellPosition = cellPosition; this.cellSize = cellSize; this.camera = camera;
+            effects = new MotionEffects(parent, camera);
         }
         public MotionFeedbackSettings Settings => settings;
         /// <summary>착지·부딪힘 여운이나 먼지·잔상이 남아 있으면 true. 숨쉬기는 포함하지 않는다. 입력은 막지 않는다.</summary>
-        public bool IsAnimating => landingTime >= 0 || bumpTime >= 0 || puffs.Count > 0 || ghosts.Count > 0;
-        public int AfterimageCount => ghosts.Count;
+        public bool IsAnimating => landingTime >= 0 || bumpTime >= 0 || effects.IsAnimating;
+        public int AfterimageCount => effects.AfterimageCount;
 
         /// <summary>새 행동을 시작할 때 부른다. origin은 출발 칸, direction은 행동 방향. 이전 여운을 정리하고 대시·구르기 시작 소리·먼지를 낸다.</summary>
         public void BeginAction(PlayerAction action, Vector2Int origin, Vector2Int direction)
@@ -67,7 +67,7 @@ namespace IBIIIS
         }
         /// <summary>매 프레임 호출한다. 현재 행동과 진행도로 플레이어 자세를 계산해 돌려준다. sprite는 잔상을 복사할 플레이어 스프라이트(없으면 잔상 생략).</summary>
         /// <summary>먼지·잔상을 흐리게 하고 다 사라지면 지운다(매 프레임, 플레이어 외형이 없어도 호출).</summary>
-        public void TickEffects(float seconds) { TickFades(puffs, seconds); TickFades(ghosts, seconds); }
+        public void TickEffects(float seconds) => effects.Tick(seconds);
         public MotionPose Tick(float seconds, GridSession session, PlayerAction action, Vector2Int direction, SpriteRenderer sprite = null)
         {
             if (!settings.Enabled || session == null) { landingTime = bumpTime = -1; return MotionPose.Identity; }
@@ -113,15 +113,7 @@ namespace IBIIIS
         public MotionPose HopPose(float progress) => HopPose(progress, settings.HopHeight);
         public MotionPose HopPose(float progress, float height) => HopPose(progress, height, settings.TakeoffSquash, settings.AirStretch);
         public MotionPose HopPose(float progress, float height, float takeoffSquash, float airStretch)
-        {
-            float p = Mathf.Clamp01(progress);
-            var pose = MotionPose.Identity;
-            pose.Lift = height * Mathf.Sin(Mathf.PI * p);
-            float takeoff = settings.TakeoffPortion;
-            if (p < takeoff) return WithSquash(pose, takeoffSquash * Mathf.Sin(Mathf.PI * p / takeoff));
-            float air = Mathf.Sin(Mathf.PI * (p - takeoff) / (1 - takeoff));
-            return WithSquash(pose, -airStretch * air);
-        }
+            => MotionPoses.Hop(progress, height, takeoffSquash, airStretch, settings.TakeoffPortion);
 
         /// <summary>적 외형 손맛을 갱신한다(매 프레임). skip이 true인 적(충돌 연출 중 등)과 죽은 적은 건드리지 않는다. walkable은 벽 반사 판단에 쓴다.</summary>
         public void TickEnemies(float seconds, GridSession session, IReadOnlyList<EnemyDefinition> views, Func<int, bool> skip, Func<Vector2Int, bool> walkable)
@@ -194,14 +186,8 @@ namespace IBIIIS
             return pose;
         }
         /// <summary>숨쉬기: 주기마다 위아래로 살짝 늘었다 줄어든다. 시간 0에서 원래 자세.</summary>
-        public MotionPose BreathPose(float time)
-        {
-            if (settings.BreathAmount <= 0) return MotionPose.Identity;
-            return Squashed(-settings.BreathAmount * Mathf.Sin(2 * Mathf.PI * time / settings.BreathPeriod));
-        }
-        // amount > 0: 납작(가로로 넓고 세로로 낮게), amount < 0: 늘어남
-        private static MotionPose Squashed(float amount) => WithSquash(MotionPose.Identity, amount);
-        private static MotionPose WithSquash(MotionPose pose, float amount) { pose.Squash = new Vector2(1 + amount, 1 - amount); return pose; }
+        public MotionPose BreathPose(float time) => MotionPoses.Breath(time, settings.BreathAmount, settings.BreathPeriod);
+        private static MotionPose Squashed(float amount) => MotionPoses.Squashed(amount);
 
         private void Land(Vector2Int cell, float squash, Vector2Int skid)
         {
@@ -212,25 +198,7 @@ namespace IBIIIS
         // 먼지 두 덩이. away가 0이면 화면 좌우로, 아니면 그 방향(맵 기준) 양옆으로 퍼진다.
         private void SpawnDust(Vector2Int cell, Vector2Int away) => SpawnDust(cell, away, settings.DustScale * cellSize);
         private void SpawnDust(Vector2Int cell, Vector2Int away, float scale)
-        {
-            if (settings.LandingDust == null || parent == null) return;
-            Vector3 spread;
-            if (away == Vector2Int.zero)
-            {
-                var right = camera != null ? camera.transform.right : Vector3.right; right.y = 0; right = right.sqrMagnitude > 0 ? right.normalized : Vector3.right;
-                spread = parent.InverseTransformDirection(right);
-            }
-            else spread = new Vector3(away.x, 0, away.y).normalized;
-            var side = new Vector3(-spread.z, 0, spread.x);
-            foreach (var drift in away == Vector2Int.zero ? new[] { -spread, spread } : new[] { spread + side * .5f, spread - side * .5f })
-            {
-                var go = UnityEngine.Object.Instantiate(settings.LandingDust, parent, false); go.name = "Landing Dust";
-                var renderers = go.GetComponentsInChildren<SpriteRenderer>(true);
-                var puff = new Fade { Go = go, Renderers = renderers, Colors = Array.ConvertAll(renderers, r => r.color), Duration = settings.DustTime, Grow = true,
-                    Base = cellPosition(cell) + Vector3.up * .05f * cellSize, Drift = drift * .35f * cellSize, Scale = scale };
-                puffs.Add(puff); ApplyFade(puff);
-            }
-        }
+            => effects.SpawnDust(settings.LandingDust, cellPosition(cell), new Vector3(away.x, 0, away.y), scale, settings.DustTime, cellSize);
         // 이동 구간을 (잔상 수 + 1)등분한 지점을 지날 때마다 현재 스프라이트를 복사해 남긴다. 긴 프레임이면 지난 지점만큼 한꺼번에 남긴다.
         private void SpawnGhosts(float progress, SpriteRenderer sprite)
         {
@@ -239,64 +207,22 @@ namespace IBIIIS
             while (ghostsSpawned < count && progress >= (ghostsSpawned + 1f) / (count + 1))
             {
                 ghostsSpawned++;
-                var go = new GameObject("Dash Afterimage"); go.transform.SetParent(parent, false);
-                go.transform.SetPositionAndRotation(sprite.transform.position, sprite.transform.rotation);
-                go.transform.localScale = parent.lossyScale.x != 0 ? sprite.transform.lossyScale / parent.lossyScale.x : sprite.transform.lossyScale;
-                var renderer = go.AddComponent<SpriteRenderer>(); renderer.sprite = sprite.sprite; renderer.flipX = sprite.flipX; renderer.sortingOrder = sprite.sortingOrder - 1;
-                var c = settings.AfterimageColor; renderer.color = c;
-                ghosts.Add(new Fade { Go = go, Renderers = new[] { renderer }, Colors = new[] { c }, Duration = settings.AfterimageTime, Base = go.transform.localPosition });
+                effects.SpawnAfterimage(sprite, settings.AfterimageColor, settings.AfterimageTime);
             }
         }
-        private void TickFades(List<Fade> list, float seconds)
-        {
-            for (int i = list.Count - 1; i >= 0; i--)
-            {
-                var fade = list[i]; fade.Time += seconds;
-                if (fade.Go == null || fade.Time >= fade.Duration) { Release(fade.Go); list.RemoveAt(i); continue; }
-                ApplyFade(fade);
-            }
-        }
-        private void ApplyFade(Fade fade)
-        {
-            float v = Mathf.Clamp01(fade.Time / fade.Duration), eased = 1 - (1 - v) * (1 - v);
-            if (fade.Grow)
-            {
-                fade.Go.transform.localPosition = fade.Base + fade.Drift * eased;
-                fade.Go.transform.localScale = Vector3.one * fade.Scale * Mathf.Lerp(.4f, 1, eased);
-                if (camera != null) fade.Go.transform.rotation = camera.transform.rotation;
-            }
-            for (int r = 0; r < fade.Renderers.Length; r++) { var c = fade.Colors[r]; fade.Renderers[r].color = new Color(c.r, c.g, c.b, c.a * (1 - v)); }
-        }
-        private void Play(AudioClip clip, float volume)
-        {
-            if (clip == null || parent == null) return;
-            if (audio == null)
-            {
-                var go = new GameObject("Motion Audio"); go.transform.SetParent(parent, false);
-                audio = go.AddComponent<AudioSource>(); audio.playOnAwake = false; audio.spatialBlend = 0;
-            }
-            audio.PlayOneShot(clip, volume);
-        }
+        private void Play(AudioClip clip, float volume) => effects.Play(clip, volume);
         /// <summary>여운·먼지·잔상을 모두 즉시 정리한다(되돌리기·재시작).</summary>
         public void Clear()
         {
-            foreach (var fade in puffs) Release(fade.Go);
-            foreach (var fade in ghosts) Release(fade.Go);
-            puffs.Clear(); ghosts.Clear(); landingTime = bumpTime = -1; landingPending = false; breathTime = 0; ghostsSpawned = 0;
+            effects.Clear(); landingTime = bumpTime = -1; landingPending = false; breathTime = 0; ghostsSpawned = 0;
             foreach (var m in enemyMotions.Values) { m.Reset(); if (m.Visual != null) { m.Visual.localPosition = m.BasePosition; m.Visual.localScale = m.BaseScale; } }
             resyncEnemies = true; enemyStepsSeen = 0;
         }
         public void Dispose()
         {
             Clear();
-            if (audio != null) { Release(audio.gameObject); audio = null; }
-            if (ownsSettings && settings != null) Release(settings);
-        }
-        private static void Release(UnityEngine.Object value)
-        {
-            if (value == null) return;
-            if (Application.isPlaying && value is GameObject go) { go.SetActive(false); go.transform.SetParent(null, false); }
-            if (Application.isPlaying) UnityEngine.Object.Destroy(value); else UnityEngine.Object.DestroyImmediate(value);
+            effects.Dispose();
+            if (ownsSettings && settings != null) MotionEffects.Release(settings);
         }
     }
 }

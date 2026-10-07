@@ -58,6 +58,7 @@ namespace IBIIIS.Editor
             var so = new SerializedObject(settings);
             Fill(so, "cameraSettings", MapEditorSetup.EnsureCameraSettings());
             Fill(so, "inputActions", EnsureInput());
+            Fill(so, "motionFeedback", AssetDatabase.LoadAssetAtPath<MotionFeedbackSettings>(AssetPaths.MotionFeedback));
             AssetDatabase.SaveAssetIfDirty(settings);
             return settings;
         }
@@ -246,6 +247,20 @@ namespace IBIIIS.Editor
                 new Vector2(Vector2.Dot(q1, q1), s * (v1.x * e1.y - v1.y * e1.x))), new Vector2(Vector2.Dot(q2, q2), s * (v2.x * e2.y - v2.y * e2.x)));
             return -Mathf.Sqrt(d.x) * Mathf.Sign(d.y);
         }
+        /// <summary>이전에 만든 NPC 프리팹의 Visual에 숨쉬기가 없으면 붙인다(공용 손맛 설정 연결). 이미 있으면 그대로 둔다.</summary>
+        public static void EnsureNpcBreathing()
+        {
+            if (AssetDatabase.LoadAssetAtPath<GameObject>(AssetPaths.NpcPrefab) == null) return;
+            var root = PrefabUtility.LoadPrefabContents(AssetPaths.NpcPrefab);
+            try
+            {
+                var visual = root.transform.Find("Visual");
+                if (visual == null || visual.GetComponent<BreathingSprite>() != null) return;
+                visual.gameObject.AddComponent<BreathingSprite>().Configure(AssetDatabase.LoadAssetAtPath<MotionFeedbackSettings>(AssetPaths.MotionFeedback));
+                PrefabUtility.SaveAsPrefabAsset(root, AssetPaths.NpcPrefab);
+            }
+            finally { PrefabUtility.UnloadPrefabContents(root); }
+        }
         /// <summary>클리어 깃발 프리팹: 카메라를 바라보는 스프라이트 하나. 스테이지 입구의 Cleared Indicator로 연결하며 클리어한 입구에서만 켜진다. 이미 있으면 덮어쓰지 않는다.</summary>
         public static GameObject EnsureClearedFlagPrefab()
         {
@@ -269,7 +284,7 @@ namespace IBIIIS.Editor
         public static GameObject EnsureNpcPrefab()
         {
             var existing = AssetDatabase.LoadAssetAtPath<GameObject>(AssetPaths.NpcPrefab);
-            if (existing != null) return existing;
+            if (existing != null) { EnsureNpcBreathing(); return existing; }
             var sprite = EnsureNpcSprite();
             var preview = EditorSceneManager.NewPreviewScene();
             try
@@ -280,6 +295,7 @@ namespace IBIIIS.Editor
                 var visual = new GameObject("Visual", typeof(SpriteRenderer), typeof(CameraFacingSprite));
                 visual.transform.SetParent(root.transform, false); visual.transform.localScale = Vector3.one * 1.5f; // 플레이어·적과 같은 임시 표시 배율
                 visual.GetComponent<SpriteRenderer>().sprite = sprite;
+                visual.AddComponent<BreathingSprite>().Configure(AssetDatabase.LoadAssetAtPath<MotionFeedbackSettings>(AssetPaths.MotionFeedback));
                 var shadow = AssetDatabase.LoadAssetAtPath<GameObject>(GroundMarkerSetup.ShadowPrefab);
                 if (shadow != null)
                 {

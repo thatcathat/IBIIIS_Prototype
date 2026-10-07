@@ -32,7 +32,7 @@
 | 작업 | 기록 위치 | 상태 |
 |---|---|---|
 | 프로젝트 실행 | 아래 맵 편집·기본 이동 절차 | 개발 검증 완료, 플레이 사용자 확인 대기 |
-| 테스트 실행 | 아래 자동 테스트 | EditMode 103/103 통과 (2026-10-07, 미니맵 브랜치) |
+| 테스트 실행 | 아래 자동 테스트 | EditMode 107/107 통과 (2026-10-07, 미니맵 브랜치) |
 | 플레이어 외형 교체 | 아래 공용 플레이어 설정, 플레이어 스프라이트 외형 | 스프라이트 외형 구현·자동 검증 완료, 화면 사용자 확인 대기. 반복 애니메이션 미구현 |
 | 적 설정 편집·배치 | 전투 및 적 배치 가이드 | 구현·자동 검증 완료, 화면 사용자 확인 대기 |
 | 새 적 추가 | 설정 생성 메뉴, ID, 패턴·외형 연결, 등장 방법 | 미작성·미검증. 적 팔레트는 루트에 EnemyDefinition이 있는 프리팹을 자동 수집한다 |
@@ -66,7 +66,8 @@
 | `Runtime/PlayerVisual.cs`, `CollisionFeedback.cs` | 플레이어 스프라이트 선택, 충돌·패배 연출 |
 | `Runtime/CameraFacingSprite.cs` | 캐릭터 그림을 카메라와 나란히 세우는 공통 규칙(플레이어·적·NPC) |
 | `Runtime/MapSolver.cs` | 맵 클리어 가능 여부 탐색 |
-| `Runtime/Overworld*.cs`, `NpcSpeaker.cs`, `StageEntrance.cs` | 미니맵 자유 이동·따라가는 카메라·입력·상호작용 대상(NPC 말풍선, 스테이지 입구) |
+| `Runtime/Overworld*.cs`, `NpcSpeaker.cs`, `StageEntrance.cs` | 미니맵 자유 이동·걷기 손맛(`OverworldMotion`)·따라가는 카메라·입력·상호작용 대상(NPC 말풍선, 스테이지 입구) |
+| `Runtime/MotionEffects.cs`, `BreathingSprite.cs` | 전투·미니맵 공용 손맛 자세 계산과 먼지·잔상·소리, NPC 숨쉬기 |
 | `Runtime/StageFlow.cs`, `StageResultPopup.cs`, `ProgressStore.cs` | 미니맵 ↔ 전투 씬 전환, 결과 팝업, 클리어 기록 저장 |
 | `Editor/` | MapEditorWindow·MapCanvas·UXML/USS(맵 편집기), MapEditorSetup(새 맵·씬 생성), GridMapPreview(Scene 미리보기), 각종 기본 에셋 생성 메뉴 |
 
@@ -101,7 +102,7 @@ Editor 코드는 런타임과 별도 어셈블리(`IBIIIS.Editor`)에 있고, �
 ## 자동 테스트
 
 - `Window > General > Test Runner > EditMode`에서 `IBIIIS.Tests`를 실행한다. 자동 테스트는 Play를 조작하지 않고 EditMode에서 실행한다.
-- 최근 결과: 컴파일 완료, EditMode 103/103 통과(2026-10-07, `feature/overworld-minimap` 브랜치. 미니맵 테스트 11개 포함). 기능별로 확인한 내용은 각 기능 항목의 검증에 기록한다.
+- 최근 결과: 컴파일 완료, EditMode 107/107 통과(2026-10-07, `feature/overworld-minimap` 브랜치. 미니맵 테스트 15개 포함). 기능별로 확인한 내용은 각 기능 항목의 검증에 기록한다.
 - UnityMCP가 연결되지 않았을 때는 Unity가 만든 `IBIIIS.*.csproj`를 `dotnet build`해 컴파일만 확인할 수 있다. 이것은 Unity 컴파일·테스트 실행을 대신하지 않는다.
 - 에이전트는 Unity 에디터가 열려 UnityMCP가 연결되어 있을 때 컴파일 확인과 테스트 실행을 할 수 있다. Player 빌드는 실행하지 않았다.
 
@@ -288,11 +289,21 @@ Editor 코드는 런타임과 별도 어셈블리(`IBIIIS.Editor`)에 있고, �
 
 ### 편집 항목
 
-- **Overworld Settings**(`IBIIIS > Overworld > Overworld Settings`): `Move Speed`(칸/초, 임시 3.5), `Camera Settings`(각도·화각, 비우면 카메라 현재 값), `Camera Distance`(칸, 임시 9), `Camera Follow Sharpness`(0이면 지연 없음, 임시 8), `Input Actions`.
+- **Overworld Settings**(`IBIIIS > Overworld > Overworld Settings`): `Move Speed`(칸/초, 임시 3.5), `Camera Settings`(각도·화각, 비우면 카메라 현재 값), `Camera Distance`(칸, 임시 9), `Camera Follow Sharpness`(0이면 지연 없음, 임시 8), `Input Actions`. 걷기 손맛(아래 항목) 값도 여기에 있다.
 - **NPC 추가**: `Assets/IBIIIS/Characters/NPC/NPC.prefab`을 씬에 끌어다 놓고, 루트의 `NpcSpeaker`에서 `Display Name`, `Lines`(항목 하나가 말풍선 한 번), `Radius`(상호작용 거리, 칸), `Label Height`(말풍선 높이, 칸)를 정한다. 그림은 자식 `Visual`의 SpriteRenderer 스프라이트를, 크기는 `Visual`의 Scale(현재 1.5)을 바꾼다. 막힘은 루트의 보이지 않는 CapsuleCollider, 말 걸기 범위는 바닥 평면 거리로 판정하므로 그림·크기를 바꿔도 달라지지 않는다. NPC마다 다른 그림을 오래 쓸 거라면 프리팹 변형(Prefab Variant)으로 만든다. 지금은 정면 한 장만 쓰며 돌아보기는 없다.
 - **카메라 바라보기**: 플레이어·적·NPC 그림은 모두 카메라 회전과 같은 회전으로 세워진다(`CameraFacingSprite`). NPC는 Play 중 매 프레임 맞추며, 편집 중 Scene에서는 똑바로 서 있는 상태로 보인다.
 - **스테이지 입구 추가**: 오브젝트에 `StageEntrance`를 붙이고 `Stage Id`(필수, 클리어 기록 키. 정한 뒤 바꾸지 않음), `Display Name`, `Battle Scene`(필수, 맵과 함께 만든 전투 씬), `Cleared Indicator`(선택, 보통 자식으로 둔 `Overworld/ClearedFlag.prefab`을 꺼 둔 채 연결)를 정한다. Inspector가 ID 누락·중복과 빌드 씬 목록 누락을 알려 준다. 에디터 Play에서는 빌드 씬 목록에 없어도 들어갈 수 있으나 빌드한 게임에서는 `빌드 씬 목록에 추가`가 필요하다. 미니맵 씬도 같다.
 - **클리어 기록**: `IBIIIS > Overworld > Reset Clear Records`로 모두 지우고, `Show Save File`로 파일 위치를 연다. 저장 형식은 [데이터 관리 문서](IBIIIS_데이터_관리_문서.md)를 따른다.
+
+### 걷기 손맛
+
+- 플레이어: 걸은 거리 `Stride Length`(임시 0.9칸)마다 한 걸음으로 세어 걸음마다 낮게 한 번 뛰고 발소리를 낸다. `Dust Every Steps`(임시 3)걸음마다 발밑 먼지가 뒤로 퍼진다. 움직이기 시작할 때 짧게 웅크리고, 멈추면 착지처럼 납작해지며 먼지가 난다. 멈춰 있으면 숨쉬기를 한다. 벽·NPC에 막혀 거의 못 움직이면 그쪽으로 한 번 부딪히고, 계속 밀어도 다시 부딪히지 않는다(손을 뗐다 다시 밀면 다시 부딪힘). 막혀 있을 때는 누른 방향을 바라보는 대기 그림이다.
+- 걸음 주기는 시간이 아니라 걸은 거리로 세므로 프레임 속도·이동 속도가 바뀌어도 발과 이동이 맞는다.
+- NPC: `NPC.prefab`의 `Visual`에 붙은 `BreathingSprite`가 숨쉬기를 한다. NPC마다 시작 시점이 달라 함께 움직이지 않는다. `Amount Scale`(0이면 끔)로 NPC별 크기를 조절한다.
+- 공용 값(뜀 높이·웅크림·늘어남·착지 납작함·먼지 그림·발소리·부딪힘·숨쉬기 크기와 주기)은 전투와 같은 `Assets/IBIIIS/Settings/MotionFeedback.asset`에서 읽는다. 이 에셋의 `Enabled`를 끄면 전투·미니맵·NPC 숨쉬기가 모두 꺼진다.
+- 미니맵 전용 값(`OverworldSettings`의 걷기 손맛): `Motion Feedback`(공용 에셋 연결), `Stride Length`, `Walk Hop Scale`(전투 1칸 뜀 대비 배율, 임시 0.5, 0이면 걸음 뜀 끔), `Footsteps`, `Dust Every Steps`(0이면 걸음 먼지 끔), `Stop Squash Scale`(임시 0.6, 0이면 멈춤 반응·먼지 끔), `Breathing`, `Wall Bump`. 값은 Play 시작 시 읽지 않고 매 프레임 읽으므로 Play 중에도 바로 반영된다.
+- 표시 전용이다. 이동·충돌·말 걸기 범위에 영향을 주지 않는다. 미니맵은 일반 게임 시간(`Time.deltaTime`)으로 움직인다.
+- 코드: `Runtime/OverworldMotion.cs`(걸은 거리 → 걸음·자세), `Runtime/MotionEffects.cs`(전투와 공유하는 `MotionPoses`·`MotionEffects`), `Runtime/BreathingSprite.cs`, `OverworldPlayer.Update`에서 `PlayerVisual.SetPose`로 적용. 기존 NPC 프리팹에는 `IBIIIS > Overworld > Create NPC Prefab`이 숨쉬기가 없을 때만 붙인다.
 
 ### 구조와 시간 분리
 
@@ -302,8 +313,8 @@ Editor 코드는 런타임과 별도 어셈블리(`IBIIIS.Editor`)에 있고, �
 
 ### 검증
 
-- 개발 검증: Unity 컴파일 완료, 콘솔 오류 0, EditMode 100/100 통과. 테스트 씬 생성 함수를 실행해 `Overworld/OverworldTest.unity`를 만들고, 열려 있던 씬이 바뀌거나 수정되지 않았음을 확인했다. 생성된 씬에서 플레이어(미니맵 플레이어 프리팹·설정·PlayerVisual 연결), 카메라(대상·MainCamera 태그·공용 카메라 각도), NPC(대사·안내 문구), 스테이지 입구(ID·전투 씬 경로·설정 오류 없음), 설정 에셋(카메라·입력 연결, 필수 액션 누락 없음)을 확인했다. 첫 실행에서 `Overworld` 폴더가 없으면 씬 경로를 만들지 못하던 결함을 찾아 고쳤다. NPC 2D 전환: NPC 프리팹·실루엣(256×256, PPU 256, 기준점 아래 중앙)을 만들고 기존 테스트 씬의 캡슐 NPC를 위치·이름·대사를 유지한 채 프리팹으로 바꿔 저장했으며, 쓰지 않게 된 `Placeholder_NPC.mat`을 지웠다. 클리어 깃발 2D 전환: 깃발 프리팹·그림(256×256, PPU 256, 기준점 아래 중앙)을 만들고 테스트 씬의 큐브 깃발을 같은 자리(바닥 높이)·꺼진 상태로 바꿔 입구에 다시 연결했으며, 쓰지 않게 된 `Placeholder_Cleared.mat`을 지웠다. EditMode 103/103 통과. Play 모드 확인은 하지 않았다.
-- 자동 테스트로 확인한 항목: 이동 입력별 스프라이트 방향(W 뒤, S 앞, A/D와 대각선 4종 옆, 데드존), 클리어 기록 저장·다시 읽기·중복 방지·빈 ID 거부·초기화, 읽을 수 없는 저장 파일의 `.corrupt` 보존, 복귀 위치를 돌아갈 씬에서 한 번만 돌려줌, 가장 가까운 상호작용 대상 선택(높이 무시·범위 밖·대사 없는 NPC 제외), 말풍선 줄 넘김·닫힘, 그림이 카메라와 나란히 서는지, NPC 프리팹의 그림·크기를 바꿔도 막힘 Collider·말 걸기 범위가 그대로인지(루트에는 렌더러 없음, 그림자 있음), 클리어 깃발이 클리어 기록이 있을 때만 켜지고 초기화하면 꺼지는지, 기본 키(W+A 정규화, F, 방향키)와 `Overworld` 맵이 없는 입력 에셋의 기본 배치 대체.
+- 개발 검증: Unity 컴파일 완료, 콘솔 오류 0, EditMode 100/100 통과. 테스트 씬 생성 함수를 실행해 `Overworld/OverworldTest.unity`를 만들고, 열려 있던 씬이 바뀌거나 수정되지 않았음을 확인했다. 생성된 씬에서 플레이어(미니맵 플레이어 프리팹·설정·PlayerVisual 연결), 카메라(대상·MainCamera 태그·공용 카메라 각도), NPC(대사·안내 문구), 스테이지 입구(ID·전투 씬 경로·설정 오류 없음), 설정 에셋(카메라·입력 연결, 필수 액션 누락 없음)을 확인했다. 첫 실행에서 `Overworld` 폴더가 없으면 씬 경로를 만들지 못하던 결함을 찾아 고쳤다. NPC 2D 전환: NPC 프리팹·실루엣(256×256, PPU 256, 기준점 아래 중앙)을 만들고 기존 테스트 씬의 캡슐 NPC를 위치·이름·대사를 유지한 채 프리팹으로 바꿔 저장했으며, 쓰지 않게 된 `Placeholder_NPC.mat`을 지웠다. 클리어 깃발 2D 전환: 깃발 프리팹·그림(256×256, PPU 256, 기준점 아래 중앙)을 만들고 테스트 씬의 큐브 깃발을 같은 자리(바닥 높이)·꺼진 상태로 바꿔 입구에 다시 연결했으며, 쓰지 않게 된 `Placeholder_Cleared.mat`을 지웠다. EditMode 103/103 통과. 걷기 손맛: 전투 손맛 코드에서 자세 계산과 먼지·잔상·소리를 공용으로 분리한 뒤 기존 103개가 그대로 통과함을 먼저 확인했고, 미니맵 걷기·NPC 숨쉬기를 더해 EditMode 107/107 통과. Play 모드 개발 검증(코드로 이동량·시간을 넣음): 실제 `OverworldTest` 씬에서 3칸 걷기 = 3걸음·먼지 1회, 그림 최고 0.125칸 뜀(전투 0.25의 절반), 멈출 때 납작함 1.11배·먼지, 2초 뒤 먼지 정리·원위치, NPC 숨쉬기 크기 변화, 콘솔 오류 없음을 확인했다. 실제 키보드로 걸어 본 느낌은 확인하지 않았다.
+- 자동 테스트로 확인한 항목: 이동 입력별 스프라이트 방향(W 뒤, S 앞, A/D와 대각선 4종 옆, 데드존), 클리어 기록 저장·다시 읽기·중복 방지·빈 ID 거부·초기화, 읽을 수 없는 저장 파일의 `.corrupt` 보존, 복귀 위치를 돌아갈 씬에서 한 번만 돌려줌, 가장 가까운 상호작용 대상 선택(높이 무시·범위 밖·대사 없는 NPC 제외), 말풍선 줄 넘김·닫힘, 걸음 수·자세가 프레임 분할과 무관함(1프레임 대 97프레임), 멈춤 납작함→숨쉬기·벽 부딪힘은 막힐 때 한 번만, 걷기 손맛 항목별 끄기와 공용 Enabled 끄기, NPC 숨쉬기는 크기만 바꾸고 위치는 그대로, 그림이 카메라와 나란히 서는지, NPC 프리팹의 그림·크기를 바꿔도 막힘 Collider·말 걸기 범위가 그대로인지(루트에는 렌더러 없음, 그림자 있음), 클리어 깃발이 클리어 기록이 있을 때만 켜지고 초기화하면 꺼지는지, 기본 키(W+A 정규화, F, 방향키)와 `Overworld` 맵이 없는 입력 에셋의 기본 배치 대체.
 - 사용자 확인 대기:
   1. 메뉴로 테스트 씬을 만들고 연다 → Play.
   2. W, S, A, D와 대각선 4방향으로 움직이며 스프라이트 방향(뒤/앞/옆)과 카메라 추적을 확인한다. 플레이어와 NPC 그림이 화면과 나란히 서 보이는지, NPC 크기·발밑 그림자가 플레이어와 어울리는지 확인한다.
@@ -311,4 +322,5 @@ Editor 코드는 런타임과 별도 어셈블리(`IBIIIS.Editor`)에 있고, �
   4. 주황 발판에서 F → 전투 진입 → 승리 → `클리어!` 팝업 → 확인 → 발판 위로 복귀, 깃발 표시와 `(클리어)` 안내를 확인한다.
   5. 다시 들어가 일부러 패배 → `패배` 팝업 → 확인 → 복귀를 확인한다.
   6. Play를 껐다 켜도 클리어 표시가 남는지, `Reset Clear Records` 후 사라지는지 확인한다.
-- 알려진 제한: 전투 중 미니맵으로 그냥 나가는 메뉴는 없다(승패 후에만 복귀). 미니맵 걷기 애니메이션은 없고 이동 그림 1장을 쓴다. NPC 그림(실루엣)·클리어 깃발·입구 발판은 임시이며 NPC는 정면 한 장만 쓴다.
+  7. 걷기 손맛: 걸을 때 통통 뛰는 크기·박자, 발소리 간격, 먼지 빈도, 멈출 때 납작함, 서 있을 때 숨쉬기, 벽·NPC에 밀었을 때 부딪힘, NPC 숨쉬기가 과하지 않은지 확인한다. 조정은 `Overworld Settings`의 걷기 손맛 값으로 한다.
+- 알려진 제한: 전투 중 미니맵으로 그냥 나가는 메뉴는 없다(승패 후에만 복귀). 걷기는 이동 그림 1장에 뜀·납작함 손맛을 더한 것이며 걷기 프레임 애니메이션은 없다. NPC 그림(실루엣)·클리어 깃발·입구 발판은 임시이며 NPC는 정면 한 장만 쓴다.

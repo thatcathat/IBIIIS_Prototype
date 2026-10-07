@@ -87,6 +87,7 @@ GameObject:
   - component: {fileID: 6124276712764135370}
   - component: {fileID: 2717792383972403757}
   - component: {fileID: 2972781911363800320}
+  - component: {fileID: 2865936644235614062}
   m_Layer: 0
   m_Name: Visual
   m_TagString: Untagged
@@ -181,6 +182,20 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: IBIIIS.Runtime::IBIIIS.CameraFacingSprite
   viewCamera: {fileID: 0}
+--- !u!114 &2865936644235614062
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5288282029276838340}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 09081de58d48c9a439eda090a50c6556, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: IBIIIS.Runtime::IBIIIS.BreathingSprite
+  settings: {fileID: 11400000, guid: f6692306c5f5bef4b912052e55506410, type: 2}
+  amountScale: 1
 --- !u!1001 &8632056961751401632
 PrefabInstance:
   m_ObjectHideFlags: 0

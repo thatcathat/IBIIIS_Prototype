@@ -66,7 +66,7 @@
 - **표시 전용**: 그림(스프라이트 자식)에만 뜸·밀림·납작함을 더한다. 논리 위치, 칸 판정, 이동 시간, 이동 표시는 그대로다. 이동 중 자세는 이번 행동의 진행도로만 계산하므로 프레임이 끊겨도, 되돌려도 원래 자세로 정확히 돌아온다. 되돌리기·재시작은 남은 착지 여운과 먼지를 즉시 지운다. 충돌·패배 연출이 플레이어를 맡는 동안은 적용하지 않는다.
 - **설정**: `Assets/IBIIIS/Settings/MotionFeedback.asset`(`IBIIIS > Player Settings`의 `Motion Feedback` 슬롯)에서 켜고 끄기, 뜀 높이, 웅크림·늘어남·착지 납작함 정도, 웅크림 구간, 착지 시간, 먼지 프리팹·크기·시간, 발소리, 부딪힘 거리·시간·납작함·소리를 바꾼다. 설정 에셋이 없으면 기본 수치로 움직임만 주고 먼지·소리는 없다.
 - **임시 에셋**: 먼지 `Assets/IBIIIS/Effects/LandingDust.png`·`.prefab`, 발소리 `Assets/IBIIIS/Audio/Footstep.wav`, 막힌 입력 `Assets/IBIIIS/Audio/Bump.wav`(모두 코드로 생성). 메뉴 `IBIIIS > Create Default Motion Feedback`가 없을 때만 만들고 연결이 비어 있을 때만 채운다.
-- **코드**: `Runtime/MotionFeedback.cs`(자세 계산·먼지·소리), `Runtime/MotionFeedbackSettings.cs`, `PlayerVisual.SetPose`(발 보정·카메라 향하기 뒤에 자세를 더함), `GridMapPlayer.UpdateMotion`·`TryActionOrBump`, `Editor/MotionFeedbackSetup.cs`.
+- **코드**: `Runtime/MotionFeedback.cs`(전투 행동 진행도 → 자세), `Runtime/MotionEffects.cs`(미니맵과 공유하는 자세 계산 `MotionPoses`와 먼지·잔상·소리 `MotionEffects`), `Runtime/MotionFeedbackSettings.cs`, `PlayerVisual.SetPose`(발 보정·카메라 향하기 뒤에 자세를 더함), `GridMapPlayer.UpdateMotion`·`TryActionOrBump`, `Editor/MotionFeedbackSetup.cs`.
 - **2단계(2026-10-06)**:
   - **대시**: 출발 칸 뒤로 먼지와 "휙" 소리. 이동 중 낮게 웅크리고(12%), 좌우 대시면 진행 방향으로 12도 기운다(위아래 대시는 웅크림만). 이동 구간의 25·50·75% 지점마다 현재 스프라이트를 복사한 하늘색 잔상을 남기고 0.22초에 걸쳐 사라진다(겹쳐 보이는 것은 보통 2개). 도착하면 진행 방향으로 먼지를 날리며 미끄러지듯 납작해졌다 돌아온다. 긴 프레임으로 지점을 여러 개 지나도 한꺼번에 남겨 잔상 수가 같다.
   - **구르기**: 낮게 뜨고(최고 0.15칸) 착지 때 납작함·먼지·발소리, 시작 때 "슥" 소리. 기존 2프레임 그림은 그대로 쓴다.

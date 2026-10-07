@@ -17,3 +17,11 @@ MonoBehaviour:
   cameraDistance: 9
   cameraFollowSharpness: 8
   inputActions: {fileID: -944628639613478452, guid: 95049c6615686ae40925f6e9f2ea355f, type: 3}
+  motionFeedback: {fileID: 11400000, guid: f6692306c5f5bef4b912052e55506410, type: 2}
+  strideLength: 0.9
+  walkHopScale: 0.5
+  footsteps: 1
+  dustEverySteps: 3
+  stopSquashScale: 0.6
+  breathing: 1
+  wallBump: 1

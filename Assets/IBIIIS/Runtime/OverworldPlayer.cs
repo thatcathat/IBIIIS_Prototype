@@ -14,11 +14,16 @@ namespace IBIIIS
         private OverworldInput input;
         private OverworldInteractable target;
         private bool frozen;
+        // 걷기 손맛(표시 전용)과 먼지·발소리를 둘 월드 기준 부모
+        private OverworldMotion motion;
+        private Transform effectsRoot;
         private PlayerFacing facing = PlayerFacing.Front;
         public OverworldSettings Settings => settings;
         public PlayerFacing Facing => visual != null ? visual.Facing : facing;
         public OverworldInteractable Target => target;
+        /// <summary>이번 프레임에 실제로 걸었으면 true(입력이 있어도 막혀 거의 못 움직이면 false).</summary>
         public bool IsMoving { get; private set; }
+        public OverworldMotion Motion => motion;
         private Camera ViewCamera => viewCamera != null ? viewCamera : Camera.main;
         /// <summary>이동 입력을 스프라이트 방향으로 바꾼다. 좌우 성분이 있으면(대각선 포함) 옆모습, 위만 누르면 뒷모습, 아래만 누르면 앞모습.
         /// 반환값은 PlayerVisual이 쓰는 격자 방향(+Y=뒤, -Y=앞, ±X=옆). 입력이 없으면 zero.</summary>
@@ -37,6 +42,9 @@ namespace IBIIIS
             if (visual == null) Debug.LogWarning($"[IBIIIS] {name}: 자식에 PlayerVisual이 없어 스프라이트 방향을 바꾸지 않습니다.", this);
             if (settings == null) Debug.LogWarning($"[IBIIIS] {name}: Overworld Settings가 없어 기본 이동 속도·키 배치를 사용합니다.", this);
             input = new OverworldInput(settings != null ? settings.InputActions : null); input.Enable();
+            effectsRoot = new GameObject("Overworld Motion Effects").transform;
+            UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(effectsRoot.gameObject, gameObject.scene);
+            motion = new OverworldMotion(settings != null ? settings.MotionFeedback : null, settings, effectsRoot, ViewCamera);
         }
         private void Start()
         {
@@ -53,30 +61,39 @@ namespace IBIIIS
         public void Teleport(Vector3 position, PlayerFacing value)
         {
             controller.enabled = false; transform.position = position; controller.enabled = true;
-            facing = value;
-            if (visual != null) visual.Show(PlayerAction.Move, DirectionOf(value), 0, false, ViewCamera);
+            facing = value; motion?.Reset();
+            if (visual != null) { visual.Show(PlayerAction.Move, DirectionOf(value), 0, false, ViewCamera); visual.SetPose(MotionPose.Identity, ViewCamera); }
         }
         /// <summary>입력을 멈춘다(전투 씬으로 넘어가는 동안 중복 입력 방지).</summary>
-        public void Freeze() { frozen = true; IsMoving = false; ShowVisual(Vector2Int.zero, false); }
+        public void Freeze()
+        {
+            frozen = true; IsMoving = false; ShowVisual(Vector2Int.zero, false);
+            if (visual != null) visual.SetPose(MotionPose.Identity, ViewCamera);
+        }
         private void Update()
         {
             if (frozen || input == null) return;
             var move = input.ReadMove();
             var direction = DirectionOf(move);
-            IsMoving = direction != Vector2Int.zero;
-            if (IsMoving)
+            var intended = Vector3.zero; var before = transform.position;
+            if (direction != Vector2Int.zero)
             {
                 float speed = settings != null ? settings.MoveSpeed : 3.5f;
-                controller.Move(new Vector3(move.x, 0, move.y) * (speed * Time.deltaTime));
+                intended = new Vector3(move.x, 0, move.y) * (speed * Time.deltaTime);
+                controller.Move(intended);
             }
+            var actual = transform.position - before; actual.y = 0;
+            IsMoving = direction != Vector2Int.zero && actual.magnitude >= intended.magnitude * .2f;
             ShowVisual(direction, IsMoving);
+            if (visual != null) visual.SetPose(motion.Tick(Time.deltaTime, transform.position, intended, actual), ViewCamera);
             UpdateTarget();
             if (target != null && input.InteractPressed()) target.Interact(this);
         }
         private void ShowVisual(Vector2Int direction, bool moving)
         {
             if (visual == null) return;
-            if (moving) { visual.Show(PlayerAction.Move, direction, 0, true, ViewCamera); facing = visual.Facing; }
+            // 막혀서 못 움직여도 누른 방향은 바라본다(그림은 대기).
+            if (direction != Vector2Int.zero) { visual.Show(PlayerAction.Move, direction, 0, moving, ViewCamera); facing = visual.Facing; }
             else visual.Show(PlayerAction.Wait, Vector2Int.zero, 0, false, ViewCamera);
         }
         private void UpdateTarget()
@@ -96,6 +113,12 @@ namespace IBIIIS
             var content = new GUIContent(label); var size = OverworldGui.Prompt.CalcSize(content);
             GUI.Box(new Rect(anchor.x - size.x / 2, anchor.y + 6, size.x, size.y), content, OverworldGui.Prompt);
         }
-        private void OnDestroy() { if (target != null) target.OnLeft(); input?.Dispose(); input = null; }
+        private void OnDestroy()
+        {
+            if (target != null) target.OnLeft();
+            input?.Dispose(); input = null;
+            motion?.Dispose(); motion = null;
+            if (effectsRoot != null) Destroy(effectsRoot.gameObject);
+        }
     }
 }

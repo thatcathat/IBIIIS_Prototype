@@ -13,6 +13,24 @@ namespace IBIIIS
         [SerializeField, Min(0), Tooltip("카메라가 따라가는 빠르기. 0이면 지연 없이 바로 붙습니다.")] private float cameraFollowSharpness = 8;
         [SerializeField, Tooltip("선택. 미니맵 키 배치 에셋. 액션 맵 'Overworld'와 Move(Vector2)·Interact(Button) 액션이 있어야 합니다. 비우면 코드의 기본 배치(WASD·방향키, F)를 사용합니다.")]
         private UnityEngine.InputSystem.InputActionAsset inputActions;
+        [Header("걷기 손맛 (표시 전용)")]
+        [SerializeField, Tooltip("선택. 뜀 높이·납작함·먼지·발소리·숨쉬기 등 공용 손맛 설정(전투와 같은 MotionFeedback 에셋). 비우면 기본 수치로, 먼지·발소리 없이 동작합니다. 이 에셋의 Enabled를 끄면 미니맵 손맛도 모두 꺼집니다.")]
+        private MotionFeedbackSettings motionFeedback;
+        [SerializeField, Min(.1f), Tooltip("한 걸음 길이(칸). 이 거리를 걸을 때마다 한 번 뛰고 발소리를 냅니다. 이동 속도와 무관하게 발과 이동이 맞습니다.")] private float strideLength = .9f;
+        [SerializeField, Range(0, 1), Tooltip("걸을 때 뜀 크기 배율(전투 1칸 뜀 대비). 높이·웅크림·늘어남에 함께 곱합니다. 0이면 걸음 뜀을 끕니다.")] private float walkHopScale = .5f;
+        [SerializeField, Tooltip("걸음마다 발소리를 냅니다(공용 설정의 Footstep Sound).")] private bool footsteps = true;
+        [SerializeField, Min(0), Tooltip("몇 걸음마다 발밑 먼지를 낼지. 0이면 걸을 때 먼지를 내지 않습니다(멈출 때 먼지는 별도).")] private int dustEverySteps = 3;
+        [SerializeField, Range(0, 1), Tooltip("멈출 때 착지처럼 납작해지는 정도의 배율(공용 Landing Squash 대비). 0이면 멈춤 반응과 멈춤 먼지를 끕니다.")] private float stopSquashScale = .6f;
+        [SerializeField, Tooltip("멈춰 있을 때 숨쉬기(공용 Breath Amount·Period).")] private bool breathing = true;
+        [SerializeField, Tooltip("벽·NPC에 막혀 거의 움직이지 못하면 그쪽으로 부딪히는 반응(공용 Bump 설정). 한 번 막힐 때 한 번만 냅니다.")] private bool wallBump = true;
+        public MotionFeedbackSettings MotionFeedback => motionFeedback;
+        public float StrideLength => Mathf.Max(.1f, strideLength);
+        public float WalkHopScale => Mathf.Clamp01(walkHopScale);
+        public bool Footsteps => footsteps;
+        public int DustEverySteps => Mathf.Max(0, dustEverySteps);
+        public float StopSquashScale => Mathf.Clamp01(stopSquashScale);
+        public bool Breathing => breathing;
+        public bool WallBump => wallBump;
         public float MoveSpeed => float.IsNaN(moveSpeed) || float.IsInfinity(moveSpeed) ? 3.5f : Mathf.Max(.1f, moveSpeed);
         public MapCameraSettings CameraSettings => cameraSettings;
         public float CameraDistance => Mathf.Max(1, cameraDistance);
