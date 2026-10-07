@@ -9,11 +9,13 @@ namespace IBIIIS
     public sealed class OverworldInput : IDisposable
     {
         public const string MapName = "Overworld";
-        public const string Move = "Move", Interact = "Interact";
+        public const string Move = "Move", Interact = "Interact", Dash = "Dash", Roll = "Roll";
         private static readonly string[] Required = { Move, Interact };
+        // 나중에 추가된 액션. 예전 에셋에 없으면 경고 없이 기본 키를 붙여 쓴다.
+        private static readonly (string name, string[] paths)[] Optional = { (Dash, new[] { "<Keyboard>/leftShift", "<Keyboard>/rightShift" }), (Roll, new[] { "<Keyboard>/space" }) };
         private readonly InputActionAsset asset;
         private readonly InputActionMap map;
-        /// <summary>기본 키 배치: WASD·방향키 자유 이동, F 상호작용. 에디터의 `IBIIIS > Overworld > Create Overworld Test Scene`이 같은 내용을 파일로 저장한다.</summary>
+        /// <summary>기본 키 배치: WASD·방향키 자유 이동, F 상호작용, Shift 누르고 있기 달리기(대시), Space 구르기. 에디터의 `IBIIIS > Overworld > Create Overworld Test Scene`이 같은 내용을 파일로 저장한다.</summary>
         public static InputActionAsset CreateDefaultAsset()
         {
             var created = ScriptableObject.CreateInstance<InputActionAsset>(); created.name = "OverworldInput";
@@ -22,7 +24,21 @@ namespace IBIIIS
             move.AddCompositeBinding("2DVector").With("Up", "<Keyboard>/w").With("Down", "<Keyboard>/s").With("Left", "<Keyboard>/a").With("Right", "<Keyboard>/d");
             move.AddCompositeBinding("2DVector").With("Up", "<Keyboard>/upArrow").With("Down", "<Keyboard>/downArrow").With("Left", "<Keyboard>/leftArrow").With("Right", "<Keyboard>/rightArrow");
             overworld.AddAction(Interact, InputActionType.Button, "<Keyboard>/f");
+            AddMissingOptional(overworld);
             return created;
+        }
+        /// <summary>대시·구르기처럼 나중에 추가된 액션이 맵에 없으면 기본 키로 추가한다. 추가했으면 true. 맵이 비활성일 때만 호출한다.</summary>
+        public static bool AddMissingOptional(InputActionMap overworld)
+        {
+            bool added = false;
+            foreach (var (name, paths) in Optional)
+            {
+                if (overworld.FindAction(name) != null) continue;
+                var action = overworld.AddAction(name, InputActionType.Button);
+                foreach (var path in paths) action.AddBinding(path);
+                added = true;
+            }
+            return added;
         }
         /// <summary>필수 액션이 없는 에셋이면 누락된 이름을 알려 준다. 모두 있으면 null.</summary>
         public static string FindMissingAction(InputActionAsset source)
@@ -41,6 +57,7 @@ namespace IBIIIS
                 asset = CreateDefaultAsset();
             }
             map = asset.FindActionMap(MapName, true);
+            AddMissingOptional(map);
         }
         public void Enable() { map.Enable(); }
         public void Disable() { map.Disable(); }
@@ -48,6 +65,9 @@ namespace IBIIIS
         /// <summary>이동 입력. 화면 기준 x=오른쪽, y=위(맵 +Z). 대각선은 길이 1로 정규화된다.</summary>
         public Vector2 ReadMove() => Vector2.ClampMagnitude(map.FindAction(Move, true).ReadValue<Vector2>(), 1);
         public bool InteractPressed() => map.FindAction(Interact, true).WasPressedThisFrame();
+        /// <summary>대시(달리기) 키를 누르고 있으면 true.</summary>
+        public bool DashHeld() => map.FindAction(Dash, true).IsPressed();
+        public bool RollPressed() => map.FindAction(Roll, true).WasPressedThisFrame();
         /// <summary>안내 문구용 첫 번째 바인딩 표시(예: "F").</summary>
         public string Key(string actionName)
         {

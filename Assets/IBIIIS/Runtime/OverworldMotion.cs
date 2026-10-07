@@ -22,8 +22,11 @@ namespace IBIIIS
         public int DustCount => effects.DustCount;
         public bool IsWalking => walking;
         /// <summary>이번 걸음에서 걸은 비율(0~1).</summary>
-        public float StrideProgress => strideTravel / Stride;
-        private float Stride => overworld != null ? overworld.StrideLength : .9f;
+        public float StrideProgress => strideTravel / stride;
+        // 이번 프레임의 걸음 길이(걷기/달리기)
+        private float stride = .9f;
+        private float WalkStride => overworld != null ? overworld.StrideLength : .9f;
+        private float RunStride => overworld != null ? overworld.RunStrideLength : 1.3f;
         private float HopScale => overworld != null ? overworld.WalkHopScale : .5f;
         private bool Enabled => settings.Enabled;
         /// <param name="effectsParent">먼지·효과음 오브젝트를 둘 부모(월드 기준). null이면 먼지·소리 없이 자세만 계산한다.</param>
@@ -36,8 +39,11 @@ namespace IBIIIS
         }
         /// <summary>매 프레임 호출한다. position은 이동 후 발밑(효과 부모 기준), intended는 입력으로 의도한 이번 프레임 이동량, actual은 실제 이동량(수평).
         /// 돌려준 자세를 PlayerVisual.SetPose에 넘긴다.</summary>
-        public MotionPose Tick(float seconds, Vector3 position, Vector3 intended, Vector3 actual)
+        public MotionPose Tick(float seconds, Vector3 position, Vector3 intended, Vector3 actual, bool running = false)
         {
+            // 걷기↔달리기가 바뀌어도 걸음 진행 비율은 이어지도록 남은 거리를 새 보폭에 맞춘다.
+            float next = running ? RunStride : WalkStride;
+            if (next != stride) { strideTravel *= next / stride; stride = next; }
             effects.Tick(seconds);
             if (!Enabled) { walking = false; landingTime = bumpTime = -1; strideTravel = 0; return MotionPose.Identity; }
             intended.y = 0; actual.y = 0;
@@ -50,7 +56,7 @@ namespace IBIIIS
                 blockedLatched = false;
                 if (!walking) { walking = true; strideTravel = 0; landingTime = bumpTime = -1; breathTime = 0; }
                 strideTravel += moved;
-                while (strideTravel >= Stride) { strideTravel -= Stride; Step(position, actual); }
+                while (strideTravel >= stride) { strideTravel -= stride; Step(position, actual); }
                 float k = HopScale;
                 return MotionPoses.Hop(StrideProgress, settings.HopHeight * k, settings.TakeoffSquash * k, settings.AirStretch * k, settings.TakeoffPortion);
             }
@@ -80,6 +86,26 @@ namespace IBIIIS
             }
             if (overworld != null && !overworld.Breathing) { breathTime = 0; return MotionPose.Identity; }
             return MotionPoses.Breath(breathTime += seconds, settings.BreathAmount, settings.BreathPeriod);
+        }
+        /// <summary>구르기를 시작할 때 부른다. 걷기 반응을 지우고 시작 효과음을 낸다.</summary>
+        public void BeginRoll()
+        {
+            walking = blockedLatched = false; strideTravel = 0; landingTime = bumpTime = -1; breathTime = 0;
+            if (Enabled) effects.Play(settings.RollSound, settings.RollVolume);
+        }
+        /// <summary>구르기 중 매 프레임 호출한다(Tick 대신). 전투와 같은 낮은 뜀 자세.</summary>
+        public MotionPose TickRoll(float seconds, float progress)
+        {
+            effects.Tick(seconds);
+            return Enabled ? MotionPoses.Hop(progress, settings.RollHopHeight, settings.TakeoffSquash, settings.AirStretch, settings.TakeoffPortion) : MotionPose.Identity;
+        }
+        /// <summary>구르기가 끝날 때(막혀서 일찍 끝날 때 포함) 부른다. 착지 납작함·발소리·먼지.</summary>
+        public void EndRoll(Vector3 position)
+        {
+            if (!Enabled) return;
+            landingTime = 0; landingSquash = settings.RollLandingSquash;
+            effects.Play(settings.FootstepSound, settings.FootstepVolume);
+            effects.SpawnDust(settings.LandingDust, position, Vector3.zero, settings.DustScale, settings.DustTime, 1);
         }
         private void Step(Vector3 position, Vector3 heading)
         {

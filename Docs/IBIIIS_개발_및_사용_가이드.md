@@ -32,7 +32,7 @@
 | 작업 | 기록 위치 | 상태 |
 |---|---|---|
 | 프로젝트 실행 | 아래 맵 편집·기본 이동 절차 | 개발 검증 완료, 플레이 사용자 확인 대기 |
-| 테스트 실행 | 아래 자동 테스트 | EditMode 107/107 통과 (2026-10-07, 미니맵 브랜치) |
+| 테스트 실행 | 아래 자동 테스트 | EditMode 115/115 통과 (2026-10-07, 미니맵 브랜치) |
 | 플레이어 외형 교체 | 아래 공용 플레이어 설정, 플레이어 스프라이트 외형 | 스프라이트 외형 구현·자동 검증 완료, 화면 사용자 확인 대기. 반복 애니메이션 미구현 |
 | 적 설정 편집·배치 | 전투 및 적 배치 가이드 | 구현·자동 검증 완료, 화면 사용자 확인 대기 |
 | 새 적 추가 | 설정 생성 메뉴, ID, 패턴·외형 연결, 등장 방법 | 미작성·미검증. 적 팔레트는 루트에 EnemyDefinition이 있는 프리팹을 자동 수집한다 |
@@ -102,7 +102,7 @@ Editor 코드는 런타임과 별도 어셈블리(`IBIIIS.Editor`)에 있고, �
 ## 자동 테스트
 
 - `Window > General > Test Runner > EditMode`에서 `IBIIIS.Tests`를 실행한다. 자동 테스트는 Play를 조작하지 않고 EditMode에서 실행한다.
-- 최근 결과: 컴파일 완료, EditMode 107/107 통과(2026-10-07, `feature/overworld-minimap` 브랜치. 미니맵 테스트 15개 포함). 기능별로 확인한 내용은 각 기능 항목의 검증에 기록한다.
+- 최근 결과: 컴파일 완료, EditMode 115/115 통과(2026-10-07, `feature/overworld-minimap` 브랜치. 미니맵 테스트 23개 포함). 기능별로 확인한 내용은 각 기능 항목의 검증에 기록한다.
 - UnityMCP가 연결되지 않았을 때는 Unity가 만든 `IBIIIS.*.csproj`를 `dotnet build`해 컴파일만 확인할 수 있다. 이것은 Unity 컴파일·테스트 실행을 대신하지 않는다.
 - 에이전트는 Unity 에디터가 열려 UnityMCP가 연결되어 있을 때 컴파일 확인과 테스트 실행을 할 수 있다. Player 빌드는 실행하지 않았다.
 
@@ -174,7 +174,7 @@ Editor 코드는 런타임과 별도 어셈블리(`IBIIIS.Editor`)에 있고, �
 
 ### 공용 카메라 설정
 
-- `Assets/IBIIIS/Settings/GlobalCameraSettings.asset`을 선택해 Inspector에서 편집한다. Orthographic 끔 = Perspective, Rotation = `(40, 0, 0)`, Field Of View = `75`가 현재 값이다(사용자가 의도한 값, 사용자 확인 2026-10-07). 정면은 좌우 회전 Y=0을 의미하며, X는 바닥을 내려다보는 각도다. 미니맵 카메라도 이 설정을 함께 쓴다.
+- `Assets/IBIIIS/Settings/GlobalCameraSettings.asset`을 선택해 Inspector에서 편집한다. Orthographic 끔 = Perspective, Rotation = `(40, 0, 0)`, Field Of View = `50`이 현재 값이다(사용자가 2026-10-07 75에서 50으로 변경). 정면은 좌우 회전 Y=0을 의미하며, X는 바닥을 내려다보는 각도다. 미니맵 카메라는 따로 `OverworldCameraSettings`를 쓴다(아래 미니맵 편집 항목).
 - `StarterMap_Test.unity`와 새로 생성하는 테스트 씬은 이 에셋을 참조한다. 별도로 만든 기존 씬은 Grid Map Player의 Camera Settings에 같은 에셋을 연결하고 Auto Fit Camera를 켜면 함께 적용된다.
 - Perspective에서는 맵 크기·화각·화면 비율에 따라 거리를, Orthographic에서는 Size를 계산한다. 그리드 범위와 플레이어 표시 높이를 포함하며 임의로 매우 크게 만든 외형까지 자동으로 맞추지는 않는다.
 - Auto Fit Camera를 끄면 씬 Camera의 개별 설정을 유지한다. 공용 값은 설정 에셋에, 설정 참조와 개별 카메라 값은 씬에 저장한다.
@@ -266,8 +266,8 @@ Editor 코드는 런타임과 별도 어셈블리(`IBIIIS.Editor`)에 있고, �
 
 1. Unity에서 메뉴 `IBIIIS > Overworld > Create Overworld Test Scene`을 누른다. 이름 없는 씬이 열려 있으면 먼저 저장하라는 안내가 나온다. 현재 열린 씬은 바꾸지 않는다.
 2. 다음을 만든다. 이미 있는 에셋·연결은 덮어쓰지 않는다.
-   - `Assets/IBIIIS/Settings/OverworldSettings.asset`: 이동 속도, 카메라, 입력 설정. 비어 있는 카메라 설정에는 GlobalCameraSettings, 비어 있는 입력에는 아래 입력 에셋을 연결한다.
-   - `Assets/IBIIIS/Settings/OverworldInput.inputactions`: 액션 맵 `Overworld`(Move = WASD·방향키, Interact = F).
+   - `Assets/IBIIIS/Settings/OverworldSettings.asset`: 이동 속도, 카메라, 입력 설정. 비어 있는 카메라 설정에는 미니맵 전용 `Settings/OverworldCameraSettings.asset`(처음 만들 때 GlobalCameraSettings의 각도를 따르고 화각만 30), 비어 있는 입력에는 아래 입력 에셋을 연결한다.
+   - `Assets/IBIIIS/Settings/OverworldInput.inputactions`: 액션 맵 `Overworld`(Move = WASD·방향키, Interact = F, Dash = Shift(누르고 있으면 달리기), Roll = Space). 이미 있는 파일에 Dash·Roll이 없으면 그 둘만 기본 키로 추가하고 다른 바인딩은 그대로 둔다. 실행 중에도 예전 파일에 없는 Dash·Roll은 경고 없이 기본 키로 채워 쓴다.
    - `Assets/IBIIIS/Characters/NPC/NPC.prefab`과 임시 실루엣 `NPC_Placeholder.png`: NPC 기본 프리팹(아래 NPC 추가). 메뉴 `IBIIIS > Overworld > Create NPC Prefab`으로 따로 만들 수도 있다.
    - `Assets/IBIIIS/Overworld/ClearedFlag.prefab`과 임시 그림 `ClearedFlag.png`: 카메라를 바라보는 클리어 깃발 스프라이트.
    - `Assets/IBIIIS/Characters/Player/OverworldPlayer.prefab`: CharacterController + OverworldPlayer, 자식에 GlobalPlayerSettings의 플레이어 외형 프리팹을 중첩한다. 외형 프리팹이 없으면 만들지 않고 안내한다.
@@ -277,6 +277,10 @@ Editor 코드는 런타임과 별도 어셈블리(`IBIIIS.Editor`)에 있고, �
 ### 조작과 흐름
 
 - WASD/방향키로 자유 이동한다(대각선 포함, 대각선 속도는 직선과 같다). 위만 누르면 뒷모습, 아래만 누르면 앞모습, 좌우가 섞이면(대각선 포함) 옆모습이다. 멈추면 마지막 방향의 대기 그림을 유지한다.
+- **달리기(Shift 누르고 있기)**: 방향 키와 함께 Shift를 누르고 있는 동안 달린다(`Run Speed` 6칸/초, 걷기 3.5, 임시). 떼면 바로 걷기로 돌아온다. Shift만 누르면 움직이지 않는다. 달리는 동안 그림은 `PlayerVisual`의 대시 슬롯(현재 좌우는 대시 그림, 앞뒤는 사용자가 연결한 이동 그림), 손맛은 걷기와 같되 보폭이 길다(`Run Stride Length` 1.3칸, 임시). 걷기↔달리기가 바뀌어도 걸음 박자는 이어진다. (2026-10-07: 한 번 누르면 2.5칸 튀어 나가는 대시에서 사용자 요청으로 홀드식 달리기로 바꿨다.)
+- **구르기(Space)**: 누르는 순간 이동 방향(대각선 포함, 멈춰 있으면 바라보는 방향)으로 1.5칸·0.35초(임시) 나아간다. 처음에 걷기의 약 2.4배 속도로 튀어 나가 감속하며 멈추고(`Roll Ease Out` 1), 멈춘 뒤 0.2초(`Roll Recovery`, 임시) 동안 일어나는 중이라 이동·달리기·구르기·상호작용 입력을 모두 무시한다(벽에 막혀 일찍 끝나도 같음). 진행 중에는 방향을 바꾸거나 걷거나 상호작용할 수 없고, 벽·NPC에 막히면 그 자리에서 끝난다. 회복 뒤 0.25초(`Evade Cooldown`, 임시) 동안은 다시 구를 수 없다. 무적·판정 같은 전투 규칙과는 무관한 이동 동작이다.
+  - 그림: 전투의 구르기 대각 그림을 쓴다. 구르기 방향에 좌우 성분이 없으면 바라보던 쪽(왼쪽이 아니면 오른쪽), 앞뒤 성분이 없으면 앞쪽 대각 그림이다.
+  - 손맛: 전투와 같은 공용 값(시작 효과음, 낮은 뜀, 착지 납작함·먼지).
 - 상호작용 대상 범위에 들어가면 대상 위에 `[F] 말 걸기`, `[F] 프로토타입 스테이지 입장` 같은 안내가 나온다. 범위가 겹치면 가장 가까운 대상 하나만 고른다.
 - NPC: F를 누를 때마다 머리 위 말풍선에 대사가 한 줄씩 나오고 마지막 줄 다음에 닫힌다. 범위를 벗어나도 닫힌다. 말하는 동안에도 움직일 수 있다.
 - 스테이지 입구: F를 누르면 연결된 전투 씬으로 바뀐다. 전투는 기존 규칙·조작 그대로다.
@@ -289,7 +293,8 @@ Editor 코드는 런타임과 별도 어셈블리(`IBIIIS.Editor`)에 있고, �
 
 ### 편집 항목
 
-- **Overworld Settings**(`IBIIIS > Overworld > Overworld Settings`): `Move Speed`(칸/초, 임시 3.5), `Camera Settings`(각도·화각, 비우면 카메라 현재 값), `Camera Distance`(칸, 임시 9), `Camera Follow Sharpness`(0이면 지연 없음, 임시 8), `Input Actions`. 걷기 손맛(아래 항목) 값도 여기에 있다.
+- **Overworld Settings**(`IBIIIS > Overworld > Overworld Settings`): `Move Speed`(칸/초, 임시 3.5), `Camera Settings`(각도·화각, 기본 `OverworldCameraSettings`: 회전 40°·화각 30, 비우면 카메라 현재 값), `Camera View Height`(플레이어 위치에서 화면 세로로 보이는 범위, 칸, 임시 14), `Camera Follow Sharpness`(0이면 지연 없음, 임시 8), `Input Actions`, 달리기·구르기(`Run Speed` 6칸/초, `Run Stride Length` 1.3칸, `Roll Distance` 1.5칸, `Roll Duration` 0.35초, `Roll Ease Out` 1(0이면 일정한 속도), `Roll Recovery` 0.2초, `Evade Cooldown` 0.25초, 모두 임시). 걷기 손맛(아래 항목) 값도 여기에 있다.
+- **미니맵 카메라 화각**(2026-10-07): 화각 75에서는 화면 가장자리 바닥이 늘어나 보이는 왜곡이 커서 미니맵만 화각 30으로 좁혔다(전투는 별도의 GlobalCameraSettings, 현재 50). 카메라 거리는 `Camera View Height`와 화각으로 자동 계산하므로(화각 30이면 약 26칸, 75면 약 9칸) 화각을 바꿔도 화면에 담기는 범위는 같고 왜곡만 줄어든다. 화각은 `Assets/IBIIIS/Settings/OverworldCameraSettings.asset`의 Field Of View에서, 보이는 범위는 `Camera View Height`에서 바꾼다. 이전의 `Camera Distance`(거리 직접 지정)는 이 항목으로 바뀌었고, 기본 14칸은 이전 거리 9·화각 75와 거의 같은 범위다. Orthographic을 켜면 Size가 보이는 범위의 절반으로 맞춰진다. 전투와 같게 하려면 `Camera Settings`에 GlobalCameraSettings를 연결한다.
 - **NPC 추가**: `Assets/IBIIIS/Characters/NPC/NPC.prefab`을 씬에 끌어다 놓고, 루트의 `NpcSpeaker`에서 `Display Name`, `Lines`(항목 하나가 말풍선 한 번), `Radius`(상호작용 거리, 칸), `Label Height`(말풍선 높이, 칸)를 정한다. 그림은 자식 `Visual`의 SpriteRenderer 스프라이트를, 크기는 `Visual`의 Scale(현재 1.5)을 바꾼다. 막힘은 루트의 보이지 않는 CapsuleCollider, 말 걸기 범위는 바닥 평면 거리로 판정하므로 그림·크기를 바꿔도 달라지지 않는다. NPC마다 다른 그림을 오래 쓸 거라면 프리팹 변형(Prefab Variant)으로 만든다. 지금은 정면 한 장만 쓰며 돌아보기는 없다.
 - **카메라 바라보기**: 플레이어·적·NPC 그림은 모두 카메라 회전과 같은 회전으로 세워진다(`CameraFacingSprite`). NPC는 Play 중 매 프레임 맞추며, 편집 중 Scene에서는 똑바로 서 있는 상태로 보인다.
 - **스테이지 입구 추가**: 오브젝트에 `StageEntrance`를 붙이고 `Stage Id`(필수, 클리어 기록 키. 정한 뒤 바꾸지 않음), `Display Name`, `Battle Scene`(필수, 맵과 함께 만든 전투 씬), `Cleared Indicator`(선택, 보통 자식으로 둔 `Overworld/ClearedFlag.prefab`을 꺼 둔 채 연결)를 정한다. Inspector가 ID 누락·중복과 빌드 씬 목록 누락을 알려 준다. 에디터 Play에서는 빌드 씬 목록에 없어도 들어갈 수 있으나 빌드한 게임에서는 `빌드 씬 목록에 추가`가 필요하다. 미니맵 씬도 같다.
@@ -313,7 +318,7 @@ Editor 코드는 런타임과 별도 어셈블리(`IBIIIS.Editor`)에 있고, �
 
 ### 검증
 
-- 개발 검증: Unity 컴파일 완료, 콘솔 오류 0, EditMode 100/100 통과. 테스트 씬 생성 함수를 실행해 `Overworld/OverworldTest.unity`를 만들고, 열려 있던 씬이 바뀌거나 수정되지 않았음을 확인했다. 생성된 씬에서 플레이어(미니맵 플레이어 프리팹·설정·PlayerVisual 연결), 카메라(대상·MainCamera 태그·공용 카메라 각도), NPC(대사·안내 문구), 스테이지 입구(ID·전투 씬 경로·설정 오류 없음), 설정 에셋(카메라·입력 연결, 필수 액션 누락 없음)을 확인했다. 첫 실행에서 `Overworld` 폴더가 없으면 씬 경로를 만들지 못하던 결함을 찾아 고쳤다. NPC 2D 전환: NPC 프리팹·실루엣(256×256, PPU 256, 기준점 아래 중앙)을 만들고 기존 테스트 씬의 캡슐 NPC를 위치·이름·대사를 유지한 채 프리팹으로 바꿔 저장했으며, 쓰지 않게 된 `Placeholder_NPC.mat`을 지웠다. 클리어 깃발 2D 전환: 깃발 프리팹·그림(256×256, PPU 256, 기준점 아래 중앙)을 만들고 테스트 씬의 큐브 깃발을 같은 자리(바닥 높이)·꺼진 상태로 바꿔 입구에 다시 연결했으며, 쓰지 않게 된 `Placeholder_Cleared.mat`을 지웠다. EditMode 103/103 통과. 걷기 손맛: 전투 손맛 코드에서 자세 계산과 먼지·잔상·소리를 공용으로 분리한 뒤 기존 103개가 그대로 통과함을 먼저 확인했고, 미니맵 걷기·NPC 숨쉬기를 더해 EditMode 107/107 통과. Play 모드 개발 검증(코드로 이동량·시간을 넣음): 실제 `OverworldTest` 씬에서 3칸 걷기 = 3걸음·먼지 1회, 그림 최고 0.125칸 뜀(전투 0.25의 절반), 멈출 때 납작함 1.11배·먼지, 2초 뒤 먼지 정리·원위치, NPC 숨쉬기 크기 변화, 콘솔 오류 없음을 확인했다. 실제 키보드로 걸어 본 느낌은 확인하지 않았다.
+- 개발 검증: Unity 컴파일 완료, 콘솔 오류 0, EditMode 100/100 통과. 테스트 씬 생성 함수를 실행해 `Overworld/OverworldTest.unity`를 만들고, 열려 있던 씬이 바뀌거나 수정되지 않았음을 확인했다. 생성된 씬에서 플레이어(미니맵 플레이어 프리팹·설정·PlayerVisual 연결), 카메라(대상·MainCamera 태그·공용 카메라 각도), NPC(대사·안내 문구), 스테이지 입구(ID·전투 씬 경로·설정 오류 없음), 설정 에셋(카메라·입력 연결, 필수 액션 누락 없음)을 확인했다. 첫 실행에서 `Overworld` 폴더가 없으면 씬 경로를 만들지 못하던 결함을 찾아 고쳤다. NPC 2D 전환: NPC 프리팹·실루엣(256×256, PPU 256, 기준점 아래 중앙)을 만들고 기존 테스트 씬의 캡슐 NPC를 위치·이름·대사를 유지한 채 프리팹으로 바꿔 저장했으며, 쓰지 않게 된 `Placeholder_NPC.mat`을 지웠다. 클리어 깃발 2D 전환: 깃발 프리팹·그림(256×256, PPU 256, 기준점 아래 중앙)을 만들고 테스트 씬의 큐브 깃발을 같은 자리(바닥 높이)·꺼진 상태로 바꿔 입구에 다시 연결했으며, 쓰지 않게 된 `Placeholder_Cleared.mat`을 지웠다. EditMode 103/103 통과. 걷기 손맛: 전투 손맛 코드에서 자세 계산과 먼지·잔상·소리를 공용으로 분리한 뒤 기존 103개가 그대로 통과함을 먼저 확인했고, 미니맵 걷기·NPC 숨쉬기를 더해 EditMode 107/107 통과. 홀드식 달리기: 대시를 2.5칸 튀어 나가는 동작에서 Shift를 누르고 있는 동안 달리기로 바꿨다. EditMode 115/115 통과(달리기 보폭·걷기 전환 시 걸음 박자 유지, Shift 누르고 있기·떼기 입력, 구르기 손맛만 남긴 모션). Play 모드 개발 검증(입력 주입, 0.02초 프레임): 걷기 3.50칸/초, W·D+Shift 6.00칸/초(위로는 `c_move_back`, 옆으로는 `c_dash_right`), Shift를 떼면 3.50칸/초, Shift만 누르면 정지, Space 구르기 정상, 콘솔 오류 없음. 이전 대시 기록은 폐기된 동작의 기록이다. 구르기 감속·회복: EditMode 114/114 통과(신규 1: 시간 절반에 거리 3/4·첫 구간 속도 평균의 약 2배·끝 구간 거의 정지, 프레임을 나눠도 총 1.5칸, 회복 중 쿨다운이 줄지 않고 회복 뒤 이어서 감소, 감속 0은 일정한 속도). Play 모드 개발 검증(입력 주입, 0.02초 프레임): 구르기 18프레임·총 1.500칸, 프레임당 이동이 걷기(0.07칸)의 약 2.4배에서 0.001칸까지 줄어듦, 회복 0.2초(11프레임) 동안 D를 누른 채 Shift·Space·F를 눌러도 이동·동작 없음, 회복 뒤 바로 걷기 재개, 콘솔 오류 없음. 대시·구르기: EditMode 113/113 통과(신규 5: 대시 거리가 프레임 분할과 무관·쿨다운 공유·막히면 일찍 끝남, 방향 결정과 구르기 대각 그림 선택, 대시 기울기·잔상 수·구르기 뜀·끝 납작함, Shift·Space 입력, 예전 입력 파일의 기본 키 보충). Play 모드 개발 검증(Unity 입력 이벤트 주입, 0.02초 프레임을 코드로 진행): `OverworldTest`에서 D+Shift 대시 2.5칸·12프레임·잔상 3개·쿨다운 시작, 멈춘 상태 Space 구르기가 바라보는 방향으로 1.5칸, NPC 쪽 대시는 1.6칸 거리에서 0.92칸 나아가 몸에 막혀 멈춤, 콘솔 오류 없음. 기존 입력 파일에 Dash·Roll만 추가된 것을 확인했다. 실제 조작감은 사용자 확인 대기다. 미니맵 화각 30 전환: 미니맵 전용 카메라 설정을 만들어 연결하고 테스트 씬 카메라를 갱신했으며, 화각 75·30 모두 플레이어가 화면 가운데이고 세로 14칸이 화면 높이에 맞는지 자동 테스트로 확인했다(EditMode 108/108). 테스트 씬 카메라로 화각 30·75 화면을 캡처해 비교했다. Play 모드 개발 검증(코드로 이동량·시간을 넣음): 실제 `OverworldTest` 씬에서 3칸 걷기 = 3걸음·먼지 1회, 그림 최고 0.125칸 뜀(전투 0.25의 절반), 멈출 때 납작함 1.11배·먼지, 2초 뒤 먼지 정리·원위치, NPC 숨쉬기 크기 변화, 콘솔 오류 없음을 확인했다. 실제 키보드로 걸어 본 느낌은 확인하지 않았다.
 - 자동 테스트로 확인한 항목: 이동 입력별 스프라이트 방향(W 뒤, S 앞, A/D와 대각선 4종 옆, 데드존), 클리어 기록 저장·다시 읽기·중복 방지·빈 ID 거부·초기화, 읽을 수 없는 저장 파일의 `.corrupt` 보존, 복귀 위치를 돌아갈 씬에서 한 번만 돌려줌, 가장 가까운 상호작용 대상 선택(높이 무시·범위 밖·대사 없는 NPC 제외), 말풍선 줄 넘김·닫힘, 걸음 수·자세가 프레임 분할과 무관함(1프레임 대 97프레임), 멈춤 납작함→숨쉬기·벽 부딪힘은 막힐 때 한 번만, 걷기 손맛 항목별 끄기와 공용 Enabled 끄기, NPC 숨쉬기는 크기만 바꾸고 위치는 그대로, 그림이 카메라와 나란히 서는지, NPC 프리팹의 그림·크기를 바꿔도 막힘 Collider·말 걸기 범위가 그대로인지(루트에는 렌더러 없음, 그림자 있음), 클리어 깃발이 클리어 기록이 있을 때만 켜지고 초기화하면 꺼지는지, 기본 키(W+A 정규화, F, 방향키)와 `Overworld` 맵이 없는 입력 에셋의 기본 배치 대체.
 - 사용자 확인 대기:
   1. 메뉴로 테스트 씬을 만들고 연다 → Play.
@@ -323,4 +328,5 @@ Editor 코드는 런타임과 별도 어셈블리(`IBIIIS.Editor`)에 있고, �
   5. 다시 들어가 일부러 패배 → `패배` 팝업 → 확인 → 복귀를 확인한다.
   6. Play를 껐다 켜도 클리어 표시가 남는지, `Reset Clear Records` 후 사라지는지 확인한다.
   7. 걷기 손맛: 걸을 때 통통 뛰는 크기·박자, 발소리 간격, 먼지 빈도, 멈출 때 납작함, 서 있을 때 숨쉬기, 벽·NPC에 밀었을 때 부딪힘, NPC 숨쉬기가 과하지 않은지 확인한다. 조정은 `Overworld Settings`의 걷기 손맛 값으로 한다.
+  8. 달리기·구르기: 방향 키와 Shift를 누르고 있어 달리기(속도·보폭·앞뒤 그림), 떼면 바로 걷기, 걸으면서·멈춰서 Space(바라보는 방향)·대각선 구르기, 벽·NPC 쪽으로 구를 때 막히는지, 연속 구르기 간격, 구르기가 튀어 나갔다 멈추는 느낌과 멈춘 뒤 0.2초 동안 움직일 수 없는 답답함 정도를 확인한다.
 - 알려진 제한: 전투 중 미니맵으로 그냥 나가는 메뉴는 없다(승패 후에만 복귀). 걷기는 이동 그림 1장에 뜀·납작함 손맛을 더한 것이며 걷기 프레임 애니메이션은 없다. NPC 그림(실루엣)·클리어 깃발·입구 발판은 임시이며 NPC는 정면 한 장만 쓴다.

@@ -56,22 +56,48 @@ namespace IBIIIS.Editor
                 AssetDatabase.CreateAsset(settings, AssetPaths.OverworldSettings);
             }
             var so = new SerializedObject(settings);
-            Fill(so, "cameraSettings", MapEditorSetup.EnsureCameraSettings());
+            Fill(so, "cameraSettings", EnsureCameraSettings());
             Fill(so, "inputActions", EnsureInput());
             Fill(so, "motionFeedback", AssetDatabase.LoadAssetAtPath<MotionFeedbackSettings>(AssetPaths.MotionFeedback));
             AssetDatabase.SaveAssetIfDirty(settings);
             return settings;
         }
+        /// <summary>미니맵 전용 카메라 설정. 처음 만들 때 전투 공용 설정의 각도를 따르고 화각만 30으로 좁혀 가장자리 왜곡을 줄인다. 이미 있으면 그대로 쓴다.</summary>
+        public static MapCameraSettings EnsureCameraSettings()
+        {
+            var existing = AssetDatabase.LoadAssetAtPath<MapCameraSettings>(AssetPaths.OverworldCameraSettings);
+            if (existing != null) return existing;
+            var created = Object.Instantiate(MapEditorSetup.EnsureCameraSettings());
+            var so = new SerializedObject(created); so.FindProperty("fieldOfView").floatValue = 30; so.ApplyModifiedPropertiesWithoutUndo();
+            AssetDatabase.CreateAsset(created, AssetPaths.OverworldCameraSettings); AssetDatabase.SaveAssetIfDirty(created);
+            return created;
+        }
         public static InputActionAsset EnsureInput()
         {
             var existing = AssetDatabase.LoadAssetAtPath<InputActionAsset>(AssetPaths.OverworldInput);
-            if (existing != null) return existing;
+            if (existing != null) { AddMissingInputActions(); return AssetDatabase.LoadAssetAtPath<InputActionAsset>(AssetPaths.OverworldInput); }
             Directory.CreateDirectory(AssetPaths.Settings);
             var created = OverworldInput.CreateDefaultAsset();
             try { File.WriteAllText(AssetPaths.OverworldInput, created.ToJson()); }
             finally { Object.DestroyImmediate(created); }
             AssetDatabase.ImportAsset(AssetPaths.OverworldInput, ImportAssetOptions.ForceUpdate);
             return AssetDatabase.LoadAssetAtPath<InputActionAsset>(AssetPaths.OverworldInput);
+        }
+        /// <summary>이전에 만든 입력 파일에 대시·구르기처럼 나중에 추가된 액션이 없으면 기본 키로 추가한다. 다른 액션·바인딩은 그대로 둔다.</summary>
+        public static bool AddMissingInputActions()
+        {
+            if (!File.Exists(AssetPaths.OverworldInput)) return false;
+            var asset = InputActionAsset.FromJson(File.ReadAllText(AssetPaths.OverworldInput));
+            try
+            {
+                var map = asset.FindActionMap(OverworldInput.MapName);
+                if (map == null || !OverworldInput.AddMissingOptional(map)) return false;
+                File.WriteAllText(AssetPaths.OverworldInput, asset.ToJson());
+                AssetDatabase.ImportAsset(AssetPaths.OverworldInput, ImportAssetOptions.ForceUpdate);
+                Debug.Log($"[IBIIIS] {AssetPaths.OverworldInput}에 빠진 미니맵 액션(대시·구르기)을 기본 키로 추가했습니다.");
+                return true;
+            }
+            finally { Object.DestroyImmediate(asset); }
         }
         /// <summary>미니맵 플레이어 프리팹: CharacterController + OverworldPlayer, 자식에 공용 플레이어 외형(PlayerVisual) 중첩 프리팹.</summary>
         public static GameObject EnsurePlayerPrefab(OverworldSettings settings)

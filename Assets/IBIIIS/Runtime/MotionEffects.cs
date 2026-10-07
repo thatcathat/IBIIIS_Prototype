@@ -17,6 +17,15 @@ namespace IBIIIS
             float air = Mathf.Sin(Mathf.PI * (p - takeoffPortion) / (1 - takeoffPortion));
             return WithSquash(pose, -airStretch * air);
         }
+        /// <summary>대시 자세: 시작·끝 15% 구간에서 부드럽게 들어갔다 빠지며, 그 사이 낮게 웅크리고 좌우 대시(directionX ≠ 0)면 진행 방향으로 기운다.</summary>
+        public static MotionPose Dash(float progress, int directionX, float squash, float lean)
+        {
+            float p = Mathf.Clamp01(progress);
+            float e = Mathf.Clamp01(Mathf.Min(p, 1 - p) / .15f); e = e * e * (3 - 2 * e);
+            var pose = Squashed(squash * e);
+            pose.Tilt = -Mathf.Sign(directionX) * (directionX != 0 ? 1 : 0) * lean * e;
+            return pose;
+        }
         /// <summary>숨쉬기: 주기마다 위아래로 살짝 늘었다 줄어든다. 시간 0에서 원래 자세.</summary>
         public static MotionPose Breath(float time, float amount, float period)
             => amount <= 0 || period <= 0 ? MotionPose.Identity : Squashed(-amount * Mathf.Sin(2 * Mathf.PI * time / period));

@@ -17,13 +17,18 @@ namespace IBIIIS
         // 걷기 손맛(표시 전용)과 먼지·발소리를 둘 월드 기준 부모
         private OverworldMotion motion;
         private Transform effectsRoot;
+        // 구르기 진행(이동량·회복·쿨다운). 진행·회복 중에는 걷기·상호작용 입력을 받지 않는다.
+        private readonly OverworldEvade evade = new OverworldEvade();
         private PlayerFacing facing = PlayerFacing.Front;
         public OverworldSettings Settings => settings;
         public PlayerFacing Facing => visual != null ? visual.Facing : facing;
         public OverworldInteractable Target => target;
         /// <summary>이번 프레임에 실제로 걸었으면 true(입력이 있어도 막혀 거의 못 움직이면 false).</summary>
         public bool IsMoving { get; private set; }
+        /// <summary>대시 키를 누른 채 달리고 있으면 true.</summary>
+        public bool IsRunning { get; private set; }
         public OverworldMotion Motion => motion;
+        public OverworldEvade Evade => evade;
         private Camera ViewCamera => viewCamera != null ? viewCamera : Camera.main;
         /// <summary>이동 입력을 스프라이트 방향으로 바꾼다. 좌우 성분이 있으면(대각선 포함) 옆모습, 위만 누르면 뒷모습, 아래만 누르면 앞모습.
         /// 반환값은 PlayerVisual이 쓰는 격자 방향(+Y=뒤, -Y=앞, ±X=옆). 입력이 없으면 zero.</summary>
@@ -32,6 +37,19 @@ namespace IBIIIS
             int x = Mathf.Abs(move.x) >= deadZone ? (move.x > 0 ? 1 : -1) : 0;
             int y = Mathf.Abs(move.y) >= deadZone ? (move.y > 0 ? 1 : -1) : 0;
             return x != 0 ? new Vector2Int(x, 0) : new Vector2Int(0, y);
+        }
+        /// <summary>구르기 방향: 이동 입력이 있으면 그 방향(대각선 포함), 없으면 바라보는 방향. 바닥 평면의 단위 벡터.</summary>
+        public static Vector3 EvadeDirection(Vector2 move, PlayerFacing facing, float deadZone = .1f)
+        {
+            if (move.magnitude >= deadZone) return new Vector3(move.x, 0, move.y).normalized;
+            var d = DirectionOf(facing); return new Vector3(d.x, 0, d.y);
+        }
+        /// <summary>구르기 그림 방향(대각선 넷 중 하나). 좌우 성분이 없으면 바라보는 쪽(왼쪽이 아니면 오른쪽), 앞뒤 성분이 없으면 앞.</summary>
+        public static Vector2Int RollSpriteDirection(Vector3 direction, PlayerFacing facing)
+        {
+            int x = Mathf.Abs(direction.x) > .1f ? (direction.x > 0 ? 1 : -1) : facing == PlayerFacing.Left ? -1 : 1;
+            int y = Mathf.Abs(direction.z) > .1f ? (direction.z > 0 ? 1 : -1) : -1;
+            return new Vector2Int(x, y);
         }
         private static Vector2Int DirectionOf(PlayerFacing value)
             => value == PlayerFacing.Back ? Vector2Int.up : value == PlayerFacing.Right ? Vector2Int.right : value == PlayerFacing.Left ? Vector2Int.left : Vector2Int.down;
@@ -61,39 +79,85 @@ namespace IBIIIS
         public void Teleport(Vector3 position, PlayerFacing value)
         {
             controller.enabled = false; transform.position = position; controller.enabled = true;
-            facing = value; motion?.Reset();
+            facing = value; motion?.Reset(); evade.Reset();
             if (visual != null) { visual.Show(PlayerAction.Move, DirectionOf(value), 0, false, ViewCamera); visual.SetPose(MotionPose.Identity, ViewCamera); }
         }
         /// <summary>입력을 멈춘다(전투 씬으로 넘어가는 동안 중복 입력 방지).</summary>
         public void Freeze()
         {
-            frozen = true; IsMoving = false; ShowVisual(Vector2Int.zero, false);
+            frozen = true; IsMoving = IsRunning = false; evade.Reset(); ShowVisual(Vector2Int.zero, false);
             if (visual != null) visual.SetPose(MotionPose.Identity, ViewCamera);
         }
         private void Update()
         {
             if (frozen || input == null) return;
+            if (evade.Recovering) { UpdateRecovery(); return; }
             var move = input.ReadMove();
+            if (UpdateEvade(move)) { UpdateTarget(); return; }
             var direction = DirectionOf(move);
             var intended = Vector3.zero; var before = transform.position;
+            // 대시 키를 누르고 있는 동안 달린다(홀드식).
+            bool running = direction != Vector2Int.zero && input.DashHeld();
             if (direction != Vector2Int.zero)
             {
-                float speed = settings != null ? settings.MoveSpeed : 3.5f;
+                float speed = running ? (settings != null ? settings.RunSpeed : 6) : (settings != null ? settings.MoveSpeed : 3.5f);
                 intended = new Vector3(move.x, 0, move.y) * (speed * Time.deltaTime);
                 controller.Move(intended);
             }
             var actual = transform.position - before; actual.y = 0;
             IsMoving = direction != Vector2Int.zero && actual.magnitude >= intended.magnitude * .2f;
-            ShowVisual(direction, IsMoving);
-            if (visual != null) visual.SetPose(motion.Tick(Time.deltaTime, transform.position, intended, actual), ViewCamera);
+            IsRunning = running && IsMoving;
+            ShowVisual(direction, IsMoving, IsRunning);
+            if (visual != null) visual.SetPose(motion.Tick(Time.deltaTime, transform.position, intended, actual, IsRunning), ViewCamera);
             UpdateTarget();
             if (target != null && input.InteractPressed()) target.Interact(this);
         }
-        private void ShowVisual(Vector2Int direction, bool moving)
+        // 구르기(Space)를 시작하거나 진행한다. 진행 중이었으면 true(이번 프레임의 걷기·상호작용은 하지 않음).
+        private bool UpdateEvade(Vector2 move)
+        {
+            float dt = Time.deltaTime;
+            if (!evade.Active)
+            {
+                evade.TickCooldown(dt);
+                if (!input.RollPressed() || !evade.CanStart) return false;
+                float distance = settings != null ? settings.RollDistance : 1.5f, duration = settings != null ? settings.RollDuration : .35f;
+                float easeOut = settings != null ? settings.RollEaseOut : 1, recovery = settings != null ? settings.RollRecovery : .2f;
+                if (!evade.TryStart(PlayerAction.Roll, EvadeDirection(move, Facing), distance, duration, settings != null ? settings.EvadeCooldown : .25f, easeOut, recovery)) return false;
+                IsRunning = false;
+                motion.BeginRoll();
+            }
+            var intended = evade.Advance(dt); var before = transform.position;
+            controller.Move(intended);
+            var actual = transform.position - before; actual.y = 0;
+            IsMoving = true;
+            var d = evade.Direction;
+            if (visual != null)
+            {
+                visual.Show(PlayerAction.Roll, RollSpriteDirection(d, Facing), evade.Progress, true, ViewCamera); facing = visual.Facing;
+                visual.SetPose(motion.TickRoll(dt, evade.Progress), ViewCamera);
+            }
+            // 다 나아갔거나 벽·NPC에 막히면 끝낸다. 감속 끝무렵의 아주 작은 이동은 CharacterController가 무시할 수 있어 막힘으로 보지 않는다.
+            if (evade.ReachedEnd || (intended.magnitude > .01f && actual.magnitude < intended.magnitude * .2f))
+            {
+                motion.EndRoll(transform.position);
+                evade.Finish();
+            }
+            return true;
+        }
+        // 구르기 뒤 일어나는 중: 입력을 모두 무시하고 제자리에서 착지 납작함만 보인다.
+        private void UpdateRecovery()
+        {
+            evade.TickCooldown(Time.deltaTime);
+            IsMoving = IsRunning = false;
+            ShowVisual(Vector2Int.zero, false);
+            if (visual != null) visual.SetPose(motion.Tick(Time.deltaTime, transform.position, Vector3.zero, Vector3.zero), ViewCamera);
+            UpdateTarget();
+        }
+        private void ShowVisual(Vector2Int direction, bool moving, bool running = false)
         {
             if (visual == null) return;
-            // 막혀서 못 움직여도 누른 방향은 바라본다(그림은 대기).
-            if (direction != Vector2Int.zero) { visual.Show(PlayerAction.Move, direction, 0, moving, ViewCamera); facing = visual.Facing; }
+            // 막혀서 못 움직여도 누른 방향은 바라본다(그림은 대기). 달릴 때는 대시 그림.
+            if (direction != Vector2Int.zero) { visual.Show(running ? PlayerAction.Dash : PlayerAction.Move, direction, 0, moving, ViewCamera); facing = visual.Facing; }
             else visual.Show(PlayerAction.Wait, Vector2Int.zero, 0, false, ViewCamera);
         }
         private void UpdateTarget()
@@ -106,7 +170,7 @@ namespace IBIIIS
         private void OnGUI()
         {
             if (input == null) return;
-            GUI.Box(new Rect(12, 12, 420, 30), $"미니맵 | 이동 {input.Key(OverworldInput.Move)} | 상호작용 {input.Key(OverworldInput.Interact)} | 클리어 {ProgressStore.ClearedStages.Count}");
+            GUI.Box(new Rect(12, 12, 560, 30), $"미니맵 | 이동 {input.Key(OverworldInput.Move)} | 달리기 {input.Key(OverworldInput.Dash)}(누르고 있기) | 구르기 {input.Key(OverworldInput.Roll)} | 상호작용 {input.Key(OverworldInput.Interact)} | 클리어 {ProgressStore.ClearedStages.Count}");
             if (frozen || target == null || target.PromptVerb == null || !OverworldGui.ToGui(ViewCamera, target.LabelPosition, out var anchor)) return;
             var label = target is StageEntrance stage ? $"[{input.Key(OverworldInput.Interact)}] {stage.DisplayName} {target.PromptVerb}" : $"[{input.Key(OverworldInput.Interact)}] {target.PromptVerb}";
             // 말풍선은 기준점 위, 안내 문구는 기준점 아래에 그려 겹치지 않게 한다.

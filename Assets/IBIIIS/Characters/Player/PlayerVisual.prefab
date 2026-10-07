@@ -149,9 +149,9 @@ MonoBehaviour:
     front: {fileID: 21300000, guid: 88e1b1f3baff86d41ad7d3f55ab43a0c, type: 3}
     left: {fileID: 21300000, guid: feeb27c5551e98543af239c1e29ff823, type: 3}
   dash:
-    back: {fileID: 21300000, guid: dae4c581d5f8e6946aa6cd8b2af76df4, type: 3}
+    back: {fileID: 21300000, guid: e64fa94cd98940e4f872369ff0762cd6, type: 3}
     right: {fileID: 21300000, guid: 4a64bb6dfe4925f42850e358fa778a71, type: 3}
-    front: {fileID: 21300000, guid: dae4c581d5f8e6946aa6cd8b2af76df4, type: 3}
+    front: {fileID: 21300000, guid: 88e1b1f3baff86d41ad7d3f55ab43a0c, type: 3}
     left: {fileID: 21300000, guid: 5b5cda05b3e18224fa0bf46c2a4cda23, type: 3}
   rollBackLeft:
     first: {fileID: 21300000, guid: ebb6e2cc991e2ee46bb5ae174bfa5849, type: 3}

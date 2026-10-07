@@ -28,6 +28,7 @@ namespace IBIIIS.Editor
         public const string Overworld = Root + "/Overworld";
         public const string OverworldScene = Overworld + "/OverworldTest.unity";
         public const string OverworldSettings = Settings + "/OverworldSettings.asset";
+        public const string OverworldCameraSettings = Settings + "/OverworldCameraSettings.asset";
         public const string OverworldInput = Settings + "/OverworldInput.inputactions";
         public const string OverworldPlayer = Player + "/OverworldPlayer.prefab";
         // 미니맵 NPC: 공용 기본 프리팹과 임시 실루엣 그림

@@ -216,6 +216,100 @@ namespace IBIIIS.Tests
             Set(shared, "enabledFeedback", false); breath.Advance(.1f);
             Assert.AreEqual(Vector3.one * 1.5f, visual.transform.localScale, "공용 손맛을 끄면 원래 크기");
         }
+        [Test] public void CameraKeepsTheSameViewHeightWhenFieldOfViewChanges()
+        {
+            var overworld = Asset<OverworldSettings>(); Set(overworld, "cameraViewHeight", 14f);
+            var player = Track(new GameObject("Player")).transform; player.position = new Vector3(3, 0, -2);
+            var cameraGo = Track(new GameObject("Camera", typeof(Camera), typeof(OverworldCamera)));
+            var camera = cameraGo.GetComponent<Camera>(); camera.transform.rotation = Quaternion.Euler(40, 0, 0);
+            var follow = cameraGo.GetComponent<OverworldCamera>(); follow.Configure(player, overworld);
+            var focus = player.position + Vector3.up * .5f;
+            foreach (var fov in new[] { 75f, 30f })
+            {
+                camera.fieldOfView = fov; follow.Snap();
+                Assert.AreEqual(.5f, camera.WorldToViewportPoint(focus).y, 1e-3f, $"화각 {fov}: 플레이어가 화면 가운데");
+                Assert.AreEqual(1f, camera.WorldToViewportPoint(focus + camera.transform.up * 7).y, 1e-3f, $"화각 {fov}: 세로 14칸이 화면 높이");
+            }
+            Assert.AreEqual(7 / Mathf.Tan(15 * Mathf.Deg2Rad), follow.Distance, 1e-3f, "화각 30이면 약 26칸 떨어짐");
+        }
+        private static Vector3 Travel(OverworldEvade evade, int frames, float total)
+        {
+            var sum = Vector3.zero; for (int i = 0; i < frames && evade.Active; i++) { sum += evade.Advance(total / frames); if (evade.ReachedEnd) evade.Finish(); }
+            return sum;
+        }
+        [Test] public void EvadeTravelsItsDistanceRegardlessOfFramesThenCoolsDown()
+        {
+            var a = new OverworldEvade(); var b = new OverworldEvade();
+            Assert.IsTrue(a.TryStart(PlayerAction.Dash, new Vector3(1, 0, 1), 2.5f, .25f, .3f));
+            Assert.IsTrue(b.TryStart(PlayerAction.Dash, new Vector3(1, 0, 1), 2.5f, .25f, .3f));
+            var oneFrame = Travel(a, 1, .25f); var manyFrames = Travel(b, 37, .25f);
+            Assert.AreEqual(2.5f, oneFrame.magnitude, 1e-4f); Assert.AreEqual(oneFrame.x, manyFrames.x, 1e-4f); Assert.AreEqual(oneFrame.z, manyFrames.z, 1e-4f);
+            Assert.AreEqual(oneFrame.x, oneFrame.z, 1e-4f, "대각선 방향 그대로");
+            Assert.IsFalse(a.Active); Assert.IsFalse(a.CanStart, "끝나면 쿨다운");
+            Assert.IsFalse(a.TryStart(PlayerAction.Roll, Vector3.right, 1.5f, .35f, .3f), "대시·구르기 쿨다운 공유");
+            a.TickCooldown(.2f); Assert.IsFalse(a.CanStart); a.TickCooldown(.11f); Assert.IsTrue(a.CanStart);
+            Assert.IsTrue(a.TryStart(PlayerAction.Roll, Vector3.right, 1.5f, .35f, .3f));
+            a.Advance(.1f); a.Finish(); Assert.IsFalse(a.Active, "막히면 일찍 끝냄"); Assert.Greater(a.CooldownLeft, 0);
+            Assert.IsFalse(new OverworldEvade().TryStart(PlayerAction.Move, Vector3.right, 1, 1, 0), "대시·구르기만");
+        }
+        [Test] public void RollBurstsOutThenStopsAndRecoversBeforeCooldown()
+        {
+            var a = new OverworldEvade(); var b = new OverworldEvade();
+            Assert.IsTrue(a.TryStart(PlayerAction.Roll, Vector3.right, 1.5f, .35f, .25f, 1, .2f));
+            Assert.IsTrue(b.TryStart(PlayerAction.Roll, Vector3.right, 1.5f, .35f, .25f, 1, .2f));
+            var firstHalf = a.Advance(.175f).x;
+            Assert.AreEqual(1.5f * .75f, firstHalf, 1e-4f, "시간 절반에 거리 3/4(처음이 빠름)");
+            var first = b.Advance(.035f).x; b.Advance(.28f); var last = b.Advance(.035f).x;
+            Assert.Greater(first, .035f / .35f * 1.5f * 1.8f, "첫 구간 속도는 평균의 약 2배"); Assert.Less(last, first * .15f, "끝 구간은 거의 멈춤");
+            a.Advance(.175f); Assert.IsTrue(a.ReachedEnd); a.Finish();
+            Assert.IsTrue(a.Recovering); Assert.IsFalse(a.CanStart);
+            a.TickCooldown(.15f); Assert.IsTrue(a.Recovering); Assert.AreEqual(.25f, a.CooldownLeft, 1e-5f, "회복 중에는 쿨다운이 줄지 않음");
+            a.TickCooldown(.1f); Assert.IsFalse(a.Recovering); Assert.AreEqual(.2f, a.CooldownLeft, 1e-4f, "회복 뒤 남은 시간만큼 쿨다운 감소");
+            a.TickCooldown(.2f); Assert.IsTrue(a.CanStart);
+            var total = 0f; var c = new OverworldEvade(); c.TryStart(PlayerAction.Roll, Vector3.right, 1.5f, .35f, 0, 1, .2f);
+            for (int i = 0; i < 23 && c.Active; i++) { total += c.Advance(.35f / 23).x; if (c.ReachedEnd) c.Finish(); }
+            Assert.AreEqual(1.5f, total, 1e-4f, "감속해도 총 거리는 같음");
+            Assert.AreEqual(.5f, OverworldEvade.Covered(.5f, 0), 1e-6f, "감속 0이면 일정한 속도(대시)");
+        }
+        [Test] public void EvadeDirectionFollowsInputElseFacingAndRollUsesDiagonalFrames()
+        {
+            float d = Mathf.Sqrt(.5f);
+            var diagonal = OverworldPlayer.EvadeDirection(new Vector2(-d, d), PlayerFacing.Front);
+            Assert.AreEqual(-d, diagonal.x, 1e-4f); Assert.AreEqual(d, diagonal.z, 1e-4f);
+            Assert.AreEqual(Vector3.left, OverworldPlayer.EvadeDirection(Vector2.zero, PlayerFacing.Left), "멈춰 있으면 바라보는 방향");
+            Assert.AreEqual(Vector3.forward, OverworldPlayer.EvadeDirection(Vector2.zero, PlayerFacing.Back));
+            Assert.AreEqual(new Vector2Int(-1, 1), OverworldPlayer.RollSpriteDirection(new Vector3(-d, 0, d), PlayerFacing.Front));
+            Assert.AreEqual(new Vector2Int(-1, -1), OverworldPlayer.RollSpriteDirection(Vector3.left, PlayerFacing.Left), "옆으로 구르면 앞쪽 대각 그림");
+            Assert.AreEqual(new Vector2Int(1, 1), OverworldPlayer.RollSpriteDirection(Vector3.forward, PlayerFacing.Back), "위로 구르면 오른쪽 뒤 그림");
+            Assert.AreEqual(new Vector2Int(-1, 1), OverworldPlayer.RollSpriteDirection(Vector3.forward, PlayerFacing.Left), "바라보던 쪽 유지");
+        }
+        [Test] public void RollHopsAndLandsWithSquash()
+        {
+            var shared = Asset<MotionFeedbackSettings>();
+            using (var motion = new OverworldMotion(shared, Asset<OverworldSettings>(), null, null))
+            {
+                motion.BeginRoll();
+                Assert.Greater(motion.TickRoll(.01f, .5f).Lift, 0, "구르기는 낮게 뜀");
+                motion.EndRoll(Vector3.zero);
+                Assert.Greater(motion.Tick(.02f, Vector3.zero, Vector3.zero, Vector3.zero).Squash.x, 1, "구르기 착지 납작함");
+            }
+        }
+        [Test] public void RunningTakesLongerStridesThanWalking()
+        {
+            var shared = Asset<MotionFeedbackSettings>(); var overworld = Asset<OverworldSettings>();
+            Assert.Greater(overworld.RunSpeed, overworld.MoveSpeed, "달리기가 걷기보다 빠름");
+            using (var walk = new OverworldMotion(shared, overworld, null, null))
+            using (var run = new OverworldMotion(shared, overworld, null, null))
+            {
+                var d = new Vector3(.1f, 0, 0);
+                for (int i = 0; i < 40; i++) { walk.Tick(.02f, Vector3.zero, d, d); run.Tick(.02f, Vector3.zero, d, d, true); }
+                Assert.AreEqual(4, walk.Steps, "4칸 ÷ 걷기 보폭 0.9");
+                Assert.AreEqual(3, run.Steps, "4칸 ÷ 달리기 보폭 1.3");
+                var small = new Vector3(.001f, 0, 0);
+                float before = run.StrideProgress; run.Tick(.0003f, Vector3.zero, small, small);
+                Assert.AreEqual(before + .001f / overworld.StrideLength, run.StrideProgress, 1e-4f, "걷기로 바뀌어도 걸음 진행 비율은 이어짐");
+            }
+        }
         [Test] public void SpeechBubbleAdvancesLineByLineThenCloses()
         {
             var npc = Npc(Vector3.zero, "첫째", "둘째");
@@ -243,6 +337,34 @@ namespace IBIIIS.Tests
             InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.DownArrow)); InputSystem.Update();
             Assert.AreEqual(Vector2.down, input.ReadMove());
             Assert.AreEqual("F", input.Key(OverworldInput.Interact));
+        }
+        [Test] public void HoldingShiftRunsAndSpaceRolls()
+        {
+            InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.LeftShift, Key.D)); InputSystem.Update();
+            Assert.IsTrue(input.DashHeld()); Assert.IsFalse(input.RollPressed());
+            InputSystem.Update();
+            Assert.IsTrue(input.DashHeld(), "누르고 있는 동안 계속 달림");
+            InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.D)); InputSystem.Update();
+            Assert.IsFalse(input.DashHeld(), "떼면 걷기");
+            InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.Space)); InputSystem.Update();
+            Assert.IsTrue(input.RollPressed());
+        }
+        [Test] public void OlderAssetWithoutDashAndRollGetsDefaultKeysWithoutWarning()
+        {
+            var old = ScriptableObject.CreateInstance<InputActionAsset>();
+            var map = old.AddActionMap(OverworldInput.MapName);
+            map.AddAction(OverworldInput.Move, InputActionType.Value, "<Keyboard>/w", expectedControlLayout: "Vector2");
+            map.AddAction(OverworldInput.Interact, InputActionType.Button, "<Keyboard>/g");
+            using (var upgraded = new OverworldInput(old))
+            {
+                upgraded.Enable();
+                Assert.AreEqual("G", upgraded.Key(OverworldInput.Interact), "기존 바인딩 유지");
+                InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.Space)); InputSystem.Update();
+                Assert.IsTrue(upgraded.RollPressed(), "구르기 기본 키 추가");
+            }
+            Assert.IsNull(map.FindAction(OverworldInput.Dash), "원본 에셋은 바꾸지 않음(사본 사용)");
+            LogAssert.NoUnexpectedReceived();
+            Object.DestroyImmediate(old);
         }
         [Test] public void AssetWithoutOverworldMapFallsBackToDefaults()
         {

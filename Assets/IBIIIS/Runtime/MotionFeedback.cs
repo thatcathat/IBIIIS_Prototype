@@ -177,14 +177,7 @@ namespace IBIIIS
             m.Visual.localScale = new Vector3(m.BaseScale.x * pose.Squash.x, m.BaseScale.y * pose.Squash.y, m.BaseScale.z);
         }
         /// <summary>대시 자세: 시작·끝 15% 구간에서 부드럽게 들어갔다 빠지며, 그 사이 낮게 웅크리고 좌우 대시면 진행 방향으로 기운다.</summary>
-        public MotionPose DashPose(float progress, Vector2Int direction)
-        {
-            float p = Mathf.Clamp01(progress);
-            float e = Mathf.Clamp01(Mathf.Min(p, 1 - p) / .15f); e = e * e * (3 - 2 * e);
-            var pose = Squashed(settings.DashSquash * e);
-            pose.Tilt = -Mathf.Sign(direction.x) * (direction.x != 0 ? 1 : 0) * settings.DashLean * e;
-            return pose;
-        }
+        public MotionPose DashPose(float progress, Vector2Int direction) => MotionPoses.Dash(progress, direction.x, settings.DashSquash, settings.DashLean);
         /// <summary>숨쉬기: 주기마다 위아래로 살짝 늘었다 줄어든다. 시간 0에서 원래 자세.</summary>
         public MotionPose BreathPose(float time) => MotionPoses.Breath(time, settings.BreathAmount, settings.BreathPeriod);
         private static MotionPose Squashed(float amount) => MotionPoses.Squashed(amount);

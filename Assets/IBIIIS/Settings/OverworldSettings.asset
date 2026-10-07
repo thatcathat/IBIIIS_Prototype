@@ -13,15 +13,22 @@ MonoBehaviour:
   m_Name: OverworldSettings
   m_EditorClassIdentifier: IBIIIS.Runtime::IBIIIS.OverworldSettings
   moveSpeed: 3.5
-  cameraSettings: {fileID: 11400000, guid: 8997b4eab41f6414199c065a7671d13a, type: 2}
-  cameraDistance: 9
-  cameraFollowSharpness: 8
+  cameraSettings: {fileID: 11400000, guid: a1635b733ed24304ba440b0fac33d8a7, type: 2}
+  cameraViewHeight: 14
+  cameraFollowSharpness: 1
   inputActions: {fileID: -944628639613478452, guid: 95049c6615686ae40925f6e9f2ea355f, type: 3}
+  runSpeed: 6
+  runStrideLength: 1.3
+  rollDistance: 1.5
+  rollDuration: 0.35
+  rollEaseOut: 1
+  rollRecovery: 0.2
+  evadeCooldown: 0.25
   motionFeedback: {fileID: 11400000, guid: f6692306c5f5bef4b912052e55506410, type: 2}
-  strideLength: 0.9
+  strideLength: 1.5
   walkHopScale: 0.5
   footsteps: 1
-  dustEverySteps: 3
+  dustEverySteps: 1
   stopSquashScale: 0.6
   breathing: 1
   wallBump: 1
