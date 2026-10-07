@@ -51,6 +51,7 @@
 | `Assets/IBIIIS/Settings/GlobalCameraSettings.asset` | 카메라 Projection·회전·화각. 맵 에셋에는 카메라 설정을 저장하지 않는다 |
 | `Assets/IBIIIS/Settings/IBIIISInput.inputactions` | 전투 키 배치(`Battle` 액션 맵) |
 | `Assets/IBIIIS/Settings/CollisionFeedback.asset` | 충돌·패배 연출의 시간·강도·이펙트·효과음 |
+| `Assets/IBIIIS/Settings/EnemyAlert.asset` | 적 인식 표시(!·?) 그림·높이·크기·튀어나옴·효과음 |
 | `Assets/IBIIIS/Settings/OverworldSettings.asset` | 미니맵 이동 속도, 카메라 설정 연결·보이는 세로 범위·따라가는 빠르기, 달리기 속도·보폭, 구르기 거리·시간·감속·회복·쿨다운, 걷기 손맛, 미니맵 입력 연결 |
 | `Assets/IBIIIS/Settings/OverworldCameraSettings.asset` | 미니맵 전용 카메라 각도·화각(현재 회전 40°, 화각 30). 전투의 GlobalCameraSettings와 별개 |
 | `Assets/IBIIIS/Settings/OverworldInput.inputactions` | 미니맵 키 배치(`Overworld` 액션 맵: Move, Interact, Dash(누르고 있으면 달리기), Roll) |

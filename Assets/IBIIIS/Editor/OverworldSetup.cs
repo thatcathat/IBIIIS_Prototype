@@ -204,74 +204,21 @@ namespace IBIIIS.Editor
         public static Sprite EnsureNpcSprite()
         {
             var fill = new Color(.66f, .76f, .9f);
-            return EnsureGeneratedSprite(AssetPaths.NpcPlaceholderSprite, (u, v) =>
-                Shade(Mathf.Min(RoundedBox(u, v - .33f, .22f, .29f, .12f), new Vector2(u, v - .76f).magnitude - .14f), fill));
+            return GeneratedSprites.EnsureGeneratedSprite(AssetPaths.NpcPlaceholderSprite, (u, v) =>
+                GeneratedSprites.Shade(Mathf.Min(GeneratedSprites.RoundedBox(u, v - .33f, .22f, .29f, .12f), new Vector2(u, v - .76f).magnitude - .14f), fill));
         }
         /// <summary>임시 클리어 깃발(256×256, PPU 256, 기준점 아래 중앙 = 깃대 밑동 근처): 갈색 깃대, 초록 삼각 깃발, 노란 꼭지.</summary>
         public static Sprite EnsureClearedFlagSprite()
         {
             Color pole = new Color(.5f, .38f, .26f), flag = new Color(.35f, .88f, .45f), knob = new Color(.98f, .82f, .3f);
-            return EnsureGeneratedSprite(AssetPaths.ClearedFlagSprite, (u, v) =>
+            return GeneratedSprites.EnsureGeneratedSprite(AssetPaths.ClearedFlagSprite, (u, v) =>
             {
                 float dKnob = new Vector2(u + .12f, v - .95f).magnitude - .04f;
-                float dPole = RoundedBox(u + .12f, v - .47f, .025f, .47f, .02f);
-                float dFlag = Triangle(new Vector2(u, v), new Vector2(-.1f, .92f), new Vector2(-.1f, .56f), new Vector2(.32f, .74f));
+                float dPole = GeneratedSprites.RoundedBox(u + .12f, v - .47f, .025f, .47f, .02f);
+                float dFlag = GeneratedSprites.Triangle(new Vector2(u, v), new Vector2(-.1f, .92f), new Vector2(-.1f, .56f), new Vector2(.32f, .74f));
                 float d = Mathf.Min(dKnob, Mathf.Min(dPole, dFlag));
-                return Shade(d, d == dKnob ? knob : d == dPole ? pole : flag);
+                return GeneratedSprites.Shade(d, d == dKnob ? knob : d == dPole ? pole : flag);
             });
-        }
-        private static readonly Color Outline = new Color(.18f, .22f, .32f);
-        // 거리 d(안쪽 음수)에 따라 채움/테두리/투명을 고른다. 테두리 두께는 캔버스 너비의 2%.
-        private static Color Shade(float d, Color fill) => d < -.02f ? new Color(fill.r, fill.g, fill.b, 1) : d < 0 ? new Color(Outline.r, Outline.g, Outline.b, 1) : Color.clear;
-        /// <summary>코드로 그린 256×256 임시 스프라이트를 PNG로 저장하고 스프라이트(PPU 256, 기준점 아래 중앙)로 가져온다. 파일이 있으면 그대로 쓴다.
-        /// sample(u, v): u는 -0.5~0.5(가로), v는 0~1(아래→위). 4×4 표본 평균으로 가장자리를 부드럽게 한다.</summary>
-        private static Sprite EnsureGeneratedSprite(string path, Func<float, float, Color> sample)
-        {
-            const int size = 256;
-            if (!File.Exists(path))
-            {
-                Directory.CreateDirectory(Path.GetDirectoryName(path)); AssetDatabase.Refresh();
-                var texture = new Texture2D(size, size, TextureFormat.RGBA32, false);
-                var pixels = new Color[size * size];
-                for (int y = 0; y < size; y++) for (int x = 0; x < size; x++)
-                {
-                    Color sum = Color.clear;
-                    for (int sy = 0; sy < 4; sy++) for (int sx = 0; sx < 4; sx++)
-                    {
-                        var c = sample((x + (sx + .5f) / 4) / size - .5f, (y + (sy + .5f) / 4) / size);
-                        sum += new Color(c.r * c.a, c.g * c.a, c.b * c.a, c.a);
-                    }
-                    var avg = sum / 16; pixels[y * size + x] = avg.a > 0 ? new Color(avg.r / avg.a, avg.g / avg.a, avg.b / avg.a, avg.a) : Color.clear;
-                }
-                texture.SetPixels(pixels);
-                File.WriteAllBytes(path, texture.EncodeToPNG());
-                Object.DestroyImmediate(texture);
-                AssetDatabase.ImportAsset(path);
-                var importer = (TextureImporter)AssetImporter.GetAtPath(path);
-                importer.textureType = TextureImporterType.Sprite; importer.spriteImportMode = SpriteImportMode.Single;
-                importer.spritePixelsPerUnit = size; importer.mipmapEnabled = false; importer.alphaIsTransparency = true;
-                var settings = new TextureImporterSettings(); importer.ReadTextureSettings(settings);
-                settings.spriteAlignment = (int)SpriteAlignment.BottomCenter; settings.spritePivot = new Vector2(.5f, 0);
-                importer.SetTextureSettings(settings); importer.SaveAndReimport();
-            }
-            return AssetDatabase.LoadAssetAtPath<Sprite>(path);
-        }
-        private static float RoundedBox(float x, float y, float halfWidth, float halfHeight, float radius)
-        {
-            var q = new Vector2(Mathf.Abs(x) - halfWidth + radius, Mathf.Abs(y) - halfHeight + radius);
-            return Vector2.Max(q, Vector2.zero).magnitude + Mathf.Min(Mathf.Max(q.x, q.y), 0) - radius;
-        }
-        // 삼각형까지의 부호 있는 거리(안쪽 음수).
-        private static float Triangle(Vector2 p, Vector2 a, Vector2 b, Vector2 c)
-        {
-            Vector2 e0 = b - a, e1 = c - b, e2 = a - c, v0 = p - a, v1 = p - b, v2 = p - c;
-            Vector2 q0 = v0 - e0 * Mathf.Clamp01(Vector2.Dot(v0, e0) / Vector2.Dot(e0, e0));
-            Vector2 q1 = v1 - e1 * Mathf.Clamp01(Vector2.Dot(v1, e1) / Vector2.Dot(e1, e1));
-            Vector2 q2 = v2 - e2 * Mathf.Clamp01(Vector2.Dot(v2, e2) / Vector2.Dot(e2, e2));
-            float s = Mathf.Sign(e0.x * e2.y - e0.y * e2.x);
-            var d = Vector2.Min(Vector2.Min(new Vector2(Vector2.Dot(q0, q0), s * (v0.x * e0.y - v0.y * e0.x)),
-                new Vector2(Vector2.Dot(q1, q1), s * (v1.x * e1.y - v1.y * e1.x))), new Vector2(Vector2.Dot(q2, q2), s * (v2.x * e2.y - v2.y * e2.x)));
-            return -Mathf.Sqrt(d.x) * Mathf.Sign(d.y);
         }
         /// <summary>이전에 만든 NPC 프리팹의 Visual에 숨쉬기가 없으면 붙인다(공용 손맛 설정 연결). 이미 있으면 그대로 둔다.</summary>
         public static void EnsureNpcBreathing()

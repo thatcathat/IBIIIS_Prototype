@@ -10,6 +10,7 @@ namespace IBIIIS.Editor
         public const string InputActions = Settings + "/IBIIISInput.inputactions";
         public const string CollisionFeedback = Settings + "/CollisionFeedback.asset";
         public const string MotionFeedback = Settings + "/MotionFeedback.asset";
+        public const string EnemyAlert = Settings + "/EnemyAlert.asset";
         public const string Audio = Root + "/Audio";
         public const string Effects = Root + "/Effects";
         public const string Player = Root + "/Characters/Player";

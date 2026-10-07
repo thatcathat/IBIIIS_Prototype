@@ -32,7 +32,7 @@
 | 작업 | 기록 위치 | 상태 |
 |---|---|---|
 | 프로젝트 실행 | 아래 맵 편집·기본 이동 절차 | 개발 검증 완료, 플레이 사용자 확인 대기 |
-| 테스트 실행 | 아래 자동 테스트 | EditMode 115/115 통과 (2026-10-07, 미니맵 브랜치) |
+| 테스트 실행 | 아래 자동 테스트 | EditMode 119/119 통과 (2026-10-08, 미니맵 브랜치) |
 | 플레이어 외형 교체 | 아래 공용 플레이어 설정, 플레이어 스프라이트 외형 | 스프라이트 외형 구현·자동 검증 완료, 화면 사용자 확인 대기. 반복 애니메이션 미구현 |
 | 적 설정 편집·배치 | 전투 및 적 배치 가이드 | 구현·자동 검증 완료, 화면 사용자 확인 대기 |
 | 새 적 추가 | 설정 생성 메뉴, ID, 패턴·외형 연결, 등장 방법 | 미작성·미검증. 적 팔레트는 루트에 EnemyDefinition이 있는 프리팹을 자동 수집한다 |
@@ -64,6 +64,7 @@
 | `Runtime/GridMapPlayer.cs` | 맵·외형 생성, 입력 명령 실행, 카메라 맞춤, 임시 표시·HUD |
 | `Runtime/BattleInput.cs` | 입력 에셋을 전투 명령으로 변환 |
 | `Runtime/PlayerVisual.cs`, `CollisionFeedback.cs` | 플레이어 스프라이트 선택, 충돌·패배 연출 |
+| `Runtime/EnemyAlert.cs`, `EnemyAlertSettings.cs` | 적 인식 표시(머리 위 !·?, 표시 전용) |
 | `Runtime/CameraFacingSprite.cs` | 캐릭터 그림을 카메라와 나란히 세우는 공통 규칙(플레이어·적·NPC) |
 | `Runtime/MapSolver.cs` | 맵 클리어 가능 여부 탐색 |
 | `Runtime/Overworld*.cs`, `NpcSpeaker.cs`, `StageEntrance.cs` | 미니맵 자유 이동·걷기 손맛(`OverworldMotion`)·따라가는 카메라·입력·상호작용 대상(NPC 말풍선, 스테이지 입구) |
@@ -78,7 +79,7 @@ Editor 코드는 런타임과 별도 어셈블리(`IBIIIS.Editor`)에 있고, �
 | 경로 | 내용 |
 |---|---|
 | `Assets/IBIIIS/Runtime`, `Editor`, `Tests/Editor` | 코드와 asmdef. 편집기 UXML/USS는 `Editor/UI` |
-| `Assets/IBIIIS/Settings` | GlobalPlayerSettings, GlobalCameraSettings, IBIIISInput, CollisionFeedback, MotionFeedback, OverworldSettings, OverworldInput |
+| `Assets/IBIIIS/Settings` | GlobalPlayerSettings, GlobalCameraSettings, IBIIISInput, CollisionFeedback, MotionFeedback, EnemyAlert, OverworldSettings, OverworldInput |
 | `Assets/IBIIIS/Characters/Player` | PlayerVisual.prefab, OverworldPlayer.prefab, `Sprites/` |
 | `Assets/IBIIIS/Characters/Enemies/<적 ID>/` | 적별 프리팹·재질·스프라이트를 한 폴더에 둔다. 새 적은 폴더 단위로 추가한다 |
 | `Assets/IBIIIS/Characters/Shared` | 공용 GroundShadow·FacingArrow 프리팹 |
@@ -102,7 +103,7 @@ Editor 코드는 런타임과 별도 어셈블리(`IBIIIS.Editor`)에 있고, �
 ## 자동 테스트
 
 - `Window > General > Test Runner > EditMode`에서 `IBIIIS.Tests`를 실행한다. 자동 테스트는 Play를 조작하지 않고 EditMode에서 실행한다.
-- 최근 결과: 컴파일 완료, EditMode 115/115 통과(2026-10-07, `feature/overworld-minimap` 브랜치. 미니맵 테스트 23개 포함). 기능별로 확인한 내용은 각 기능 항목의 검증에 기록한다.
+- 최근 결과: 컴파일 완료, EditMode 119/119 통과(2026-10-08, `feature/overworld-minimap` 브랜치. 미니맵 테스트 23개, 적 인식 표시 4개 포함). 기능별로 확인한 내용은 각 기능 항목의 검증에 기록한다.
 - UnityMCP가 연결되지 않았을 때는 Unity가 만든 `IBIIIS.*.csproj`를 `dotnet build`해 컴파일만 확인할 수 있다. 이것은 Unity 컴파일·테스트 실행을 대신하지 않는다.
 - 에이전트는 Unity 에디터가 열려 UnityMCP가 연결되어 있을 때 컴파일 확인과 테스트 실행을 할 수 있다. Player 빌드는 실행하지 않았다.
 

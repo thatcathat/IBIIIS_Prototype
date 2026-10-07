@@ -198,6 +198,8 @@ namespace IBIIIS
         }
         private static bool ValidTime(float value) => !float.IsNaN(value) && !float.IsInfinity(value) && value > 0;
         public static Vector2Int LocalToGrid(Vector2Int local, Vector2Int facing) => new Vector2Int(facing.y, -facing.x) * local.x + facing * local.y;
+        /// <summary>지금(입력 대기 중의) 플레이어 칸이 이 적의 인식 범위 안이면 true. 다음 행동에서 이 적이 플레이어 쪽으로 조준하고, 지금 공격 범위가 인식 후 범위인지와 같은 기준이다.</summary>
+        public bool IsRecognizing(EnemyState enemy) => enemy != null && enemy.Alive && Recognizes(enemy, Position);
         private bool Recognizes(EnemyState e, Vector2Int target)
         {
             foreach (var offset in e.Recognition) if (e.Position + LocalToGrid(offset, e.Direction) == target) return true;

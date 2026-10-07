@@ -33,6 +33,9 @@ namespace IBIIIS
         private BattleInput input;
         private CollisionFeedback feedback;
         private MotionFeedback motion;
+        // 적 인식 표시(머리 위 !·?, 표시 전용)
+        private EnemyAlert alert;
+        public EnemyAlert Alert => alert;
         public MotionFeedback Motion => motion;
         // 이번 행동의 충돌 기록 중 연출을 시작한 개수와 패배 연출 시작 여부
         private int shownCollisions;
@@ -87,6 +90,7 @@ namespace IBIIIS
             CreateVisuals(false);
             feedback = new CollisionFeedback(playerSettings != null ? playerSettings.CollisionFeedback : null, generated, LocalPosition, cellSize, viewCamera);
             motion = new MotionFeedback(playerSettings != null ? playerSettings.MotionFeedback : null, generated, LocalPosition, cellSize, viewCamera);
+            alert = new EnemyAlert(playerSettings != null ? playerSettings.EnemyAlert : null, generated, viewCamera, cellSize);
             UpdateMotion(0); // 적 방향 등 현재 상태를 기준으로 기억해 첫 행동의 방향 전환도 반응하게 한다
             EnsureRuntimeEnvironment();
             if (Application.IsPlaying(gameObject)) { input = new BattleInput(playerSettings != null ? playerSettings.InputActions : null); input.Enable(); }
@@ -103,6 +107,7 @@ namespace IBIIIS
         {
             if (feedback != null) { feedback.Dispose(); feedback = null; }
             if (motion != null) { motion.Dispose(); motion = null; }
+            if (alert != null) { alert.Dispose(); alert = null; }
             shownCollisions = 0; shownDefeat = false; fallbackPlayerVisual = null;
             if (generated != null) { generated.gameObject.SetActive(false); Release(generated.gameObject); }
             MovementWorldTime.Unregister(this);
@@ -353,7 +358,9 @@ namespace IBIIIS
             lastAction = previous.Key; lastDirection = previous.Value;
             if (player != null) player.localPosition = LocalPosition(session.Position);
             if (Application.IsPlaying(gameObject)) MovementWorldTime.SetMoving(this, false);
-            ShowPlayerVisual(); UpdateEnemyViews(); RefreshMoveHints(); return true;
+            ShowPlayerVisual(); UpdateEnemyViews(); RefreshMoveHints();
+            alert?.Resync(session); UpdateAlert(0);
+            return true;
         }
         private void ShowPlayerVisual()
         {
@@ -395,11 +402,18 @@ namespace IBIIIS
         /// <summary>플레이어 이동 손맛 자세를 갱신한다(매 프레임). 충돌·패배 연출이 플레이어를 맡고 있으면 건드리지 않는다.</summary>
         public void UpdateMotion(float seconds)
         {
+            UpdateAlert(seconds);
             if (motion == null || session == null) return;
             motion.TickEffects(seconds);
             motion.TickEnemies(seconds, session, enemyViews, i => feedback != null && feedback.Owns(i), p => map != null && map.IsWalkable(p));
             if (playerView == null || (feedback != null && feedback.OwnsPlayer)) return;
             playerView.SetPose(motion.Tick(seconds, session, lastAction, lastDirection, playerView.Renderer), viewCamera);
+        }
+        // 적 인식 표시는 판정이 확정된 입력 대기·승패 상태에서만 보인다(행동·연출 중에는 숨김). 충돌로 날아가는 적은 건너뛴다.
+        private void UpdateAlert(float seconds)
+        {
+            if (alert == null || session == null) return;
+            alert.Update(seconds, session, enemyViews, !session.IsBusy && !IsPresenting, i => feedback != null && feedback.Owns(i));
         }
         /// <summary>행동을 시작한다. 입력 대기 중인데 갈 수 없는 방향이면 그쪽으로 부딪히는 반응만 보이고 false를 돌려준다(시간·판정 변화 없음).</summary>
         public bool TryActionOrBump(PlayerAction action, Vector2Int direction)

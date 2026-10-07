@@ -23,3 +23,4 @@ MonoBehaviour:
   inputActions: {fileID: -944628639613478452, guid: fa661a5dcc9c90b4b979d2fd35b9d307, type: 3}
   collisionFeedback: {fileID: 11400000, guid: 13a9fccc82a1feb45990ecdb0f16a222, type: 2}
   motionFeedback: {fileID: 11400000, guid: f6692306c5f5bef4b912052e55506410, type: 2}
+  enemyAlert: {fileID: 11400000, guid: 06c02d2a361db284b98e55725004eb3c, type: 2}

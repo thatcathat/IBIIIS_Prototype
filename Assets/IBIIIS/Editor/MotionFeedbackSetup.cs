@@ -88,7 +88,8 @@ namespace IBIIIS.Editor
             float filtered = 0;
             return EnsureSound(path, seconds, (t, noise) => { filtered += (noise - filtered) * (1 - smoothing); return filtered * envelope(t); });
         }
-        private static AudioClip EnsureSound(string path, float seconds, Func<float, float, float> wave)
+        /// <summary>코드로 합성한 짧은 임시 효과음 WAV를 만든다(파일이 있으면 그대로 쓴다). wave(t, 잡음)은 시각 t의 파형.</summary>
+        internal static AudioClip EnsureSound(string path, float seconds, Func<float, float, float> wave)
         {
             if (!File.Exists(path))
             {

@@ -22,6 +22,9 @@ namespace IBIIIS
         [SerializeField, Tooltip("선택. 이동 손맛(뜀·납작함·착지 먼지·발소리·막힌 입력 반응) 설정. 비우면 기본 수치로 움직임만 주고 먼지·소리는 없습니다. `IBIIIS > Create Default Motion Feedback`로 기본 에셋을 만듭니다.")]
         private MotionFeedbackSettings motionFeedback;
         public MotionFeedbackSettings MotionFeedback => motionFeedback;
+        [SerializeField, Tooltip("선택. 적 인식 표시(머리 위 !·?) 설정. 비우면 표시하지 않습니다. `IBIIIS > Create Default Enemy Alert`로 기본 에셋을 만듭니다.")]
+        private EnemyAlertSettings enemyAlert;
+        public EnemyAlertSettings EnemyAlert => enemyAlert;
         public bool ShowEnemyRanges => showEnemyRanges;
         public float EnemyStepDuration => float.IsNaN(enemyStepDuration) || float.IsInfinity(enemyStepDuration) ? .25f : Mathf.Max(.01f, enemyStepDuration);
         public GameObject VisualPrefab => visualPrefab;
