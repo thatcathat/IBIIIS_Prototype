@@ -128,9 +128,12 @@ namespace IBIIIS.Tests
             var near = Npc(new Vector3(1, 0, 0), "a");
             var farther = Npc(new Vector3(0, 0, 1.2f), "b");
             var outOfRange = Npc(new Vector3(.2f, 5, 3), "c");
+            var high = Npc(new Vector3(.8f, 3, 0), "d"); // 바닥 거리 0.8로 가장 가깝지만 3D 거리는 범위 밖
             var silent = Npc(new Vector3(.5f, 0, 0));
-            var all = new OverworldInteractable[] { farther, outOfRange, silent, near };
-            Assert.AreSame(near, OverworldInteractable.FindNearest(Vector3.zero, all), "높이는 무시하고 바닥 평면 거리로 판정");
+            var all = new OverworldInteractable[] { farther, outOfRange, silent, near, high };
+            Assert.AreSame(high, OverworldInteractable.FindNearest(Vector3.zero, all), "높이는 무시하고 바닥 평면 거리로 판정");
+            all = new OverworldInteractable[] { farther, outOfRange, silent, near };
+            Assert.AreSame(near, OverworldInteractable.FindNearest(Vector3.zero, all));
             Assert.IsNull(OverworldInteractable.FindNearest(new Vector3(10, 0, 10), all));
             Assert.IsNull(silent.PromptVerb, "대사가 없으면 상호작용 대상이 아님");
         }
@@ -365,6 +368,38 @@ namespace IBIIIS.Tests
                 float before = run.StrideProgress; run.Tick(.0003f, Vector3.zero, small, small);
                 Assert.AreEqual(before + .001f / overworld.StrideLength, run.StrideProgress, 1e-4f, "걷기로 바뀌어도 걸음 진행 비율은 이어짐");
             }
+        }
+        [Test] public void WinningTheWatchedBattleSavesTheClearOnceAndUndoKeepsIt()
+        {
+            var map = ScriptableObject.CreateInstance<GridMap>(); map.Resize(5, 1);
+            for (int x = 0; x < 5; x++) map.SetWalkable(new Vector2Int(x, 0), true);
+            map.SetStart(new Vector2Int(4, 0));
+            foreach (var (x, facing) in new[] { (0, Vector2Int.right), (2, Vector2Int.left) }) // 첫 행동에 (1,0)에서 충돌
+            {
+                var enemy = Track(new GameObject("Enemy")); var so = new SerializedObject(enemy.AddComponent<EnemyDefinition>());
+                so.FindProperty("recognition").arraySize = 0; so.ApplyModifiedPropertiesWithoutUndo(); map.PlaceEnemy(new Vector2Int(x, 0), enemy, facing);
+            }
+            var battle = Track(new GameObject("Battle")).AddComponent<GridMapPlayer>(); battle.Configure(map, null, null); battle.Build();
+            var popup = StageResultPopup.Create(new StageRun("stage-win", "W", "Assets/Battle.unity", "Assets/Overworld.unity", Vector3.zero, PlayerFacing.Front));
+            Track(popup.gameObject); popup.Watch(battle);
+            popup.CheckResult(); Assert.IsFalse(ProgressStore.IsCleared("stage-win"), "승리 전에는 저장하지 않음");
+            Assert.True(battle.TryBeginAction(PlayerAction.Wait, Vector2Int.zero));
+            for (int i = 0; i < 200 && (battle.Session.IsBusy || battle.IsPresenting); i++) { battle.AdvanceMovement(.05f); popup.CheckResult(); }
+            Assert.AreEqual(BattlePhase.Won, popup.Result);
+            popup.CheckResult(); Assert.IsTrue(ProgressStore.IsCleared("stage-win")); Assert.AreEqual(1, ProgressStore.ClearedStages.Count);
+            Assert.IsNull(popup.Problem);
+            Assert.True(battle.TryUndo()); Assert.AreEqual(BattlePhase.Waiting, popup.Result, "되돌리면 팝업이 사라짐");
+            ProgressStore.Reload(); Assert.IsTrue(ProgressStore.IsCleared("stage-win"), "저장한 기록은 유지");
+            Object.DestroyImmediate(map);
+        }
+        [Test] public void EnteringAMissingBattleSceneDoesNothing()
+        {
+            LogAssert.Expect(LogType.Error, new System.Text.RegularExpressions.Regex("찾을 수 없습니다"));
+            Assert.IsFalse(StageFlow.Enter(new StageRun("stage-x", "X", "Assets/IBIIIS/Tests/NoSuchBattle.unity", "Assets/Overworld.unity", Vector3.zero, PlayerFacing.Front)));
+            Assert.IsNull(StageFlow.Current, "진행 정보를 남기지 않음");
+            Assert.IsNull(Object.FindAnyObjectByType<StageResultPopup>(), "결과 팝업을 만들지 않음");
+            LogAssert.Expect(LogType.Error, new System.Text.RegularExpressions.Regex("전투 씬이 지정되지"));
+            Assert.IsFalse(StageFlow.Enter(new StageRun("stage-x", "X", "", "Assets/Overworld.unity", Vector3.zero, PlayerFacing.Front)));
         }
         [Test] public void PopupOffersReturnWhenBattleCannotStart()
         {

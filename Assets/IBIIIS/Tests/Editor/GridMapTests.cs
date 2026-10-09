@@ -135,18 +135,39 @@ namespace IBIIIS.Tests
             map.SetTile(Vector2Int.right, wall); wall.Initialize("changed-id", "Wall", false, Color.gray);
             Assert.That(map.ValidateMap(), Has.Some.Contains("(1, 0)"));
         }
-        [Test] public void VisualChangesDoNotChangeMovement()
+        [Test] public void PlayerVisualSizeAndFootOffsetDoNotChangeMovement()
         {
-            var before = new GridSession(map);
-            var visual = new GameObject("Oversized visual");
+            var scene = UnityEditor.SceneManagement.EditorSceneManager.NewPreviewScene();
+            var settings = ScriptableObject.CreateInstance<PlayerSettings>();
+            var sprite = Sprite.Create(Texture2D.whiteTexture, new Rect(0, 0, 1, 1), Vector2.zero);
             try
             {
-                visual.transform.localScale = Vector3.one * 20;
-                var serialized = new SerializedObject(floor); serialized.FindProperty("visualPrefab").objectReferenceValue = visual; serialized.ApplyModifiedPropertiesWithoutUndo();
-                var after = new GridSession(map);
-                Assert.AreEqual(before.TryMove(Vector2Int.right), after.TryMove(Vector2Int.right)); Assert.AreEqual(before.Position, after.Position);
+                // 아주 크고 발 보정이 큰 외형과 기본(임시) 외형으로 같은 행동을 하고 결과를 비교한다.
+                var big = new GameObject("Oversized visual"); UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(big, scene); big.transform.localScale = Vector3.one * 20;
+                var child = new GameObject("Sprite"); child.transform.SetParent(big.transform, false);
+                var visual = big.AddComponent<PlayerVisual>(); var so = new SerializedObject(visual);
+                so.FindProperty("spriteRenderer").objectReferenceValue = child.AddComponent<SpriteRenderer>(); so.FindProperty("footOffset").floatValue = 3;
+                foreach (var group in new[] { "idle", "move" }) foreach (var face in new[] { "back", "right", "front", "left" }) so.FindProperty(group).FindPropertyRelative(face).objectReferenceValue = sprite;
+                so.ApplyModifiedPropertiesWithoutUndo();
+                so = new SerializedObject(settings); so.FindProperty("visualPrefab").objectReferenceValue = big; so.ApplyModifiedPropertiesWithoutUndo();
+                GridMapPlayer Make(PlayerSettings shared)
+                {
+                    var go = new GameObject("Player"); UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(go, scene);
+                    var p = go.AddComponent<GridMapPlayer>(); p.Configure(map, null, null);
+                    if (shared != null) { var s = new SerializedObject(p); s.FindProperty("playerSettings").objectReferenceValue = shared; s.ApplyModifiedPropertiesWithoutUndo(); }
+                    p.Build(); return p;
+                }
+                var plain = Make(null); var dressed = Make(settings);
+                foreach (var step in new[] { Vector2Int.right, Vector2Int.up, Vector2Int.right })
+                {
+                    Assert.AreEqual(plain.TryBeginMove(step), dressed.TryBeginMove(step));
+                    plain.AdvanceMovement(1); dressed.AdvanceMovement(1);
+                    Assert.AreEqual(plain.Session.Position, dressed.Session.Position); Assert.AreEqual(plain.Session.Phase, dressed.Session.Phase);
+                    Assert.AreEqual(plain.Generated.Find("Player Logic Anchor").localPosition, dressed.Generated.Find("Player Logic Anchor").localPosition, "논리 위치 기준점은 외형과 무관");
+                }
+                Assert.AreEqual(new Vector2Int(2, 1), dressed.Session.Position);
             }
-            finally { UnityEngine.Object.DestroyImmediate(visual); }
+            finally { UnityEditor.SceneManagement.EditorSceneManager.ClosePreviewScene(scene); UnityEngine.Object.DestroyImmediate(settings); UnityEngine.Object.DestroyImmediate(sprite); }
         }
         [Test] public void PaintUndoRedoRestoresCell()
         {

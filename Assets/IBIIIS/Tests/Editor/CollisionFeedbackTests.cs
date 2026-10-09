@@ -81,7 +81,7 @@ namespace IBIIIS.Tests
         {
             var so = new SerializedObject(settings);
             void Set(string name, float min, float max) { var p = so.FindProperty(name); p.FindPropertyRelative("min").floatValue = min; p.FindPropertyRelative("max").floatValue = max; }
-            Set("flyDistance", 1, 2); Set("flyHeight", .5f, .9f); Set("spinTurns", 1, 3); so.ApplyModifiedPropertiesWithoutUndo();
+            Set("flyDistance", 1, 2); Set("flyHeight", .5f, .9f); Set("spinTurns", .25f, .25f); so.ApplyModifiedPropertiesWithoutUndo();
             Enemy(1, 3, Vector2Int.right); Enemy(3, 3, Vector2Int.left); Build();
             Assert.True(player.TryBeginAction(PlayerAction.Wait, Vector2Int.zero)); player.AdvanceMovement(.25f);
             player.AdvanceMovement(settings.HoldTime + settings.FlyTime * .5f); // 퇴장 중간(u=0.5): 수평 = 거리/2, 높이 = 최고 높이
@@ -91,14 +91,20 @@ namespace IBIIIS.Tests
                 Assert.That(new Vector2(offset.x, offset.z).magnitude, Is.InRange(.5f - 1e-3f, 1f + 1e-3f), "수평 거리");
                 Assert.That(offset.y, Is.InRange(.5f - 1e-3f, .9f + 1e-3f), "높이");
             }
+            // 0.25바퀴의 절반 지점: 카메라를 바라본 채 화면 안에서 ±45도, 두 적은 반대로 돈다.
+            float Spin(int i) { var rel = Quaternion.Inverse(camera.transform.rotation) * EnemyView(i).Find("Visual").rotation; return Mathf.DeltaAngle(0, rel.eulerAngles.z); }
+            Assert.AreEqual(45, Mathf.Abs(Spin(0)), .1f); Assert.AreEqual(45, Mathf.Abs(Spin(1)), .1f);
+            Assert.AreEqual(-Mathf.Sign(Spin(0)), Mathf.Sign(Spin(1)), "도는 방향이 번갈아 바뀜");
         }
         [Test] public void HitStopFreezesOtherMovementThenResumes()
         {
+            var so = new SerializedObject(settings); so.FindProperty("squashTime").floatValue = .08f; so.FindProperty("hitStopTime").floatValue = .08f; so.ApplyModifiedPropertiesWithoutUndo();
+            so = new SerializedObject(playerSettings); so.FindProperty("enemyStepDuration").floatValue = .25f; so.ApplyModifiedPropertiesWithoutUndo();
             Enemy(1, 3, Vector2Int.right); Enemy(3, 3, Vector2Int.left); Enemy(0, 6, Vector2Int.right, 2); Build();
             Assert.True(player.TryBeginAction(PlayerAction.Wait, Vector2Int.zero)); player.AdvanceMovement(.25f);
             Assert.True(player.Session.IsEnemiesMoving); Assert.AreEqual(0, player.Session.EnemyProgress);
             player.AdvanceMovement(.1f); Assert.AreEqual(0, player.Session.EnemyProgress, "멈춤 시간에는 다른 적도 멈춘다");
-            player.AdvanceMovement(.1f); Assert.That(player.Session.EnemyProgress, Is.EqualTo(.04f / .25f).Within(1e-3f));
+            player.AdvanceMovement(.1f); Assert.That(player.Session.EnemyProgress, Is.EqualTo((.2f - settings.HoldTime) / playerSettings.EnemyStepDuration).Within(1e-3f));
             player.AdvanceMovement(2f); Assert.AreEqual(new Vector2Int(2, 6), player.Session.Enemies[2].Position);
         }
         [Test] public void UndoDuringPresentationRestoresEnemies()

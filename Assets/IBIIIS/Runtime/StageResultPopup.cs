@@ -44,7 +44,9 @@ namespace IBIIIS
             ? "전투를 시작하지 못했습니다. Console의 [IBIIIS] 오류(맵 설정)를 확인하세요." : null);
         /// <summary>표시할 결과. 충돌·패배 연출이 끝난 뒤에만 Won/Lost를 돌려준다. 되돌리기·재시작하면 다시 Waiting이 된다.</summary>
         public BattlePhase Result => battle != null && battle.Session != null && !battle.IsPresenting ? battle.Session.Phase : BattlePhase.Waiting;
-        private void Update()
+        private void Update() => CheckResult();
+        /// <summary>승리가 확정되었으면 클리어 기록을 한 번 저장한다(매 프레임 호출).</summary>
+        internal void CheckResult()
         {
             if (clearSaved || Result != BattlePhase.Won) return;
             clearSaved = true; TrySaveClear();

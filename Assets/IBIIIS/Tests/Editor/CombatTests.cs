@@ -106,6 +106,18 @@ namespace IBIIIS.Tests
             s=new GridSession(map); Assert.True(s.TryAct(PlayerAction.Dash,Vector2Int.up)); s.Advance(1);
             Assert.AreEqual(new Vector2Int(3,2),s.Position); Assert.True(s.EvasionLocked); Assert.False(s.CanAct(PlayerAction.Roll,Vector2Int.one));
             WaitRound(s); Assert.False(s.EvasionLocked); Assert.True(s.TryAct(PlayerAction.Roll,Vector2Int.one)); s.Advance(1); Assert.AreEqual(new Vector2Int(4,3),s.Position);
+            Assert.True(s.EvasionLocked,"구르기 뒤에도 잠김"); Assert.False(s.CanAct(PlayerAction.Dash,Vector2Int.up)); Assert.True(s.CanMove(Vector2Int.up));
+        }
+        [Test] public void EvasionDestinationsAndDashMiddleCellAreChecked()
+        {
+            Enemy(3,2,Vector2Int.up); Enemy(4,1,Vector2Int.up);
+            var s=new GridSession(map);
+            Assert.False(s.CanAct(PlayerAction.Dash,Vector2Int.up),"대시 도착 칸에 적");
+            Assert.False(s.CanAct(PlayerAction.Roll,Vector2Int.one),"구르기 도착 칸에 적");
+            map.RemoveEnemy(new Vector2Int(3,2)); map.RemoveEnemy(new Vector2Int(4,1)); Enemy(2,0,Vector2Int.up); Enemy(3,1,Vector2Int.up);
+            s=new GridSession(map); Assert.True(s.CanAct(PlayerAction.Roll,new Vector2Int(-1,1)),"대각선 양옆 칸의 적은 막지 않음(현재 규칙)");
+            map.RemoveEnemy(new Vector2Int(2,0)); map.RemoveEnemy(new Vector2Int(3,1)); map.SetWalkable(new Vector2Int(3,1),false);
+            s=new GridSession(map); Assert.False(s.CanAct(PlayerAction.Dash,Vector2Int.up),"중간 칸이 이동 불가면 대시 불가");
         }
         [Test] public void UndoRestoresFullBattleStateAndAllowsAnotherChoice()
         {
@@ -244,6 +256,16 @@ namespace IBIIIS.Tests
             Enemy(1,3,Vector2Int.right); var r=MapSolver.Analyze(map);
             Assert.True(r.Completed); Assert.False(r.Solvable); Assert.AreEqual(-1,r.ShortestWin); Assert.Null(r.WinPath); Assert.Greater(r.States,1); Assert.AreEqual(r.States,r.DeadStates);
             StringAssert.Contains("클리어: 불가능",r.ToReport());
+        }
+        [Test] public void SolverCountsOnlyTheStatesThatCanNoLongerWinAsDead()
+        {
+            // 위쪽 칸으로 플레이어를 따라가게 만든 적은 아래 줄의 적과 다시 만나지 못해 승리 불가 상태가 생긴다.
+            map.Resize(5,3);
+            for(int y=0;y<3;y++) for(int x=0;x<5;x++) map.SetWalkable(new Vector2Int(x,y),false);
+            foreach(var p in new[]{new Vector2Int(0,0),new Vector2Int(1,0),new Vector2Int(2,0),new Vector2Int(3,0),new Vector2Int(4,0),new Vector2Int(4,1),new Vector2Int(4,2),new Vector2Int(3,1),new Vector2Int(3,2)}) map.SetWalkable(p,true);
+            map.SetStart(new Vector2Int(3,1)); Enemy(0,0,Vector2Int.right); Enemy(4,0,Vector2Int.left,1,new[]{Vector2Int.right});
+            var r=MapSolver.Analyze(map); Assert.True(r.Completed); Assert.True(r.Solvable);
+            Assert.Greater(r.DeadStates,0); Assert.Less(r.DeadStates,r.States);
         }
         [Test] public void SolverFindsEarliestLossAndItsPathReplaysToDefeat()
         {

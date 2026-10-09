@@ -8,7 +8,8 @@ namespace IBIIIS.Tests
     {
         private GameObject root;
         private PlayerVisual visual;
-        private Sprite Make(string name) { var s = Sprite.Create(Texture2D.whiteTexture, new Rect(0, 0, 1, 1), Vector2.zero); s.name = name; return s; }
+        private readonly System.Collections.Generic.List<Sprite> sprites = new System.Collections.Generic.List<Sprite>();
+        private Sprite Make(string name) { var s = Sprite.Create(Texture2D.whiteTexture, new Rect(0, 0, 1, 1), Vector2.zero); s.name = name; sprites.Add(s); return s; }
         private static void Set(SerializedProperty p, string f, Sprite s) => p.FindPropertyRelative(f).objectReferenceValue = s;
         [SetUp] public void SetUp()
         {
@@ -21,7 +22,7 @@ namespace IBIIIS.Tests
             { Set(so.FindProperty(roll), "first", Make(roll + "-1")); Set(so.FindProperty(roll), "second", Make(roll + "-2")); }
             so.ApplyModifiedPropertiesWithoutUndo();
         }
-        [TearDown] public void TearDown() { Object.DestroyImmediate(root); }
+        [TearDown] public void TearDown() { Object.DestroyImmediate(root); foreach (var s in sprites) Object.DestroyImmediate(s); sprites.Clear(); }
         private string Shown => visual.Renderer.sprite.name;
         [Test] public void MoveAndIdleFollowGridDirectionAsScreenFacing()
         {

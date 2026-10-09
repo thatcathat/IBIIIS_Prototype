@@ -33,9 +33,10 @@ namespace IBIIIS.Tests
         [TearDown] public void Cleanup()
         {
             if (player != null) Object.DestroyImmediate(player.gameObject);
-            Object.DestroyImmediate(map); Object.DestroyImmediate(settings); Object.DestroyImmediate(playerSettings);
+            Object.DestroyImmediate(map); Object.DestroyImmediate(settings); Object.DestroyImmediate(playerSettings); Object.DestroyImmediate(testSprite);
             EditorSceneManager.ClosePreviewScene(scene);
         }
+        private Sprite testSprite;
         private GameObject Add(GameObject go) { SceneManager.MoveGameObjectToScene(go, scene); return go; }
         // 모든 슬롯에 스프라이트를 채운 테스트용 플레이어 외형
         private GameObject MakePlayerVisual()
@@ -43,7 +44,7 @@ namespace IBIIIS.Tests
             var root = Add(new GameObject("PlayerVisual Source")); var child = new GameObject("Sprite"); child.transform.SetParent(root.transform, false);
             var visual = root.AddComponent<PlayerVisual>(); var so = new SerializedObject(visual);
             so.FindProperty("spriteRenderer").objectReferenceValue = child.AddComponent<SpriteRenderer>();
-            var sprite = Sprite.Create(Texture2D.whiteTexture, new Rect(0, 0, 1, 1), Vector2.zero);
+            var sprite = Sprite.Create(Texture2D.whiteTexture, new Rect(0, 0, 1, 1), Vector2.zero); testSprite = sprite;
             foreach (var group in new[] { "idle", "move", "dash" }) foreach (var face in new[] { "back", "right", "front", "left" }) so.FindProperty(group).FindPropertyRelative(face).objectReferenceValue = sprite;
             foreach (var roll in new[] { "rollBackLeft", "rollBackRight", "rollFrontLeft", "rollFrontRight" })
             { so.FindProperty(roll).FindPropertyRelative("first").objectReferenceValue = sprite; so.FindProperty(roll).FindPropertyRelative("second").objectReferenceValue = sprite; }

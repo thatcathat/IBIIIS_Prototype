@@ -13,6 +13,7 @@ namespace IBIIIS.Tests
         private PlayerSettings playerSettings;
         private EnemyAlertSettings settings;
         private Texture2D texture;
+        private Sprite alertSprite, lostSprite;
         private Camera camera;
         private GridMapPlayer player;
         [SetUp] public void Setup()
@@ -24,8 +25,9 @@ namespace IBIIIS.Tests
             texture = new Texture2D(4, 4);
             settings = ScriptableObject.CreateInstance<EnemyAlertSettings>();
             var so = new SerializedObject(settings);
-            so.FindProperty("alertSprite").objectReferenceValue = Sprite.Create(texture, new Rect(0, 0, 4, 4), new Vector2(.5f, 0));
-            so.FindProperty("lostSprite").objectReferenceValue = Sprite.Create(texture, new Rect(0, 0, 4, 4), new Vector2(.5f, 0));
+            alertSprite = Sprite.Create(texture, new Rect(0, 0, 4, 4), new Vector2(.5f, 0)); lostSprite = Sprite.Create(texture, new Rect(0, 0, 4, 4), new Vector2(.5f, 0));
+            so.FindProperty("alertSprite").objectReferenceValue = alertSprite;
+            so.FindProperty("lostSprite").objectReferenceValue = lostSprite;
             so.ApplyModifiedPropertiesWithoutUndo();
             playerSettings = ScriptableObject.CreateInstance<PlayerSettings>();
             so = new SerializedObject(playerSettings); so.FindProperty("enemyAlert").objectReferenceValue = settings; so.ApplyModifiedPropertiesWithoutUndo();
@@ -34,7 +36,7 @@ namespace IBIIIS.Tests
         [TearDown] public void Cleanup()
         {
             if (player != null) Object.DestroyImmediate(player.gameObject);
-            Object.DestroyImmediate(map); Object.DestroyImmediate(playerSettings); Object.DestroyImmediate(settings); Object.DestroyImmediate(texture);
+            Object.DestroyImmediate(map); Object.DestroyImmediate(playerSettings); Object.DestroyImmediate(settings); Object.DestroyImmediate(alertSprite); Object.DestroyImmediate(lostSprite); Object.DestroyImmediate(texture);
             EditorSceneManager.ClosePreviewScene(scene);
         }
         private GameObject Add(GameObject go) { SceneManager.MoveGameObjectToScene(go, scene); return go; }
