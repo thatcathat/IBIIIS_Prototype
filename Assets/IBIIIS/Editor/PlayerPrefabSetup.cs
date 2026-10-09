@@ -22,7 +22,7 @@ namespace IBIIIS.Editor
         {
             ImportSprites();
             var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath);
-            if (prefab == null) { prefab = CreatePrefab(); GroundMarkerSetup.EnsureAll(); }
+            if (prefab == null) { prefab = CreatePrefab(); GroundMarkerSetup.AttachTo(PrefabPath, false); }
             var settings = AssetDatabase.LoadAssetAtPath<PlayerSettings>(SettingsPath);
             if (settings == null) return;
             var so = new SerializedObject(settings); var property = so.FindProperty("visualPrefab");
