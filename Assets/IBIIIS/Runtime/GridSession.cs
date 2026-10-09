@@ -14,8 +14,6 @@ namespace IBIIIS
         public Vector2Int StepFrom { get; internal set; }
         public Vector2Int StepTo { get; internal set; }
         public bool Alive { get; internal set; } = true;
-        public bool Recognized { get; internal set; }
-        public int MoveCells { get; internal set; }
         internal EnemyActionStep[] Actions;
         // 이번 행동에서 실행 중인 행동 목록의 위치와, 현재 전진 단위에서 남은 칸 수. GridSession이 행동마다 초기화한다.
         internal int ActionIndex, CellsLeft;
@@ -48,7 +46,7 @@ namespace IBIIIS
         private struct EnemyMemo
         {
             public Vector2Int Position, Direction, StepFrom, StepTo;
-            public bool Alive, Recognized;
+            public bool Alive;
             public Vector2Int[] Path;
         }
         private readonly Stack<Snapshot> history = new Stack<Snapshot>();
@@ -99,7 +97,7 @@ namespace IBIIIS
             {
                 var d = spawn.Prefab.GetComponent<EnemyDefinition>();
                 enemies.Add(new EnemyState { Prefab = spawn.Prefab, Position = spawn.Position, StepFrom = spawn.Position, StepTo = spawn.Position,
-                    Direction = spawn.Direction, MoveCells = d.MoveCells, Actions = d.Actions, Recognition = d.Recognition, Attack = d.Attack, RecognizedAttack = d.RecognizedAttack });
+                    Direction = spawn.Direction, Actions = d.Actions, Recognition = d.Recognition, Attack = d.Attack, RecognizedAttack = d.RecognizedAttack });
             }
         }
         public static bool CanStep(Vector2Int position, Vector2Int direction, Func<Vector2Int, bool> available)
@@ -157,7 +155,7 @@ namespace IBIIIS
             {
                 var e = enemies[i]; int at = 3 + i * 5;
                 e.Position = e.StepFrom = e.StepTo = new Vector2Int(core[at] - 1, core[at + 1] - 1);
-                e.Direction = new Vector2Int(core[at + 2] - 1, core[at + 3] - 1); e.Alive = core[at + 4] == 1; e.Recognized = false; e.Path.Clear();
+                e.Direction = new Vector2Int(core[at + 2] - 1, core[at + 3] - 1); e.Alive = core[at + 4] == 1; e.Path.Clear();
             }
             attackCells.Clear(); collisions.Clear(); attackers.Clear(); elapsed = enemyElapsed = 0; enemiesComplete = true; evasion = false;
         }
@@ -174,7 +172,7 @@ namespace IBIIIS
             {
                 var memo = snapshot.Enemies[i]; var e = enemies[i];
                 e.Position = memo.Position; e.Direction = memo.Direction; e.StepFrom = memo.StepFrom; e.StepTo = memo.StepTo;
-                e.Alive = memo.Alive; e.Recognized = memo.Recognized;
+                e.Alive = memo.Alive;
                 e.Path.Clear(); e.Path.AddRange(memo.Path);
             }
             collisions.Clear(); attackers.Clear(); elapsed = enemyElapsed = 0; enemiesComplete = true; evasion = false;
@@ -188,7 +186,7 @@ namespace IBIIIS
             {
                 var e = enemies[i];
                 snapshot.Enemies[i] = new EnemyMemo { Position = e.Position, Direction = e.Direction, StepFrom = e.StepFrom, StepTo = e.StepTo,
-                    Alive = e.Alive, Recognized = e.Recognized, Path = e.Path.ToArray() };
+                    Alive = e.Alive, Path = e.Path.ToArray() };
             }
             return snapshot;
         }
@@ -206,7 +204,8 @@ namespace IBIIIS
         }
         private static bool ValidTime(float value) => !float.IsNaN(value) && !float.IsInfinity(value) && value > 0;
         public static Vector2Int LocalToGrid(Vector2Int local, Vector2Int facing) => new Vector2Int(facing.y, -facing.x) * local.x + facing * local.y;
-        /// <summary>지금(입력 대기 중의) 플레이어 칸이 이 적의 인식 범위 안이면 true. 다음 행동에서 이 적이 플레이어 쪽으로 조준하고, 지금 공격 범위가 인식 후 범위인지와 같은 기준이다.</summary>
+        /// <summary>지금(입력 대기 중의) 플레이어 칸이 적의 현재 위치·방향 기준 인식 범위 안이면 true. 지금 공격 범위가 인식 후 범위인지와 같은 기준이다.
+        /// 행동 목록이 AimAtPlayer로 시작하는 적이면 다음 행동의 조준 여부와도 일치한다(앞에 회전·전진이 있으면 그 뒤 위치에서 다시 판정한다).</summary>
         public bool IsRecognizing(EnemyState enemy) => enemy != null && enemy.Alive && Recognizes(enemy, Position);
         private bool Recognizes(EnemyState e, Vector2Int target)
         {
@@ -224,9 +223,11 @@ namespace IBIIIS
         {
             enemiesComplete = AliveCount == 0; enemyElapsed = 0;
             if (enemiesComplete) return;
-            foreach (var e in enemies) if (e.Alive) { e.Path.Clear(); e.Recognized = false; e.ActionIndex = 0; e.CellsLeft = 0; }
-            foreach (var e in enemies) if (e.Alive) RunInstantActions(e);
-            PlanEnemyStep();
+            foreach (var e in enemies) if (e.Alive) { e.Path.Clear(); e.ActionIndex = 0; e.CellsLeft = 0; }
+            bool anyMove = false;
+            foreach (var e in enemies) if (e.Alive) { RunInstantActions(e); if (e.CellsLeft > 0) anyMove = true; }
+            // 모든 적이 조준·회전만 하면 이동 단계를 진행하지 않는다(행동 시간이 적 이동 시간에 묶이지 않게).
+            if (anyMove) PlanEnemyStep(); else enemiesComplete = true;
         }
         // 시간을 쓰지 않는 행동(조준·회전)을 다음 전진 단위 직전까지 실행한다. 전진 단위를 만나면 남은 칸 수를 설정하고 멈춘다.
         private void RunInstantActions(EnemyState e)
@@ -288,9 +289,9 @@ namespace IBIIIS
             {
                 var e = enemies[i];
                 if (!e.Alive) continue;
-                e.Recognized = Recognizes(e, Position);
+                bool recognized = Recognizes(e, Position);
                 bool struck = e.Path.Contains(Position);
-                foreach (var offset in e.Recognized ? e.RecognizedAttack : e.Attack)
+                foreach (var offset in recognized ? e.RecognizedAttack : e.Attack)
                 {
                     var p = e.Position + LocalToGrid(offset, e.Direction); attackCells.Add(p); if (p == Position) struck = true;
                 }

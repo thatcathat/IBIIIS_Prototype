@@ -97,7 +97,7 @@ namespace IBIIIS.Tests
             var s=new GridSession(map); WaitRound(s); Assert.AreEqual(Vector2Int.up,s.Enemies[0].Direction); Assert.AreEqual(BattlePhase.Lost,s.Phase);
             map.RemoveEnemy(new Vector2Int(1,3)); map.SetStart(new Vector2Int(2,4));
             Enemy(1,3,Vector2Int.right,1,new[]{Vector2Int.left},new[]{Vector2Int.left});
-            s=new GridSession(map); WaitRound(s); Assert.AreEqual(Vector2Int.right,s.Enemies[0].Direction); Assert.True(s.Enemies[0].Recognized); Assert.AreEqual(BattlePhase.Lost,s.Phase);
+            s=new GridSession(map); WaitRound(s); Assert.AreEqual(Vector2Int.right,s.Enemies[0].Direction); Assert.True(s.IsRecognizing(s.Enemies[0])); Assert.AreEqual(BattlePhase.Lost,s.Phase);
         }
         [Test] public void DashChecksIntermediateCellAndEvasionLocksForOneNormalAction()
         {
@@ -115,7 +115,7 @@ namespace IBIIIS.Tests
             Assert.True(s.TryUndo()); Assert.AreEqual(0,s.UndoCount);
             var fresh=new GridSession(map);
             Assert.AreEqual(BattlePhase.Waiting,s.Phase); Assert.AreEqual(fresh.Position,s.Position); Assert.AreEqual(fresh.Destination,s.Destination); Assert.AreEqual(0,new List<Vector2Int>(s.AttackCells).Count);
-            for(int i=0;i<2;i++){ Assert.AreEqual(fresh.Enemies[i].Position,s.Enemies[i].Position); Assert.AreEqual(fresh.Enemies[i].Direction,s.Enemies[i].Direction); Assert.True(s.Enemies[i].Alive); Assert.False(s.Enemies[i].Recognized); }
+            for(int i=0;i<2;i++){ Assert.AreEqual(fresh.Enemies[i].Position,s.Enemies[i].Position); Assert.AreEqual(fresh.Enemies[i].Direction,s.Enemies[i].Direction); Assert.True(s.Enemies[i].Alive); Assert.AreEqual(fresh.IsRecognizing(fresh.Enemies[i]),s.IsRecognizing(s.Enemies[i])); }
             Assert.True(s.TryAct(PlayerAction.Move,Vector2Int.up)); s.Advance(2); Assert.AreEqual(BattlePhase.Waiting,s.Phase);
         }
         [Test] public void UndoStepsBackThroughEvasionLockAndKilledEnemiesAndIsBlockedWhileMoving()
@@ -162,11 +162,14 @@ namespace IBIIIS.Tests
         {
             Assert.AreEqual(new Vector2Int(1,0),EnemyActionStep.Rotate(Vector2Int.up,EnemyTurn.Right)); Assert.AreEqual(new Vector2Int(-1,0),EnemyActionStep.Rotate(Vector2Int.up,EnemyTurn.Left)); Assert.AreEqual(Vector2Int.down,EnemyActionStep.Rotate(Vector2Int.up,EnemyTurn.Around));
             var go=Enemy(0,3,Vector2Int.up); SetActions(go,EnemyActionStep.Move(1),EnemyActionStep.TurnBy(EnemyTurn.Right),EnemyActionStep.Move(1));
-            var s=new GridSession(map); Assert.AreEqual(2,s.Enemies[0].MoveCells); Assert.True(s.TryAct(PlayerAction.Wait,Vector2Int.zero)); s.Advance(.25f);
+            var s=new GridSession(map); Assert.True(s.TryAct(PlayerAction.Wait,Vector2Int.zero)); s.Advance(.25f);
             Assert.AreEqual(new Vector2Int(0,4),s.Enemies[0].Position); Assert.AreEqual(Vector2Int.right,s.Enemies[0].Direction); Assert.True(s.IsEnemiesMoving);
             s.Advance(.25f); Assert.AreEqual(new Vector2Int(1,4),s.Enemies[0].Position); Assert.AreEqual(BattlePhase.Waiting,s.Phase);
             SetActions(go,EnemyActionStep.TurnBy(EnemyTurn.Around)); s=new GridSession(map); WaitRound(s);
             Assert.AreEqual(new Vector2Int(0,3),s.Enemies[0].Position); Assert.AreEqual(Vector2Int.down,s.Enemies[0].Direction); Assert.AreEqual(BattlePhase.Waiting,s.Phase);
+            Assert.AreEqual(0,s.EnemyStepsCompleted,"회전만 하는 적은 이동 단계를 쓰지 않는다");
+            // 적 이동 시간이 플레이어 이동보다 길어도 회전만 하는 행동은 플레이어 이동 시간에 끝난다.
+            s=new GridSession(map); Assert.True(s.TryAct(PlayerAction.Wait,Vector2Int.zero,.25f,1f)); s.Advance(.25f); Assert.AreEqual(BattlePhase.Waiting,s.Phase);
         }
         [Test] public void AimActionUsesEnemyPositionAtItsOwnTurnInTheSequence()
         {
@@ -308,6 +311,9 @@ namespace IBIIIS.Tests
             var go=Enemy(5,5,Vector2Int.up); var definition=go.GetComponent<EnemyDefinition>();
             SetActions(go,EnemyActionStep.Move(1)); var so=new SerializedObject(definition); so.FindProperty("actions").GetArrayElementAtIndex(0).FindPropertyRelative("cells").intValue=3; so.ApplyModifiedPropertiesWithoutUndo();
             Assert.False(definition.IsValid); Assert.Throws<ArgumentException>(()=>map.PlaceEnemy(new Vector2Int(4,5),go,Vector2Int.up));
+            var problems=definition.DescribeProblems(); Assert.AreEqual(1,problems.Count); StringAssert.Contains("행동 1번",problems[0]);
+            StringAssert.Contains("행동 1번",string.Join("
+",map.ValidateMap(false))); // 맵 검증도 같은 이유를 보여 준다
             var legacy=Enemy(2,5,Vector2Int.up,2).GetComponent<EnemyDefinition>(); Assert.True(legacy.UsesLegacyActions);
             Assert.True(EnemyDefinitionEditor.ConvertLegacy(new SerializedObject(legacy))); Assert.False(legacy.UsesLegacyActions);
             var converted=legacy.Actions; Assert.AreEqual(2,converted.Length); Assert.AreEqual(EnemyActionType.AimAtPlayer,converted[0].Type); Assert.AreEqual(2,converted[1].Cells);

@@ -29,6 +29,19 @@ namespace IBIIIS
         public Vector2Int[] RecognizedAttack => recognizedAttack == null ? null : (Vector2Int[])recognizedAttack.Clone();
         public Color EditorColor => editorColor;
         public bool IsValid => !string.IsNullOrEmpty(enemyId) && ActionsValid && recognition != null && attack != null && recognizedAttack != null;
+        /// <summary>IsValid가 false인 이유(메시지용). 문제가 없으면 빈 목록. IsValid는 자주 호출되므로 할당 없이 두고, 이 함수는 표시할 때만 부른다.</summary>
+        public System.Collections.Generic.List<string> DescribeProblems()
+        {
+            var problems = new System.Collections.Generic.List<string>();
+            if (string.IsNullOrEmpty(enemyId)) problems.Add("Enemy Id가 비어 있습니다");
+            var steps = Actions;
+            for (int i = 0; i < steps.Length; i++)
+                if (!steps[i].IsValid) problems.Add($"행동 {i + 1}번(전진) 칸 수가 1~{EnemyActionStep.MaxMoveCells} 밖입니다");
+            if (recognition == null) problems.Add("Recognition 범위가 없습니다");
+            if (attack == null) problems.Add("Attack 범위가 없습니다");
+            if (recognizedAttack == null) problems.Add("Recognized Attack 범위가 없습니다");
+            return problems;
+        }
         /// <summary>카메라를 향하는 외형 자식. 없으면 null.</summary>
         public Transform Visual => visual != null && visual != transform ? visual : null;
         public void FaceCamera(Camera camera) { if (visual != null && visual != transform && camera != null) CameraFacingSprite.Face(visual, camera); }

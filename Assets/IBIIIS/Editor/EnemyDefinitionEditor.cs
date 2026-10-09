@@ -36,6 +36,7 @@ namespace IBIIIS.Editor
         public override void OnInspectorGUI()
         {
             var definition = (EnemyDefinition)target;
+            if (!definition.IsValid) EditorGUILayout.HelpBox("이 설정으로는 맵에 배치·플레이할 수 없습니다: " + string.Join(", ", definition.DescribeProblems()) + ".", MessageType.Error);
             if (definition.UsesLegacyActions)
             {
                 EditorGUILayout.HelpBox($"행동 목록이 비어 있어 이전 설정으로 동작합니다: 인식 시 조준 → {definition.LegacyMoveCells}칸 전진. 변환하면 이 목록을 직접 편집할 수 있습니다.", MessageType.Info);

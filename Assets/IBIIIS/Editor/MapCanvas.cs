@@ -130,7 +130,8 @@ namespace IBIIIS.Editor
         // 검증 경로 재생: 이번 행동 뒤 공격 칸, 플레이어 이동 선, 적(제거된 적은 흐린 ×), 플레이어 원을 그린다. 맵의 정적 적 배치 대신 그린다.
         private void DrawReplay(Painter2D painter, MapReplay.Frame frame)
         {
-            foreach (var cell in frame.Attack) if (Map.Contains(cell)) FillCell(painter, cell, new Color(AttackColor.r, AttackColor.g, AttackColor.b, .45f), 4);
+            // 전투 화면(Tab 범위 표시)과 같게 이동 가능한 칸의 공격 범위만 칠한다.
+            foreach (var cell in frame.Attack) if (Map.IsWalkable(cell)) FillCell(painter, cell, new Color(AttackColor.r, AttackColor.g, AttackColor.b, .45f), 4);
             for (int i = 0; i < frame.EnemyPositions.Length && i < Map.Enemies.Count; i++)
             {
                 var placement = Map.Enemies[i];

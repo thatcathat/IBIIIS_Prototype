@@ -119,7 +119,9 @@ namespace IBIIIS
             {
                 if (enemy == null) { errors.Add("누락된 적 배치가 있습니다."); continue; }
                 var definition = enemy.Prefab != null ? enemy.Prefab.GetComponent<EnemyDefinition>() : null;
-                if (definition == null || !definition.IsValid) errors.Add($"{enemy.Position}: 적 프리팹 또는 설정이 없습니다.");
+                if (enemy.Prefab == null) errors.Add($"{enemy.Position}: 적 프리팹이 없습니다(삭제되었거나 연결이 끊김).");
+                else if (definition == null) errors.Add($"{enemy.Position}: 적 프리팹 '{enemy.Prefab.name}'에 EnemyDefinition이 없습니다.");
+                else if (!definition.IsValid) errors.Add($"{enemy.Position}: 적 '{enemy.Prefab.name}' 설정 오류: {string.Join(", ", definition.DescribeProblems())}.");
                 if (!IsWalkable(enemy.Position) || !occupied.Add(enemy.Position) || (hasStart && start == enemy.Position)) errors.Add($"{enemy.Position}: 적 배치가 이동 영역·시작 위치·다른 적과 충돌합니다.");
                 if (Math.Abs((long)enemy.Direction.x) + Math.Abs((long)enemy.Direction.y) != 1) errors.Add($"{enemy.Position}: 적 방향이 잘못되었습니다.");
             }

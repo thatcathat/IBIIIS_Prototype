@@ -251,7 +251,7 @@ namespace IBIIIS.Editor
                 var definition = prefab.GetComponent<EnemyDefinition>(); var target = prefab;
                 var button = new Button(() =>
                 {
-                    if (!definition.IsValid) { Message($"{target.name}: EnemyDefinition 설정이 올바르지 않아 배치할 수 없습니다. 프리팹을 확인하세요."); return; }
+                    if (!definition.IsValid) { Message($"{target.name}: 설정 오류로 배치할 수 없습니다({string.Join(", ", definition.DescribeProblems())}). 프리팹을 확인하세요."); return; }
                     selectedEnemy = target; RefreshEnemyPalette(); RefreshEnemySummary(); SelectTool(MapTool.PlaceEnemy);
                 }) { text = prefab.name, tooltip = $"{AssetDatabase.GetAssetPath(prefab)}\n{DescribeActions(definition)}" };
                 button.AddToClassList("swatch"); button.AddToClassList("swatch--enemy");
