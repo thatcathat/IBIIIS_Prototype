@@ -20,7 +20,11 @@ namespace IBIIIS.Tests
         [TearDown] public void TearDown()
         {
             ProgressStore.UseFile(null);
-            foreach (var path in new[] { savePath, savePath + ".corrupt", savePath + ".tmp" }) if (File.Exists(path)) File.Delete(path);
+            foreach (var path in new[] { savePath, savePath + ".corrupt", savePath + ".tmp" })
+            {
+                if (File.Exists(path)) File.Delete(path);
+                if (Directory.Exists(path)) Directory.Delete(path); // 저장 실패를 만들려고 같은 이름으로 만든 폴더
+            }
             foreach (var go in spawned) if (go != null) Object.DestroyImmediate(go);
             StageFlow.Begin(null);
         }
@@ -60,6 +64,42 @@ namespace IBIIIS.Tests
             Assert.AreEqual("{ not json", File.ReadAllText(savePath + ".corrupt"));
             ProgressStore.MarkCleared("stage-a"); ProgressStore.Reload();
             Assert.IsTrue(ProgressStore.IsCleared("stage-a"));
+        }
+        [Test] public void FailedSaveDoesNotMarkStageClearedAndCanBeRetried()
+        {
+            Directory.CreateDirectory(savePath + ".tmp"); // 임시 파일 자리를 폴더로 막아 저장을 실패시킨다
+            Assert.Throws<System.UnauthorizedAccessException>(() => ProgressStore.MarkCleared("stage-a"));
+            Assert.IsFalse(ProgressStore.IsCleared("stage-a"), "저장에 실패하면 깃발도 켜지지 않는다");
+            Directory.Delete(savePath + ".tmp");
+            ProgressStore.MarkCleared("stage-a"); ProgressStore.Reload();
+            Assert.IsTrue(ProgressStore.IsCleared("stage-a"));
+        }
+        [Test] public void UnreadableSaveBlocksSavingInsteadOfOverwriting()
+        {
+            File.WriteAllText(savePath, "{\"version\":1,\"clearedStages\":[\"stage-old\"]}");
+            var original = File.ReadAllText(savePath);
+            using (new FileStream(savePath, FileMode.Open, FileAccess.ReadWrite, FileShare.None)) // 다른 프로그램이 잠근 상황
+            {
+                ProgressStore.Reload();
+                LogAssert.Expect(LogType.Error, new System.Text.RegularExpressions.Regex("읽지 못해 저장하지 않습니다"));
+                Assert.IsFalse(ProgressStore.IsCleared("stage-old"));
+                Assert.IsNotNull(ProgressStore.SaveBlockedReason);
+                Assert.Throws<System.InvalidOperationException>(() => ProgressStore.MarkCleared("stage-a"));
+            }
+            Assert.AreEqual(original, File.ReadAllText(savePath));
+            Assert.IsFalse(File.Exists(savePath + ".corrupt"), "읽기 실패는 형식 오류가 아니므로 사본을 만들지 않는다");
+            ProgressStore.Reload();
+            Assert.IsTrue(ProgressStore.IsCleared("stage-old")); Assert.IsNull(ProgressStore.SaveBlockedReason);
+        }
+        [Test] public void CorruptSaveIsKeptWhenBackupCannotBeMade()
+        {
+            File.WriteAllText(savePath, "{ not json");
+            Directory.CreateDirectory(savePath + ".corrupt"); // 사본 자리를 폴더로 막아 복사를 실패시킨다
+            ProgressStore.Reload();
+            LogAssert.Expect(LogType.Error, new System.Text.RegularExpressions.Regex("사본도 만들지 못해"));
+            Assert.IsFalse(ProgressStore.IsCleared("stage-a"));
+            Assert.Throws<System.InvalidOperationException>(() => ProgressStore.MarkCleared("stage-a"));
+            Assert.AreEqual("{ not json", File.ReadAllText(savePath));
         }
         [Test] public void ReturnPointIsGivenOnceAndOnlyToTheReturnScene()
         {

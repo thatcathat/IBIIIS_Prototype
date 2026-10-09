@@ -61,9 +61,10 @@
 ## 클리어 기록
 
 - 위치: `Application.persistentDataPath/IBIIIS_progress.json`(Windows 에디터에서는 보통 `%USERPROFILE%\AppData\LocalLow\<회사 이름>\<제품 이름>\`). 메뉴 `IBIIIS > Overworld > Show Save File`로 연다.
-- 형식: `{"version": 1, "clearedStages": ["스테이지 ID", ...]}`. 승리 시 해당 스테이지 ID를 한 번만 추가하고 바로 저장한다. 임시 파일에 쓴 뒤 교체한다.
+- 형식: `{"version": 1, "clearedStages": ["스테이지 ID", ...]}`. 승리 시 해당 스테이지 ID를 한 번만 추가하고 바로 저장한다. 임시 파일에 쓴 뒤 교체한다. 저장에 성공한 뒤에만 클리어로 표시하므로, 저장에 실패하면 깃발도 켜지지 않고 같은 스테이지를 다시 이기면 다시 저장을 시도한다.
 - 키는 `StageEntrance`의 Stage Id다. 표시 이름·씬 경로가 바뀌어도 ID가 같으면 기록이 유지된다. ID를 바꾸거나 두 입구에 같은 ID를 쓰면 기록이 어긋나므로 Inspector가 누락·중복을 알린다. ID 명명 규칙은 미정이다.
-- 읽을 수 없는 파일은 `.corrupt` 사본으로 보존한 뒤 빈 기록으로 시작한다. 더 새로운 버전의 파일도 같은 방식으로 다룬다.
+- 형식이 잘못된 파일은 `.corrupt` 사본으로 보존한 뒤 빈 기록으로 시작한다. 더 새로운 버전의 파일도 같은 방식으로 다룬다.
+- 파일을 읽지 못했거나(다른 프로그램이 잠금, 권한 없음 등) `.corrupt` 사본을 만들지 못했으면 원본을 지키려고 그 실행 동안 저장하지 않는다. Console에 `[IBIIIS]` 오류를 한 번 남기고, 클리어 팝업에 저장 실패를 표시한다. 원인을 해결한 뒤 Play를 다시 시작하면 다시 읽는다.
 - 초기화는 `IBIIIS > Overworld > Reset Clear Records`(파일 삭제). 저장 슬롯·클라우드 저장은 없다.
 
 ## 환경 배치 데이터

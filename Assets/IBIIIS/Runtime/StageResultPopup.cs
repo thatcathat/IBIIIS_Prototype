@@ -11,6 +11,8 @@ namespace IBIIIS
         private StageRun run;
         private GridMapPlayer battle;
         private bool clearSaved, closing;
+        // 클리어 기록 저장에 실패했는지, 확인 버튼으로 다시 시도했는지
+        private bool saveFailed, retried;
         private string problem;
         public static StageResultPopup Create(StageRun run)
         {
@@ -45,9 +47,13 @@ namespace IBIIIS
         private void Update()
         {
             if (clearSaved || Result != BattlePhase.Won) return;
-            clearSaved = true;
-            try { ProgressStore.MarkCleared(run.StageId); }
-            catch (Exception e) { problem = $"클리어 기록을 저장하지 못했습니다: {e.Message}"; Debug.LogException(e); }
+            clearSaved = true; TrySaveClear();
+        }
+        // 승리 때 한 번 저장한다. 실패하면 매 프레임 다시 시도하지 않고, 확인 버튼을 누를 때 한 번 더 시도한다.
+        private bool TrySaveClear()
+        {
+            try { ProgressStore.MarkCleared(run.StageId); saveFailed = false; return true; }
+            catch (Exception e) { saveFailed = true; problem = $"클리어 기록을 저장하지 못했습니다: {e.Message}"; Debug.LogException(e); return false; }
         }
         private void OnGUI()
         {
@@ -66,7 +72,17 @@ namespace IBIIIS
             bool confirm = GUI.Button(new Rect(rect.x + (width - 160) / 2, rect.yMax - 60, 160, 40), "확인", OverworldGui.Button);
             var e = Event.current;
             if (e.type == EventType.KeyDown && (e.keyCode == KeyCode.Return || e.keyCode == KeyCode.KeypadEnter)) { confirm = true; e.Use(); }
-            if (confirm) Close();
+            if (confirm)
+            {
+                // 저장 실패 뒤 첫 확인은 다시 저장을 시도한다. 또 실패하면 안내하고, 다음 확인에서는 저장 없이 돌아간다.
+                if (saveFailed && !retried)
+                {
+                    retried = true;
+                    if (!TrySaveClear()) { problem += "\n다시 시도했지만 실패했습니다. 확인을 누르면 저장하지 않고 미니맵으로 돌아갑니다."; return; }
+                    problem = null;
+                }
+                Close();
+            }
         }
         private void Close()
         {
