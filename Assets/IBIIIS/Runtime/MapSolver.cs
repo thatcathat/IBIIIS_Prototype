@@ -88,7 +88,7 @@ namespace IBIIIS
             var parent = new List<int> { -1 }; var move = new List<int> { -1 }; var depth = new List<int> { 0 }; var kind = new List<int> { Waiting };
             var visited = new Dictionary<string, int> { [states[0]] = 0 };
             var edgeFrom = new List<int>(); var edgeTo = new List<int>();
-            bool truncated = false; int firstWin = -1, firstLoss = -1, expanded = 0;
+            bool truncated = false; int firstWin = -1, firstLoss = -1, expanded = 0, maxDepth = 0;
             for (int head = 0; head < states.Count; head++)
             {
                 if (kind[head] != Waiting) continue;
@@ -101,7 +101,9 @@ namespace IBIIIS
                     if (!session.TryAct(Moves[m].Action, Moves[m].Direction, .01f, .01f)) continue;
                     session.Advance(1000f);
                     int outcome = session.Phase == BattlePhase.Won ? Won : session.Phase == BattlePhase.Lost ? Lost : Waiting;
-                    string core = session.SaveCore(); string key = outcome == Waiting ? core : (outcome == Won ? "W" : "L") + core;
+                    maxDepth = Mathf.Max(maxDepth, depth[head] + 1);
+                    // 승리·패배는 그 뒤를 펼치지 않으므로 각각 하나의 상태로 합친다. 너비 우선이라 처음 찾은 것이 최단이고, 상태 한도도 쓰지 않는다.
+                    string core = session.SaveCore(); string key = outcome == Waiting ? core : outcome == Won ? "W" : "L";
                     if (!visited.TryGetValue(key, out int index))
                     {
                         if (states.Count >= options.MaxStates) { truncated = true; continue; }
@@ -112,8 +114,8 @@ namespace IBIIIS
                     if (outcome != Lost) { edgeFrom.Add(head); edgeTo.Add(index); }
                 }
             }
-            int waiting = 0, maxDepth = 0;
-            for (int i = 0; i < states.Count; i++) { if (kind[i] == Waiting) waiting++; maxDepth = Mathf.Max(maxDepth, depth[i]); }
+            int waiting = 0;
+            for (int i = 0; i < states.Count; i++) if (kind[i] == Waiting) { waiting++; maxDepth = Mathf.Max(maxDepth, depth[i]); }
             result.States = waiting; result.MaxDepthReached = maxDepth; result.Completed = !truncated;
             if (firstWin >= 0) { result.ShortestWin = depth[firstWin]; result.WinPath = PathTo(firstWin, parent, move); }
             if (firstLoss >= 0) { result.EarliestLoss = depth[firstLoss]; result.LossPath = PathTo(firstLoss, parent, move); }

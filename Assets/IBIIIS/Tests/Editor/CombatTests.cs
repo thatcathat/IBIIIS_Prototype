@@ -196,6 +196,28 @@ namespace IBIIIS.Tests
         {
             var s=new GridSession(map); foreach(var m in path){ Assert.True(s.TryAct(m.Action,m.Direction)); s.Advance(2); } return s;
         }
+        // 분석기 상태 문자열: [플레이어 x+1, y+1, 회피기 잠금] + 적마다 [x+1, y+1, 방향x+1, 방향y+1, 생존]
+        private static string Core(Vector2Int player, params (Vector2Int pos, Vector2Int dir, bool alive)[] enemies)
+        {
+            var data = new List<char> { (char)(player.x + 1), (char)(player.y + 1), (char)0 };
+            foreach (var (pos, dir, alive) in enemies) data.AddRange(new[] { (char)(pos.x + 1), (char)(pos.y + 1), (char)(dir.x + 1), (char)(dir.y + 1), (char)(alive ? 1 : 0) });
+            return new string(data.ToArray());
+        }
+        [Test] public void SolverStateIgnoresWhereDeadEnemiesFell()
+        {
+            Enemy(1,3,Vector2Int.right); Enemy(5,3,Vector2Int.left); Enemy(0,6,Vector2Int.right);
+            var s = new GridSession(map);
+            var alive = (new Vector2Int(0,6), Vector2Int.right, true);
+            s.LoadCore(Core(new Vector2Int(3,0), (new Vector2Int(2,3), Vector2Int.right, false), (new Vector2Int(2,3), Vector2Int.left, false), alive)); var a = s.SaveCore();
+            s.LoadCore(Core(new Vector2Int(3,0), (new Vector2Int(4,5), Vector2Int.up, false), (new Vector2Int(4,5), Vector2Int.down, false), alive)); var b = s.SaveCore();
+            Assert.AreEqual(a, b, "죽은 적이 어디서 어느 방향으로 사라졌는지는 같은 상태");
+            s.LoadCore(Core(new Vector2Int(3,0), (new Vector2Int(2,3), Vector2Int.right, false), (new Vector2Int(2,3), Vector2Int.left, false), (new Vector2Int(1,6), Vector2Int.right, true)));
+            Assert.AreNotEqual(a, s.SaveCore(), "살아 있는 적의 위치는 구분");
+            s.LoadCore(Core(new Vector2Int(3,0), (new Vector2Int(1,3), Vector2Int.right, true), (new Vector2Int(2,3), Vector2Int.left, false), alive));
+            Assert.AreNotEqual(a, s.SaveCore(), "생존 여부는 구분");
+            Assert.True(s.TryAct(PlayerAction.Wait, Vector2Int.zero)); s.Advance(2);
+            Assert.AreNotEqual(BattlePhase.Lost, s.Phase, "죽은 적의 (-1,-1) 위치는 판정에 쓰이지 않음");
+        }
         [Test] public void SolverFindsShortestWinAndItsPathReplaysToVictory()
         {
             Enemy(1,3,Vector2Int.right); Enemy(5,3,Vector2Int.left);

@@ -53,6 +53,10 @@ namespace IBIIIS
         }
         private readonly Stack<Snapshot> history = new Stack<Snapshot>();
         private readonly bool[,] walkable;
+        // 맵 분석기가 행동마다 이동 가능 여부를 묻기 때문에 델리게이트와 충돌 계산 버퍼를 한 번만 만들어 재사용한다.
+        private readonly Func<Vector2Int, bool> available;
+        private readonly List<int> collisionGroup = new List<int>();
+        private bool[] grouped = Array.Empty<bool>();
         private readonly List<EnemyState> enemies = new List<EnemyState>();
         private readonly HashSet<Vector2Int> attackCells = new HashSet<Vector2Int>();
         private float elapsed, duration, enemyDuration, enemyElapsed;
@@ -89,6 +93,7 @@ namespace IBIIIS
             if (errors.Count > 0) throw new ArgumentException(string.Join("\n", errors));
             walkable = new bool[map.Width, map.Height];
             for (int y = 0; y < map.Height; y++) for (int x = 0; x < map.Width; x++) walkable[x, y] = map.IsWalkable(new Vector2Int(x, y));
+            available = Available;
             Position = Destination = map.Start;
             foreach (var spawn in map.Enemies)
             {
@@ -111,9 +116,9 @@ namespace IBIIIS
         {
             if (Phase != BattlePhase.Waiting) return false;
             if (action == PlayerAction.Wait) return direction == Vector2Int.zero;
-            if (action == PlayerAction.Move) return CanStep(Position, direction, Available);
+            if (action == PlayerAction.Move) return CanStep(Position, direction, available);
             if (EvasionLocked) return false;
-            if (action == PlayerAction.Dash) return CanStep(Position, direction, Available) && Available(Position + direction * 2);
+            if (action == PlayerAction.Dash) return CanStep(Position, direction, available) && Available(Position + direction * 2);
             if (action == PlayerAction.Roll) return Math.Abs((long)direction.x) == 1 && Math.Abs((long)direction.y) == 1 && Available(Position + direction);
             return false;
         }
@@ -129,7 +134,9 @@ namespace IBIIIS
         }
         // 맵 분석기가 같은 세션으로 수많은 행동을 시험할 때 되돌리기 기록이 쌓이지 않게 끈다.
         internal bool RecordHistory = true;
-        /// <summary>앞으로의 전개를 정하는 상태만 문자열로 저장한다: 플레이어 위치, 회피기 쿨다운, 적의 위치·방향·생존. 입력 대기 상태에서만 의미가 있다.</summary>
+        /// <summary>앞으로의 전개를 정하는 상태만 문자열로 저장한다: 플레이어 위치, 회피기 쿨다운, 각 적의 생존, 살아 있는 적의 위치·방향.
+        /// 죽은 적의 위치·방향은 이후 판정에 쓰이지 않으므로(모든 판정이 생존을 먼저 본다) 고정값으로 기록해, 어디서 충돌했는지만 다른 상태를 같은 상태로 본다.
+        /// 입력 대기 상태에서만 의미가 있다.</summary>
         internal string SaveCore()
         {
             var data = new char[3 + enemies.Count * 5];
@@ -137,8 +144,9 @@ namespace IBIIIS
             for (int i = 0; i < enemies.Count; i++)
             {
                 var e = enemies[i]; int at = 3 + i * 5;
+                if (!e.Alive) { data[at] = data[at + 1] = data[at + 2] = data[at + 3] = (char)0; data[at + 4] = (char)0; continue; } // LoadCore 뒤 위치 (-1,-1)·방향 (-1,-1)이지만 쓰이지 않는다
                 data[at] = (char)(e.Position.x + 1); data[at + 1] = (char)(e.Position.y + 1);
-                data[at + 2] = (char)(e.Direction.x + 1); data[at + 3] = (char)(e.Direction.y + 1); data[at + 4] = (char)(e.Alive ? 1 : 0);
+                data[at + 2] = (char)(e.Direction.x + 1); data[at + 3] = (char)(e.Direction.y + 1); data[at + 4] = (char)1;
             }
             return new string(data);
         }
@@ -250,22 +258,26 @@ namespace IBIIIS
         private void CommitEnemyStep()
         {
             enemyStepIndex++;
-            var occupied = new Dictionary<Vector2Int, List<int>>();
-            for (int i = 0; i < enemies.Count; i++)
+            foreach (var e in enemies)
             {
-                var e = enemies[i];
                 if (!e.Alive) continue;
                 e.Position = e.StepTo;
                 if (e.Moving) { e.Path.Add(e.Position); e.CellsLeft--; }
-                if (!occupied.TryGetValue(e.Position, out var group)) occupied[e.Position] = group = new List<int>();
-                group.Add(i);
             }
-            foreach (var pair in occupied)
+            // 같은 칸에 도착한 살아 있는 적을 묶는다. 묶음은 가장 작은 적 인덱스 순, 묶음 안은 인덱스 오름차순(충돌 기록 순서 유지).
+            // 묶음을 모두 정한 뒤 한꺼번에 제거하므로 세 마리 이상이 같은 칸에 와도 모두 사라진다.
+            if (grouped.Length < enemies.Count) grouped = new bool[enemies.Count];
+            Array.Clear(grouped, 0, enemies.Count);
+            int firstCollision = collisions.Count;
+            for (int i = 0; i < enemies.Count; i++)
             {
-                if (pair.Value.Count < 2) continue;
-                foreach (var i in pair.Value) enemies[i].Alive = false;
-                collisions.Add(new EnemyCollision(pair.Key, enemyStepIndex, pair.Value.ToArray()));
+                if (!enemies[i].Alive || grouped[i]) continue;
+                collisionGroup.Clear(); collisionGroup.Add(i);
+                for (int j = i + 1; j < enemies.Count; j++)
+                    if (enemies[j].Alive && !grouped[j] && enemies[j].Position == enemies[i].Position) { grouped[j] = true; collisionGroup.Add(j); }
+                if (collisionGroup.Count > 1) collisions.Add(new EnemyCollision(enemies[i].Position, enemyStepIndex, collisionGroup.ToArray()));
             }
+            for (int c = firstCollision; c < collisions.Count; c++) foreach (var i in collisions[c].Enemies) enemies[i].Alive = false;
             bool another = false;
             foreach (var e in enemies) if (e.Alive) { RunInstantActions(e); if (e.CellsLeft > 0) another = true; }
             if (another) PlanEnemyStep(); else enemiesComplete = true;
