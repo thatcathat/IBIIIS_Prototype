@@ -19,7 +19,7 @@ namespace IBIIIS.Editor
             const int size = 256;
             if (!File.Exists(path))
             {
-                Directory.CreateDirectory(Path.GetDirectoryName(path)); AssetDatabase.Refresh();
+                AssetPaths.EnsureFolder(Path.GetDirectoryName(path));
                 var texture = new Texture2D(size, size, TextureFormat.RGBA32, false);
                 var pixels = new Color[size * size];
                 for (int y = 0; y < size; y++) for (int x = 0; x < size; x++)

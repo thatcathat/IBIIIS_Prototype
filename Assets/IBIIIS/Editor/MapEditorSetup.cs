@@ -11,7 +11,7 @@ namespace IBIIIS.Editor
     {
         public static IBIIIS.PlayerSettings EnsurePlayerSettings(GridMapPlayer legacySource = null)
         {
-            Directory.CreateDirectory(AssetPaths.Settings); AssetDatabase.Refresh();
+            AssetPaths.EnsureFolder(AssetPaths.Settings);
             var path = AssetPaths.PlayerSettings;
             var settings = AssetDatabase.LoadAssetAtPath<IBIIIS.PlayerSettings>(path);
             if (settings != null) return settings;
@@ -32,7 +32,7 @@ namespace IBIIIS.Editor
         }
         public static MapCameraSettings EnsureCameraSettings()
         {
-            Directory.CreateDirectory(AssetPaths.Settings); AssetDatabase.Refresh();
+            AssetPaths.EnsureFolder(AssetPaths.Settings);
             var path = AssetPaths.CameraSettings;
             var settings = AssetDatabase.LoadAssetAtPath<MapCameraSettings>(path);
             if (settings != null) return settings;
@@ -46,7 +46,7 @@ namespace IBIIIS.Editor
             const string path = folder + "/DefaultGround.mat";
             var material = AssetDatabase.LoadAssetAtPath<Material>(path);
             if (material != null) return material;
-            Directory.CreateDirectory(folder); AssetDatabase.Refresh();
+            AssetPaths.EnsureFolder(folder);
             var shader = Shader.Find("Universal Render Pipeline/Unlit");
             if (shader == null) throw new InvalidOperationException("URP/Unlit 셰이더가 없습니다.");
             material = new Material(shader) { color = new Color(.22f, .24f, .26f) };
@@ -60,7 +60,7 @@ namespace IBIIIS.Editor
             var map = AssetDatabase.LoadAssetAtPath<GridMap>(AssetPaths.StarterMap);
             if (map == null)
             {
-                Directory.CreateDirectory(Path.GetDirectoryName(AssetPaths.StarterMap)); AssetDatabase.Refresh();
+                AssetPaths.EnsureFolder(Path.GetDirectoryName(AssetPaths.StarterMap));
                 map = ScriptableObject.CreateInstance<GridMap>();
                 map.Resize(12, 10);
                 for (int y = 0; y < map.Height; y++) for (int x = 0; x < map.Width; x++)
@@ -121,7 +121,7 @@ namespace IBIIIS.Editor
             var material = AssetDatabase.LoadAssetAtPath<Material>(materialPath);
             if (material == null)
             {
-                Directory.CreateDirectory(AssetPaths.Materials); AssetDatabase.Refresh();
+                AssetPaths.EnsureFolder(AssetPaths.Materials);
                 var shader = Shader.Find("Universal Render Pipeline/Unlit");
                 if (shader == null) throw new InvalidOperationException("URP/Unlit 셰이더가 없습니다.");
                 material = new Material(shader); AssetDatabase.CreateAsset(material, AssetDatabase.GenerateUniqueAssetPath(materialPath)); AssetDatabase.SaveAssetIfDirty(material);

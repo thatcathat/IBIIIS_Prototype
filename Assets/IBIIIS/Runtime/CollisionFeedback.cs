@@ -132,15 +132,7 @@ namespace IBIIIS
             effects.Add(effect);
             Apply(effect);
         }
-        private void PlaySound(AudioClip clip, float volume)
-        {
-            if (audio == null)
-            {
-                var go = new GameObject("Collision Audio"); go.transform.SetParent(parent, false);
-                audio = go.AddComponent<AudioSource>(); audio.playOnAwake = false; audio.spatialBlend = 0;
-            }
-            audio.PlayOneShot(clip, volume);
-        }
+        private void PlaySound(AudioClip clip, float volume) => RuntimeObjects.PlayOneShot(ref audio, parent, "Collision Audio", clip, volume);
 
         public void Tick(float seconds)
         {
@@ -231,10 +223,6 @@ namespace IBIIIS
             if (audio != null) { Release(audio.gameObject); audio = null; }
             if (ownsSettings && settings != null) Release(settings);
         }
-        private static void Release(UnityEngine.Object value)
-        {
-            if (value == null) return;
-            if (Application.isPlaying) UnityEngine.Object.Destroy(value); else UnityEngine.Object.DestroyImmediate(value);
-        }
+        private static void Release(UnityEngine.Object value) => RuntimeObjects.Release(value);
     }
 }

@@ -90,19 +90,13 @@ namespace IBIIIS
             {
                 landingTime += seconds;
                 if (landingTime >= settings.LandingTime) landingTime = -1;
-                else return Squashed(landingSquash * Mathf.Sin(Mathf.PI * landingTime / settings.LandingTime));
+                else return MotionPoses.Landing(landingTime, settings.LandingTime, landingSquash);
             }
             if (bumpTime >= 0)
             {
                 bumpTime += seconds;
                 if (bumpTime >= settings.BumpTime) bumpTime = -1;
-                else
-                {
-                    float k = Mathf.Sin(Mathf.PI * bumpTime / settings.BumpTime);
-                    var pose = Squashed(settings.BumpSquash * k);
-                    pose.Shift = new Vector3(bumpDirection.x, 0, bumpDirection.y).normalized * settings.BumpDistance * k;
-                    return pose;
-                }
+                else return MotionPoses.Bump(bumpTime, settings.BumpTime, settings.BumpSquash, settings.BumpDistance, new Vector3(bumpDirection.x, 0, bumpDirection.y).normalized);
             }
             if (session.Phase == BattlePhase.Waiting && !session.IsBusy) return BreathPose(breathTime += seconds);
             breathTime = 0;
@@ -147,7 +141,7 @@ namespace IBIIIS
                 {
                     m.LandTime += seconds;
                     if (m.LandTime >= settings.EnemyLandingTime) { m.LandTime = -1; pose = MotionPose.Identity; }
-                    else pose = Squashed(settings.EnemyLandingSquash * Mathf.Sin(Mathf.PI * m.LandTime / settings.EnemyLandingTime));
+                    else pose = MotionPoses.Landing(m.LandTime, settings.EnemyLandingTime, settings.EnemyLandingSquash);
                 }
                 else pose = MotionPose.Identity;
                 if (m.TurnTime >= 0)

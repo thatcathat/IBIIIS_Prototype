@@ -16,7 +16,7 @@ namespace IBIIIS.Editor
         [MenuItem("IBIIIS/Create Default Collision Feedback")]
         public static CollisionFeedbackSettings EnsureDefault()
         {
-            Directory.CreateDirectory(AssetPaths.Effects); Directory.CreateDirectory(AssetPaths.Audio); AssetDatabase.Refresh();
+            AssetPaths.EnsureFolder(AssetPaths.Effects); AssetPaths.EnsureFolder(AssetPaths.Audio);
             var burst = EnsureBurstPrefab();
             var sound = EnsureSound();
             var settings = AssetDatabase.LoadAssetAtPath<CollisionFeedbackSettings>(AssetPaths.CollisionFeedback);

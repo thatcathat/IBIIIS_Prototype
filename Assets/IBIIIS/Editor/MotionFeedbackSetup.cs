@@ -18,17 +18,17 @@ namespace IBIIIS.Editor
         [MenuItem("IBIIIS/Create Default Motion Feedback")]
         public static MotionFeedbackSettings EnsureDefault()
         {
-            Directory.CreateDirectory(AssetPaths.Effects); Directory.CreateDirectory(AssetPaths.Audio); AssetDatabase.Refresh();
+            AssetPaths.EnsureFolder(AssetPaths.Effects); AssetPaths.EnsureFolder(AssetPaths.Audio);
             var dust = EnsureDustPrefab();
             // 가볍고 짧은 "톡": 높게 시작해 내려가는 짧은 음 + 아주 짧은 잡음
-            var footstep = EnsureSound(FootstepSound, .09f, (t, noise) => (float)Math.Sin(2 * Math.PI * Mathf.Lerp(900, 520, t / .09f) * t) * Mathf.Exp(-t * 45) + noise * Mathf.Exp(-t * 120) * .4f);
+            var footstep = EnsureSound(FootstepSound, .09f, (t, noise) => Chirp(t, 900, 520, .09f) * Mathf.Exp(-t * 45) + noise * Mathf.Exp(-t * 120) * .4f);
             // 둔한 "툭": 낮은 음이 빨리 사라짐
-            var bump = EnsureSound(BumpSound, .12f, (t, noise) => (float)Math.Sin(2 * Math.PI * Mathf.Lerp(260, 140, t / .12f) * t) * Mathf.Exp(-t * 30) + noise * Mathf.Exp(-t * 90) * .3f);
-            // 대시 "휙": 점점 커졌다 사라지는 바람 소리(잡음을 부드럽게 거른 것). 구르기 "슥": 더 짧고 낮은 바람 소리.
+            var bump = EnsureSound(BumpSound, .12f, (t, noise) => Chirp(t, 260, 140, .12f) * Mathf.Exp(-t * 30) + noise * Mathf.Exp(-t * 90) * .3f);
+            // 대시 "휙": 점점 커졌다 사라지는 바람 소리(잡음을 부드럽게 거른 것). 구르기 "슥": 더 짧고 덜 거른(가벼운) 바람 소리. smoothing이 클수록 낮고 부드럽다.
             var dash = EnsureNoise(DashSound, .2f, .35f, t => Mathf.Sin(Mathf.PI * Mathf.Clamp01(t / .2f)) * Mathf.Exp(-t * 4));
             var roll = EnsureNoise(RollSound, .15f, .15f, t => Mathf.Sin(Mathf.PI * Mathf.Clamp01(t / .15f)));
             // 적 발소리 "쿵": 낮게 떨어지는 음 + 짧은 잡음, 플레이어 발소리보다 무겁게.
-            var enemyStep = EnsureSound(EnemyFootstepSound, .16f, (t, noise) => (float)Math.Sin(2 * Math.PI * Mathf.Lerp(150, 70, t / .16f) * t) * Mathf.Exp(-t * 22) + noise * Mathf.Exp(-t * 70) * .35f);
+            var enemyStep = EnsureSound(EnemyFootstepSound, .16f, (t, noise) => Chirp(t, 150, 70, .16f) * Mathf.Exp(-t * 22) + noise * Mathf.Exp(-t * 70) * .35f);
             var settings = AssetDatabase.LoadAssetAtPath<MotionFeedbackSettings>(AssetPaths.MotionFeedback);
             if (settings == null)
             {
@@ -83,6 +83,9 @@ namespace IBIIIS.Editor
         }
 
         // 잡음을 한 단계 저역 통과로 부드럽게 만든 바람 소리. smoothing이 클수록 낮고 부드럽다.
+        /// <summary>주파수가 duration 동안 f0에서 f1로 일정하게 변하는 사인파(위상을 적분한 닫힌 식). sin(2π·f(t)·t)는 변화가 두 배로 빨라져 쓰지 않는다.
+        /// 이미 만든 WAV는 다시 만들지 않으므로 지금 소리에는 영향이 없다.</summary>
+        private static float Chirp(float t, float f0, float f1, float duration) => (float)Math.Sin(2 * Math.PI * (f0 * t + (f1 - f0) * t * t / (2 * duration)));
         private static AudioClip EnsureNoise(string path, float seconds, float smoothing, Func<float, float> envelope)
         {
             float filtered = 0;

@@ -36,9 +36,9 @@ namespace IBIIIS
         public float StrideProgress => strideTravel / stride;
         // 이번 프레임의 걸음 길이(걷기/달리기)
         private float stride = .9f;
-        private float WalkStride => overworld != null ? overworld.StrideLength : .9f;
-        private float RunStride => overworld != null ? overworld.RunStrideLength : 1.3f;
-        private float HopScale => overworld != null ? overworld.WalkHopScale : .5f;
+        private float WalkStride => overworld != null ? overworld.StrideLength : OverworldSettings.DefaultStrideLength;
+        private float RunStride => overworld != null ? overworld.RunStrideLength : OverworldSettings.DefaultRunStrideLength;
+        private float HopScale => overworld != null ? overworld.WalkHopScale : OverworldSettings.DefaultWalkHopScale;
         private bool Enabled => settings.Enabled;
         /// <param name="effectsParent">먼지·효과음 오브젝트를 둘 부모(월드 기준). null이면 먼지·소리 없이 자세만 계산한다.</param>
         public OverworldMotion(MotionFeedbackSettings settings, OverworldSettings overworld, Transform effectsParent, Camera camera)
@@ -82,19 +82,13 @@ namespace IBIIIS
             {
                 landingTime += seconds;
                 if (landingTime >= settings.LandingTime) landingTime = -1;
-                else return MotionPoses.Squashed(landingSquash * Mathf.Sin(Mathf.PI * landingTime / settings.LandingTime));
+                else return MotionPoses.Landing(landingTime, settings.LandingTime, landingSquash);
             }
             if (bumpTime >= 0)
             {
                 bumpTime += seconds;
                 if (bumpTime >= settings.BumpTime) bumpTime = -1;
-                else
-                {
-                    float k = Mathf.Sin(Mathf.PI * bumpTime / settings.BumpTime);
-                    var pose = MotionPoses.Squashed(settings.BumpSquash * k);
-                    pose.Shift = bumpDirection * settings.BumpDistance * k;
-                    return pose;
-                }
+                else return MotionPoses.Bump(bumpTime, settings.BumpTime, settings.BumpSquash, settings.BumpDistance, bumpDirection);
             }
             if (overworld != null && !overworld.Breathing) { breathTime = 0; return MotionPose.Identity; }
             return MotionPoses.Breath(breathTime += seconds, settings.BreathAmount, settings.BreathPeriod);
@@ -123,13 +117,13 @@ namespace IBIIIS
         {
             Steps++;
             if (overworld == null || overworld.Footsteps) effects.Play(settings.FootstepSound, settings.FootstepVolume);
-            int every = overworld != null ? overworld.DustEverySteps : 3;
+            int every = overworld != null ? overworld.DustEverySteps : OverworldSettings.DefaultDustEverySteps;
             if (every > 0 && Steps % every == 0) effects.SpawnDust(settings.LandingDust, position, -heading, settings.DustScale * .7f, settings.DustTime, 1);
         }
         private void Stop(Vector3 position)
         {
             walking = false; strideTravel = 0; breathTime = 0;
-            float scale = overworld != null ? overworld.StopSquashScale : .6f;
+            float scale = overworld != null ? overworld.StopSquashScale : OverworldSettings.DefaultStopSquashScale;
             if (scale <= 0) return;
             landingTime = 0; landingSquash = settings.LandingSquash * scale;
             if (overworld == null || overworld.Footsteps) effects.Play(settings.FootstepSound, settings.FootstepVolume);

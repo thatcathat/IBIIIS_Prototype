@@ -7,6 +7,17 @@ namespace IBIIIS.Editor
     [CustomPropertyDrawer(typeof(EnemyActionStep))]
     public sealed class EnemyActionStepDrawer : PropertyDrawer
     {
+        /// <summary>맵 에디터 요약에 쓰는 행동 이름. 새 행동 단위를 추가하면 여기와 아래 OnGUI에 함께 추가한다.</summary>
+        public static string Describe(EnemyActionStep step)
+        {
+            switch (step.Type)
+            {
+                case EnemyActionType.AimAtPlayer: return "조준";
+                case EnemyActionType.MoveForward: return $"전진 {step.Cells}칸";
+                case EnemyActionType.Turn: return $"회전({step.Turn})";
+                default: return $"알 수 없는 행동({(int)step.Type})";
+            }
+        }
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
             EditorGUI.BeginProperty(position, label, property);
@@ -21,8 +32,10 @@ namespace IBIIIS.Editor
                     cells.intValue = EditorGUI.IntSlider(right, cells.intValue, 1, EnemyActionStep.MaxMoveCells); break;
                 case EnemyActionType.Turn:
                     EditorGUI.PropertyField(right, property.FindPropertyRelative("turn"), GUIContent.none); break;
-                default:
+                case EnemyActionType.AimAtPlayer:
                     EditorGUI.LabelField(right, "행동 직전 위치 인식 시 향함", EditorStyles.miniLabel); break;
+                default:
+                    EditorGUI.LabelField(right, "알 수 없는 행동", EditorStyles.miniLabel); break;
             }
             EditorGUI.EndProperty();
         }

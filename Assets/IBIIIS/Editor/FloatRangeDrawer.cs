@@ -19,11 +19,20 @@ namespace IBIIIS.Editor
             var dashRect = new Rect(minRect.xMax, field.y, 14, EditorGUIUtility.singleLineHeight);
             var maxRect = new Rect(dashRect.xMax, field.y, half, EditorGUIUtility.singleLineHeight);
             var previous = GUI.color; if (min.floatValue > max.floatValue) GUI.color = new Color(1f, .75f, .4f);
-            min.floatValue = Mathf.Max(0, EditorGUI.FloatField(minRect, new GUIContent("최소"), min.floatValue));
+            Field(minRect, "최소", min);
             EditorGUI.LabelField(dashRect, "~");
-            max.floatValue = Mathf.Max(0, EditorGUI.FloatField(maxRect, new GUIContent("최대"), max.floatValue));
+            Field(maxRect, "최대", max);
             GUI.color = previous; EditorGUIUtility.labelWidth = labelWidth; EditorGUI.indentLevel = indent;
             EditorGUI.EndProperty();
+        }
+        // 값을 실제로 바꿨을 때만 쓴다. 여러 에셋을 함께 선택해도 건드리지 않은 칸은 각 에셋 값을 유지한다.
+        private static void Field(Rect rect, string label, SerializedProperty value)
+        {
+            EditorGUI.showMixedValue = value.hasMultipleDifferentValues;
+            EditorGUI.BeginChangeCheck();
+            float next = EditorGUI.FloatField(rect, new GUIContent(label), value.floatValue);
+            if (EditorGUI.EndChangeCheck()) value.floatValue = Mathf.Max(0, next);
+            EditorGUI.showMixedValue = false;
         }
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label) => EditorGUIUtility.singleLineHeight;
     }

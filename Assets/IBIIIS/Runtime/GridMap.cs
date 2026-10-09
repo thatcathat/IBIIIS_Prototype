@@ -60,9 +60,14 @@ namespace IBIIIS
         {
             var id = GetId(p);
             if (string.IsNullOrEmpty(id)) return null;
-            return palette.Find(t => t != null && t.Id == id);
+            for (int i = 0; i < palette.Count; i++) if (palette[i] != null && palette[i].Id == id) return palette[i];
+            return null;
         }
-        public bool IsWalkable(Vector2Int p) => GetId(p) == WalkableCellId || (GetTile(p) != null && GetTile(p).Walkable);
+        public bool IsWalkable(Vector2Int p)
+        {
+            if (GetId(p) == WalkableCellId) return true;
+            var tile = GetTile(p); return tile != null && tile.Walkable;
+        }
         public void AddTile(TileDefinition tile) { if (tile != null && !palette.Contains(tile)) palette.Add(tile); }
         public void SetTile(Vector2Int p, TileDefinition tile)
         {
@@ -83,7 +88,7 @@ namespace IBIIIS
             if (!tile.Walkable) throw new ArgumentException("이동 불가 타일은 배치할 수 없습니다.");
             SetTile(p, tile);
         }
-        public Color GetFloorColor(Vector2Int p) => GetTile(p) != null ? GetTile(p).Color : movementColor;
+        public Color GetFloorColor(Vector2Int p) { var tile = GetTile(p); return tile != null ? tile.Color : movementColor; }
         public void SetStart(Vector2Int p)
         {
             if (!IsWalkable(p) || EnemyAt(p) != null) throw new ArgumentException("시작 위치는 적이 없는 이동 가능한 칸이어야 합니다.");

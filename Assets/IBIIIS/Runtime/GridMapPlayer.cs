@@ -122,10 +122,7 @@ namespace IBIIIS
             foreach (var material in materials) if (material != null) Release(material);
             materials.Clear();
         }
-        private static void Release(UnityEngine.Object value)
-        {
-            if (Application.isPlaying) Destroy(value); else DestroyImmediate(value);
-        }
+        private static void Release(UnityEngine.Object value) => RuntimeObjects.Release(value);
         public void FitCamera()
         {
             if (map == null || viewCamera == null) return;
@@ -241,28 +238,29 @@ namespace IBIIIS
         {
             var root = new GameObject("Movement Hints").transform; root.SetParent(generated, false);
             moveHints = new Transform[13];
-            var basis = playerSettings != null ? playerSettings.MoveHintMaterial : null;
-            if (basis == null) basis = fallbackMaterial != null ? fallbackMaterial : Resources.Load<Material>("IBIIIS/DefaultGround");
-            var shader = basis != null ? basis.shader : Shader.Find("Universal Render Pipeline/Unlit");
-            if (shader == null) return;
             for (int i = 0; i < moveHints.Length; i++)
             {
-                var ring = new GameObject(i == 4 ? "Destination" : i < 4 ? "Adjacent " + Directions[i] : i < 9 ? "Dash " + Directions[i - 5] : "Roll " + RollDirections[i - 9]).transform;
-                ring.SetParent(root, false); moveHints[i] = ring;
-                var material = basis != null ? new Material(basis) : new Material(shader);
-                material.hideFlags = HideFlags.HideAndDontSave;
-                material.color = i == 4 ? (playerSettings != null ? playerSettings.DestinationColor : Color.yellow) :
+                var color = i == 4 ? (playerSettings != null ? playerSettings.DestinationColor : Color.yellow) :
                     i >= 9 ? new Color(.8f, .4f, 1f) : i >= 5 ? new Color(.3f, .5f, 1f) : (playerSettings != null ? playerSettings.MoveHintColor : Color.cyan);
-                materials.Add(material);
-                for (int edge = 0; edge < 4; edge++)
-                {
-                    bool horizontal = edge < 2; float sign = edge % 2 == 0 ? -1 : 1;
-                    var strip = FlatSurface("Border", new Vector3(cellSize * (horizontal ? .9f : .035f), cellSize * (horizontal ? .035f : .9f), 1));
-                    strip.SetParent(ring, false); strip.localRotation = Quaternion.Euler(90, 0, 0);
-                    strip.localPosition = horizontal ? new Vector3(0, 0, sign * cellSize * .435f) : new Vector3(sign * cellSize * .435f, 0, 0);
-                    strip.GetComponent<Renderer>().sharedMaterial = material;
-                }
+                var material = OverlayMaterial(color);
+                if (material == null) return; // 셰이더가 없으면 힌트 없이 진행(RefreshMoveHints가 빈 칸을 건너뜀)
+                var ring = Outline(i == 4 ? "Destination" : i < 4 ? "Adjacent " + Directions[i] : i < 9 ? "Dash " + Directions[i - 5] : "Roll " + RollDirections[i - 9], root, .9f, .035f, .435f, material);
+                moveHints[i] = ring;
             }
+        }
+        // 칸 테두리 4줄(길이 length, 두께 width, 중심에서 offset만큼 떨어짐, 칸 단위)
+        private Transform Outline(string label, Transform parent, float length, float width, float offset, Material material)
+        {
+            var ring = new GameObject(label).transform; ring.SetParent(parent, false);
+            for (int edge = 0; edge < 4; edge++)
+            {
+                bool horizontal = edge < 2; float sign = edge % 2 == 0 ? -1 : 1;
+                var strip = FlatSurface("Border", new Vector3(cellSize * (horizontal ? length : width), cellSize * (horizontal ? width : length), 1));
+                strip.SetParent(ring, false);
+                strip.localPosition = horizontal ? new Vector3(0, 0, sign * cellSize * offset) : new Vector3(sign * cellSize * offset, 0, 0);
+                if (material != null) strip.GetComponent<Renderer>().sharedMaterial = material;
+            }
+            return ring;
         }
         public void ToggleEnemyRanges() { showRanges = !showRanges; RefreshRanges(); }
         private Material OverlayMaterial(Color color)
@@ -281,19 +279,7 @@ namespace IBIIIS
             if (attackMaterial != null) mark.GetComponent<Renderer>().sharedMaterial = attackMaterial;
             return mark;
         }
-        private Transform CreateRecognitionMark()
-        {
-            var ring = new GameObject("Recognition Mark").transform; ring.SetParent(rangeRoot, false);
-            for (int edge = 0; edge < 4; edge++)
-            {
-                bool horizontal = edge < 2; float sign = edge % 2 == 0 ? -1 : 1;
-                var strip = FlatSurface("Border", new Vector3(cellSize * (horizontal ? .96f : .04f), cellSize * (horizontal ? .04f : .96f), 1));
-                strip.SetParent(ring, false);
-                strip.localPosition = horizontal ? new Vector3(0, 0, sign * cellSize * .46f) : new Vector3(sign * cellSize * .46f, 0, 0);
-                if (recognitionMaterial != null) strip.GetComponent<Renderer>().sharedMaterial = recognitionMaterial;
-            }
-            return ring;
-        }
+        private Transform CreateRecognitionMark() => Outline("Recognition Mark", rangeRoot, .96f, .04f, .46f, recognitionMaterial);
         private static void PlaceMarks(List<Transform> marks, HashSet<Vector2Int> cells, Func<Transform> create, Func<Vector2Int, Vector3> position)
         {
             int used = 0;

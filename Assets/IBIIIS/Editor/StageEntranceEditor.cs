@@ -17,16 +17,11 @@ namespace IBIIIS.Editor
                 if (property.name == "m_Script" || property.name == "battleScenePath") continue;
                 if (property.name == "battleSceneAsset")
                 {
+                    // SerializedProperty를 받는 필드라 여러 선택·프리팹 오버라이드 표시·우클릭 메뉴가 기본과 같다.
                     EditorGUI.BeginChangeCheck();
-                    EditorGUI.showMixedValue = property.hasMultipleDifferentValues;
-                    var picked = EditorGUILayout.ObjectField(new GUIContent("Battle Scene", "필수. 들어갈 전투 씬(맵과 함께 만든 .unity). Grid Map Player가 있어야 합니다."),
-                        property.objectReferenceValue as SceneAsset, typeof(SceneAsset), false);
-                    EditorGUI.showMixedValue = false;
+                    EditorGUILayout.ObjectField(property, typeof(SceneAsset), new GUIContent("Battle Scene", "필수. 들어갈 전투 씬(맵과 함께 만든 .unity). Grid Map Player가 있어야 합니다."));
                     if (EditorGUI.EndChangeCheck())
-                    {
-                        property.objectReferenceValue = picked;
-                        serializedObject.FindProperty("battleScenePath").stringValue = picked != null ? AssetDatabase.GetAssetPath(picked) : "";
-                    }
+                        serializedObject.FindProperty("battleScenePath").stringValue = property.objectReferenceValue != null ? AssetDatabase.GetAssetPath(property.objectReferenceValue) : "";
                     continue;
                 }
                 EditorGUILayout.PropertyField(property, true);
@@ -38,10 +33,16 @@ namespace IBIIIS.Editor
             var duplicate = FindDuplicate(entrance);
             if (duplicate != null) EditorGUILayout.HelpBox($"Stage Id '{entrance.StageId}'를 '{duplicate.name}'도 쓰고 있습니다. 클리어 기록이 섞이므로 ID를 다르게 하세요.", MessageType.Error);
             var path = entrance.BattleScenePath;
-            if (!string.IsNullOrEmpty(path) && SceneUtilityIndex(path) < 0)
+            int index = string.IsNullOrEmpty(path) ? -2 : SceneUtilityIndex(path);
+            if (index == -1)
             {
                 EditorGUILayout.HelpBox("이 전투 씬은 빌드 씬 목록(File > Build Profiles)에 없습니다. 에디터 Play에서는 들어갈 수 있지만, 빌드한 게임에서는 들어갈 수 없습니다.", MessageType.Info);
                 if (GUILayout.Button("빌드 씬 목록에 추가")) AddToBuild(path);
+            }
+            else if (index >= 0 && !EditorBuildSettings.scenes[index].enabled)
+            {
+                EditorGUILayout.HelpBox("이 전투 씬은 빌드 씬 목록에 있지만 꺼져 있습니다. 빌드한 게임에서는 들어갈 수 없습니다.", MessageType.Info);
+                if (GUILayout.Button("빌드 씬 목록에서 켜기")) EnableInBuild(index);
             }
             if (!string.IsNullOrEmpty(entrance.StageId))
                 EditorGUILayout.LabelField("클리어 기록", entrance.IsCleared ? "클리어함" : "클리어 안 함");
@@ -58,6 +59,11 @@ namespace IBIIIS.Editor
             var scenes = EditorBuildSettings.scenes;
             for (int i = 0; i < scenes.Length; i++) if (scenes[i].path == path) return i;
             return -1;
+        }
+        private static void EnableInBuild(int index)
+        {
+            var scenes = EditorBuildSettings.scenes; scenes[index].enabled = true; EditorBuildSettings.scenes = scenes;
+            Debug.Log($"[IBIIIS] 빌드 씬 목록에서 켬: {scenes[index].path}");
         }
         private static void AddToBuild(string path)
         {

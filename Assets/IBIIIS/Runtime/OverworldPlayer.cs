@@ -105,7 +105,7 @@ namespace IBIIIS
             bool running = direction != Vector2Int.zero && input.DashHeld();
             if (direction != Vector2Int.zero)
             {
-                float speed = running ? (settings != null ? settings.RunSpeed : 6) : (settings != null ? settings.MoveSpeed : 3.5f);
+                float speed = running ? (settings != null ? settings.RunSpeed : OverworldSettings.DefaultRunSpeed) : (settings != null ? settings.MoveSpeed : OverworldSettings.DefaultMoveSpeed);
                 intended = new Vector3(move.x, 0, move.y) * (speed * Time.deltaTime);
                 controller.Move(intended);
             }
@@ -128,9 +128,10 @@ namespace IBIIIS
             {
                 evade.TickCooldown(dt);
                 if (!input.RollPressed() || !evade.CanStart) return false;
-                float distance = settings != null ? settings.RollDistance : 1.5f, duration = settings != null ? settings.RollDuration : .35f;
-                float easeOut = settings != null ? settings.RollEaseOut : 1, recovery = settings != null ? settings.RollRecovery : .2f;
-                if (!evade.TryStart(EvadeDirection(move, Facing), distance, duration, settings != null ? settings.EvadeCooldown : .25f, easeOut, recovery)) return false;
+                float distance = settings != null ? settings.RollDistance : OverworldSettings.DefaultRollDistance, duration = settings != null ? settings.RollDuration : OverworldSettings.DefaultRollDuration;
+                float easeOut = settings != null ? settings.RollEaseOut : OverworldSettings.DefaultRollEaseOut, recovery = settings != null ? settings.RollRecovery : OverworldSettings.DefaultRollRecovery;
+                float cooldown = settings != null ? settings.EvadeCooldown : OverworldSettings.DefaultEvadeCooldown;
+                if (!evade.TryStart(EvadeDirection(move, Facing), distance, duration, cooldown, easeOut, recovery)) return false;
                 IsRunning = false;
                 motion.BeginRoll();
             }

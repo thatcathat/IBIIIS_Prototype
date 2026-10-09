@@ -10,7 +10,9 @@ namespace IBIIIS.Editor
     [InitializeOnLoad]
     public static class GridMapPreview
     {
-        private static readonly Dictionary<int, string> signatures = new Dictionary<int, string>();
+        // 미리보기를 다시 만들지 판단하는 입력 해시. 0.4초마다 계산하므로 큰 문자열을 만들지 않고 해시에 바로 누적한다.
+        private static readonly Dictionary<int, Hash128> signatures = new Dictionary<int, Hash128>();
+        private static readonly HashSet<GameObject> hashedPrefabs = new HashSet<GameObject>();
         private static double nextUpdate;
         static GridMapPreview()
         {
@@ -32,6 +34,11 @@ namespace IBIIIS.Editor
             signatures.Clear();
         }
         public static void RefreshAll() { signatures.Clear(); nextUpdate = 0; Update(); }
+        private static void AppendDependency(ref Hash128 signature, Object asset)
+        {
+            var hash = AssetDatabase.GetAssetDependencyHash(AssetDatabase.GetAssetPath(asset));
+            signature.Append(ref hash);
+        }
         private static void Update()
         {
             if (EditorApplication.isPlayingOrWillChangePlaymode || EditorApplication.isCompiling || EditorApplication.timeSinceStartup < nextUpdate) return;
@@ -43,23 +50,27 @@ namespace IBIIIS.Editor
                 int id = target.GetInstanceID(); alive.Add(id);
                 if (!target.isActiveAndEnabled) { signatures.Remove(id); continue; }
                 MapEnvironmentEditor.Synchronize(target, false);
-                var signature = EditorJsonUtility.ToJson(target) + target.transform.localToWorldMatrix.ToString();
+                var signature = new Hash128();
+                signature.Append(EditorJsonUtility.ToJson(target)); signature.Append(target.transform.localToWorldMatrix.ToString());
                 if (target.Map != null)
                 {
-                    signature += EditorJsonUtility.ToJson(target.Map);
-                    foreach (var enemy in target.Map.Enemies) if (enemy != null && enemy.Prefab != null) signature += AssetDatabase.GetAssetDependencyHash(AssetDatabase.GetAssetPath(enemy.Prefab)).ToString();
+                    signature.Append(EditorJsonUtility.ToJson(target.Map));
+                    hashedPrefabs.Clear();
+                    foreach (var enemy in target.Map.Enemies) if (enemy != null && enemy.Prefab != null && hashedPrefabs.Add(enemy.Prefab)) AppendDependency(ref signature, enemy.Prefab);
                     foreach (var tile in target.Map.Palette) if (tile != null)
                     {
-                        signature += EditorJsonUtility.ToJson(tile);
-                        if (tile.VisualPrefab != null) signature += AssetDatabase.GetAssetDependencyHash(AssetDatabase.GetAssetPath(tile.VisualPrefab)).ToString();
+                        signature.Append(EditorJsonUtility.ToJson(tile));
+                        if (tile.VisualPrefab != null) AppendDependency(ref signature, tile.VisualPrefab);
                     }
                 }
-                if (target.ViewCamera != null) signature += target.ViewCamera.transform.rotation.ToString() + target.ViewCamera.aspect;
-                if (target.PlayerVisualPrefab != null) signature += AssetDatabase.GetAssetDependencyHash(AssetDatabase.GetAssetPath(target.PlayerVisualPrefab)).ToString();
-                if (target.FallbackMaterial != null) signature += EditorJsonUtility.ToJson(target.FallbackMaterial);
-                if (target.CameraSettings != null) signature += EditorJsonUtility.ToJson(target.CameraSettings);
-                if (target.SharedPlayerSettings != null) signature += EditorJsonUtility.ToJson(target.SharedPlayerSettings);
-                if (signatures.TryGetValue(id, out var previous) && previous == signature && (target.Generated != null || target.Map == null)) continue;
+                if (target.ViewCamera != null) { signature.Append(target.ViewCamera.transform.rotation.ToString()); signature.Append(target.ViewCamera.aspect); }
+                if (target.PlayerVisualPrefab != null) AppendDependency(ref signature, target.PlayerVisualPrefab);
+                if (target.FallbackMaterial != null) signature.Append(EditorJsonUtility.ToJson(target.FallbackMaterial));
+                if (target.CameraSettings != null) signature.Append(EditorJsonUtility.ToJson(target.CameraSettings));
+                if (target.SharedPlayerSettings != null) signature.Append(EditorJsonUtility.ToJson(target.SharedPlayerSettings));
+                // 설정이 잘못된 맵은 미리보기를 만들 수 없으므로 입력이 바뀔 때만 다시 시도한다(원인은 Grid Map Player Inspector에 표시).
+                bool unbuildable = target.Map != null && target.Map.ValidateMap(false).Count > 0;
+                if (signatures.TryGetValue(id, out var previous) && previous == signature && (target.Generated != null || target.Map == null || unbuildable)) continue;
                 target.RefreshPreview(); signatures[id] = signature;
                 SceneView.RepaintAll(); EditorApplication.QueuePlayerLoopUpdate();
             }
@@ -80,6 +91,15 @@ namespace IBIIIS.Editor
                 var settings = ((GridMapPlayer)target).SharedPlayerSettings;
                 if (settings != null) { Selection.activeObject = settings; EditorGUIUtility.PingObject(settings); }
             }) { text = "연결된 공용 플레이어 설정 열기" });
+            var mapErrors = new HelpBox("", HelpBoxMessageType.Error); root.Add(mapErrors);
+            mapErrors.schedule.Execute(() =>
+            {
+                var map = target != null ? ((GridMapPlayer)target).Map : null;
+                var errors = map != null ? map.ValidateMap() : null;
+                bool show = errors != null && errors.Count > 0;
+                mapErrors.style.display = show ? DisplayStyle.Flex : DisplayStyle.None;
+                if (show) mapErrors.text = "맵 설정 오류로 미리보기·Play를 할 수 없습니다: " + string.Join(" / ", errors);
+            }).Every(400);
             var missingSettings = new HelpBox("Player Settings가 없습니다. 이전 씬의 숨겨진 기존 값을 사용 중입니다. 공용 설정을 연결하세요.", HelpBoxMessageType.Warning);
             root.Add(missingSettings);
             void UpdateSettingsWarning() { missingSettings.SetEnabled(true); missingSettings.visible = ((GridMapPlayer)target).SharedPlayerSettings == null; }

@@ -112,7 +112,7 @@ namespace IBIIIS.Editor
                 var cell = new Vector2Int(x, y); var o = Origin(cell);
                 if (o.x + size < 0 || o.y + size < 0 || o.x > contentRect.width || o.y > contentRect.height) continue;
                 var tile = Map.GetTile(cell);
-                FillCell(painter, cell, Map.IsWalkable(cell) ? Map.GetFloorColor(cell) : (tile != null || string.IsNullOrEmpty(Map.GetId(cell))) ? EmptyCell : Color.magenta);
+                FillCell(painter, cell, Map.IsWalkable(cell) ? (tile != null ? tile.Color : Map.MovementColor) : (tile != null || string.IsNullOrEmpty(Map.GetId(cell))) ? EmptyCell : Color.magenta);
             }
             if (Map.HasStart && Map.Contains(Map.Start)) OutlineCell(painter, Map.Start, Color.yellow, 3, 3);
             if (owner.Replay != null) DrawReplay(painter, owner.Replay.Current);

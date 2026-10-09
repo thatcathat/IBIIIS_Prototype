@@ -102,13 +102,7 @@ namespace IBIIIS
         private void HideAll() { foreach (var m in marks.Values) Hide(m); }
         private void Play(AudioClip clip, float volume)
         {
-            if (clip == null || parent == null) return;
-            if (audio == null)
-            {
-                var go = new GameObject("Alert Audio"); go.transform.SetParent(parent, false);
-                audio = go.AddComponent<AudioSource>(); audio.playOnAwake = false; audio.spatialBlend = 0;
-            }
-            audio.PlayOneShot(clip, volume);
+            RuntimeObjects.PlayOneShot(ref audio, parent, "Alert Audio", clip, volume);
         }
         public void Dispose()
         {

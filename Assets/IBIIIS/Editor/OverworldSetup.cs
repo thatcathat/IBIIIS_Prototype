@@ -26,8 +26,10 @@ namespace IBIIIS.Editor
         /// <summary>겹치지 않는 테스트 씬 경로. 폴더가 없으면 GenerateUniqueAssetPath가 빈 문자열을 돌려주므로 폴더를 먼저 만든다.</summary>
         public static string NextScenePath()
         {
-            if (!AssetDatabase.IsValidFolder(AssetPaths.Overworld)) AssetDatabase.CreateFolder(AssetPaths.Root, Path.GetFileName(AssetPaths.Overworld));
-            return AssetDatabase.GenerateUniqueAssetPath(AssetPaths.OverworldScene);
+            AssetPaths.EnsureFolder(AssetPaths.Overworld); // AssetPaths의 폴더 구조가 바뀌어도 중간 폴더까지 만든다
+            var path = AssetDatabase.GenerateUniqueAssetPath(AssetPaths.OverworldScene);
+            if (string.IsNullOrEmpty(path)) throw new InvalidOperationException($"테스트 씬 경로를 만들지 못했습니다: {AssetPaths.OverworldScene}");
+            return path;
         }
         [MenuItem("IBIIIS/Overworld/Overworld Settings")]
         public static void OpenSettings() { Selection.activeObject = EnsureSettings(); EditorGUIUtility.PingObject(Selection.activeObject); }
@@ -54,7 +56,7 @@ namespace IBIIIS.Editor
             bool created = settings == null;
             if (created)
             {
-                Directory.CreateDirectory(AssetPaths.Settings); AssetDatabase.Refresh();
+                AssetPaths.EnsureFolder(AssetPaths.Settings);
                 settings = ScriptableObject.CreateInstance<OverworldSettings>();
                 AssetDatabase.CreateAsset(settings, AssetPaths.OverworldSettings);
             }
@@ -135,7 +137,7 @@ namespace IBIIIS.Editor
             for (int i = 0; i < SceneManager.sceneCount; i++)
                 if (string.IsNullOrEmpty(SceneManager.GetSceneAt(i).path))
                     throw new InvalidOperationException("이름 없는 씬이 열려 있습니다. 현재 씬을 먼저 저장한 뒤 다시 실행하세요. 기존 작업은 변경하지 않았습니다.");
-            Directory.CreateDirectory(Path.GetDirectoryName(path)); AssetDatabase.Refresh();
+            AssetPaths.EnsureFolder(Path.GetDirectoryName(path));
             var previous = SceneManager.GetActiveScene();
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Additive);
             try
@@ -271,16 +273,11 @@ namespace IBIIIS.Editor
                 visual.transform.SetParent(root.transform, false); visual.transform.localScale = Vector3.one * 1.5f; // 플레이어·적과 같은 임시 표시 배율
                 visual.GetComponent<SpriteRenderer>().sprite = sprite;
                 visual.AddComponent<BreathingSprite>().Configure(AssetDatabase.LoadAssetAtPath<MotionFeedbackSettings>(AssetPaths.MotionFeedback));
-                var shadow = AssetDatabase.LoadAssetAtPath<GameObject>(GroundMarkerSetup.ShadowPrefab);
-                if (shadow != null)
-                {
-                    var instance = (GameObject)PrefabUtility.InstantiatePrefab(shadow, root.transform);
-                    instance.name = GroundMarkerSetup.ShadowName; instance.transform.localPosition = new Vector3(0, .03f, 0);
-                }
-                else Debug.LogWarning($"[IBIIIS] {GroundMarkerSetup.ShadowPrefab}이(가) 없어 NPC 프리팹에 그림자를 붙이지 않았습니다. IBIIIS > Create Ground Markers 후 직접 붙이세요.");
                 var prefab = PrefabUtility.SaveAsPrefabAsset(root, AssetPaths.NpcPrefab, out bool saved);
                 if (!saved) throw new IOException("NPC 프리팹을 저장하지 못했습니다.");
-                return prefab;
+                if (!GroundMarkerSetup.AttachShadow(AssetPaths.NpcPrefab))
+                    Debug.LogWarning($"[IBIIIS] {GroundMarkerSetup.ShadowPrefab}이(가) 없어 NPC 프리팹에 그림자를 붙이지 않았습니다. IBIIIS > Create Ground Markers를 실행하면 빠진 그림자를 붙입니다.");
+                return AssetDatabase.LoadAssetAtPath<GameObject>(AssetPaths.NpcPrefab);
             }
             finally { EditorSceneManager.ClosePreviewScene(preview); }
         }
@@ -299,7 +296,7 @@ namespace IBIIIS.Editor
             if (material != null) return material;
             var shader = Shader.Find("Universal Render Pipeline/Unlit");
             if (shader == null) throw new InvalidOperationException("URP/Unlit 셰이더가 없습니다.");
-            Directory.CreateDirectory(AssetPaths.Overworld); AssetDatabase.Refresh();
+            AssetPaths.EnsureFolder(AssetPaths.Overworld);
             material = new Material(shader) { color = color };
             AssetDatabase.CreateAsset(material, path);
             return material;

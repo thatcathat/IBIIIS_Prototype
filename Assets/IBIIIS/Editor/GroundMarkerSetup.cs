@@ -18,11 +18,12 @@ namespace IBIIIS.Editor
         [MenuItem("IBIIIS/Create Ground Markers (Shadow, Facing Arrow)")]
         public static void EnsureAll()
         {
-            Directory.CreateDirectory(Folder); AssetDatabase.Refresh();
+            AssetPaths.EnsureFolder(Folder);
             // 그림자는 캐릭터 뒤(-1), 화살표는 4방향 스프라이트가 생기기 전까지 몸에 가려지지 않도록 캐릭터 위(1)에 그린다.
             var shadow = EnsurePrefab(ShadowPrefab, ShadowName, EnsureTexture(ShadowTexture, ShadowAlpha, Color.black), -1, .7f);
             var arrow = EnsurePrefab(ArrowPrefab, ArrowName, EnsureTexture(ArrowTexture, ArrowAlpha, Color.white), 1, .42f);
             Attach(PlayerPrefabSetup.PrefabPath, shadow, null);
+            Attach(AssetPaths.NpcPrefab, shadow, null);
             foreach (var guid in AssetDatabase.FindAssets("t:Prefab", new[] { AssetPaths.Enemies }))
             {
                 var path = AssetDatabase.GUIDToAssetPath(guid);
@@ -93,6 +94,13 @@ namespace IBIIIS.Editor
         }
 
         /// <summary>프리팹 루트 아래에 그림자·화살표가 없으면 붙인다. 적 프리팹의 이전 임시 방향 선(Direction 쿼드)은 화살표로 대체하므로 제거한다.</summary>
+        /// <summary>프리팹에 발밑 그림자가 없으면 붙인다. 그림자 프리팹이 아직 없으면 false.</summary>
+        public static bool AttachShadow(string prefabPath)
+        {
+            var shadow = AssetDatabase.LoadAssetAtPath<GameObject>(ShadowPrefab);
+            if (shadow == null) return false;
+            Attach(prefabPath, shadow, null); return true;
+        }
         private static void Attach(string path, GameObject shadow, GameObject arrow)
         {
             if (AssetDatabase.LoadAssetAtPath<GameObject>(path) == null) return;

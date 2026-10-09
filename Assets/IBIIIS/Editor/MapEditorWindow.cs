@@ -218,7 +218,7 @@ namespace IBIIIS.Editor
             return $"적: {enemy.Prefab.name} · 방향 {FacingName(enemy.Direction)}\n행동: {DescribeActions(definition)}";
         }
         private static string DescribeActions(EnemyDefinition definition)
-            => string.Join(" → ", definition.Actions.Select(a => a.Type == EnemyActionType.AimAtPlayer ? "조준" : a.Type == EnemyActionType.MoveForward ? $"전진 {a.Cells}칸" : $"회전({a.Turn})"));
+            => string.Join(" → ", definition.Actions.Select(EnemyActionStepDrawer.Describe));
         // 프로젝트의 적 프리팹 목록. 프로젝트가 바뀔 때만 다시 찾는다.
         private List<GameObject> enemyPrefabs;
         private void ProjectChanged()

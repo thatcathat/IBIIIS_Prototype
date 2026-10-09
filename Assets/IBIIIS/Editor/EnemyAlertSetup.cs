@@ -15,7 +15,7 @@ namespace IBIIIS.Editor
         [MenuItem("IBIIIS/Create Default Enemy Alert")]
         public static EnemyAlertSettings EnsureDefault()
         {
-            Directory.CreateDirectory(AssetPaths.Effects); Directory.CreateDirectory(AssetPaths.Audio); AssetDatabase.Refresh();
+            AssetPaths.EnsureFolder(AssetPaths.Effects); AssetPaths.EnsureFolder(AssetPaths.Audio);
             var alertSprite = EnsureAlertSprite(); var lostSprite = EnsureLostSprite();
             // 짧게 올라가는 두 음 "띵-딩!"
             var sound = MotionFeedbackSetup.EnsureSound(AlertSound, .2f, (t, noise) =>

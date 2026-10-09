@@ -21,7 +21,7 @@ namespace IBIIIS
         }
         /// <summary>현재 회전에서 대상을 화면 가운데에 두는 카메라 위치.</summary>
         public Vector3 DesiredPosition => target.position + Vector3.up * focusHeight - transform.rotation * Vector3.forward * Distance;
-        private float ViewHeight => settings != null ? settings.CameraViewHeight : 14;
+        private float ViewHeight => settings != null ? settings.CameraViewHeight : OverworldSettings.DefaultCameraViewHeight;
         /// <summary>대상까지의 거리. Perspective면 보이는 세로 범위가 화면 높이에 맞는 거리, Orthographic이면 충분히 떨어진 거리(값을 읽기만 하고 카메라를 바꾸지 않는다).</summary>
         public float Distance
         {
@@ -40,7 +40,7 @@ namespace IBIIIS
         {
             if (target == null) return;
             ApplyViewSize();
-            float sharpness = settings != null ? settings.CameraFollowSharpness : 8;
+            float sharpness = settings != null ? settings.CameraFollowSharpness : OverworldSettings.DefaultCameraFollowSharpness;
             // 첫 프레임(전투에서 돌아와 위치를 옮긴 직후 포함)은 바로 붙인다.
             if (!snapped || sharpness <= 0) { Snap(); return; }
             transform.position = Vector3.Lerp(transform.position, DesiredPosition, 1 - Mathf.Exp(-sharpness * Time.deltaTime));

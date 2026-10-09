@@ -16,7 +16,7 @@ namespace IBIIIS.Editor
             {
                 string name = "Enemy00" + type, folder = Folder + "/" + name, path = folder + "/" + name + ".prefab";
                 if (AssetDatabase.LoadAssetAtPath<GameObject>(path) != null) continue;
-                Directory.CreateDirectory(folder); AssetDatabase.Refresh();
+                AssetPaths.EnsureFolder(folder);
                 var scene = EditorSceneManager.NewPreviewScene();
                 try
                 {

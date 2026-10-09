@@ -1,8 +1,17 @@
+using UnityEditor;
 namespace IBIIIS.Editor
 {
     /// <summary>에디터 도구가 기본 에셋을 찾고 생성하는 프로젝트 경로. 폴더 구조를 바꾸면 이 파일만 수정한다.</summary>
     public static class AssetPaths
     {
+        /// <summary>Assets 아래 폴더를 만든다. 이미 Unity에 등록된 폴더면 아무것도 하지 않는다(매번 전체 Refresh를 피함).</summary>
+        public static void EnsureFolder(string folder)
+        {
+            folder = folder.Replace('\\', '/').TrimEnd('/');
+            if (AssetDatabase.IsValidFolder(folder)) return;
+            System.IO.Directory.CreateDirectory(folder); AssetDatabase.Refresh();
+            if (!AssetDatabase.IsValidFolder(folder)) throw new System.IO.IOException($"폴더 '{folder}'를 만들지 못했습니다. Assets 아래 경로인지 확인하세요.");
+        }
         public const string Root = "Assets/IBIIIS";
         public const string Settings = Root + "/Settings";
         public const string PlayerSettings = Settings + "/GlobalPlayerSettings.asset";

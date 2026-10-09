@@ -5,6 +5,26 @@ using UnityEngine;
 namespace IBIIIS
 {
     /// <summary>손맛 자세 계산(표시 전용). 전투·미니맵이 함께 쓴다. 진행도 0과 1에서는 원래 자세.</summary>
+    /// <summary>실행 중 만든 오브젝트·효과음 공용 처리. Play 중이면 Destroy, 에디터(테스트·미리보기)면 DestroyImmediate.</summary>
+    public static class RuntimeObjects
+    {
+        public static void Release(UnityEngine.Object value)
+        {
+            if (value == null) return;
+            if (Application.isPlaying) UnityEngine.Object.Destroy(value); else UnityEngine.Object.DestroyImmediate(value);
+        }
+        /// <summary>parent 아래의 AudioSource 하나로 효과음을 낸다(처음 쓸 때 name으로 만든다). 소리나 parent가 없으면 아무것도 하지 않는다.</summary>
+        public static void PlayOneShot(ref AudioSource audio, Transform parent, string name, AudioClip clip, float volume)
+        {
+            if (clip == null || parent == null) return;
+            if (audio == null)
+            {
+                var go = new GameObject(name); go.transform.SetParent(parent, false);
+                audio = go.AddComponent<AudioSource>(); audio.playOnAwake = false; audio.spatialBlend = 0;
+            }
+            audio.PlayOneShot(clip, volume);
+        }
+    }
     public static class MotionPoses
     {
         /// <summary>뜀 자세: 시작 구간(takeoffPortion)에 웅크렸다가 포물선으로 뜨고, 공중에서 위아래로 늘어난다.</summary>
@@ -29,6 +49,14 @@ namespace IBIIIS
         /// <summary>숨쉬기: 주기마다 위아래로 살짝 늘었다 줄어든다. 시간 0에서 원래 자세.</summary>
         public static MotionPose Breath(float time, float amount, float period)
             => amount <= 0 || period <= 0 ? MotionPose.Identity : Squashed(-amount * Mathf.Sin(2 * Mathf.PI * time / period));
+        /// <summary>착지 납작함: time이 0→duration 동안 squash까지 납작해졌다 돌아온다.</summary>
+        public static MotionPose Landing(float time, float duration, float squash) => Squashed(squash * Mathf.Sin(Mathf.PI * time / duration));
+        /// <summary>부딪힘: direction(맵 평면, 단위 벡터) 쪽으로 distance만큼 밀렸다 돌아오며 squash만큼 눌린다.</summary>
+        public static MotionPose Bump(float time, float duration, float squash, float distance, Vector3 direction)
+        {
+            float k = Mathf.Sin(Mathf.PI * time / duration);
+            var pose = Squashed(squash * k); pose.Shift = direction * distance * k; return pose;
+        }
         /// <summary>amount > 0: 납작(가로로 넓고 세로로 낮게), amount < 0: 늘어남.</summary>
         public static MotionPose Squashed(float amount) => WithSquash(MotionPose.Identity, amount);
         public static MotionPose WithSquash(MotionPose pose, float amount) { pose.Squash = new Vector2(1 + amount, 1 - amount); return pose; }
@@ -84,13 +112,7 @@ namespace IBIIIS
         public void Tick(float seconds) { TickFades(puffs, seconds); TickFades(ghosts, seconds); }
         public void Play(AudioClip clip, float volume)
         {
-            if (clip == null || parent == null) return;
-            if (audio == null)
-            {
-                var go = new GameObject("Motion Audio"); go.transform.SetParent(parent, false);
-                audio = go.AddComponent<AudioSource>(); audio.playOnAwake = false; audio.spatialBlend = 0;
-            }
-            audio.PlayOneShot(clip, volume);
+            RuntimeObjects.PlayOneShot(ref audio, parent, "Motion Audio", clip, volume);
         }
         /// <summary>먼지·잔상을 즉시 지운다.</summary>
         public void Clear()
@@ -124,11 +146,12 @@ namespace IBIIIS
             }
             for (int r = 0; r < fade.Renderers.Length; r++) { var c = fade.Colors[r]; fade.Renderers[r].color = new Color(c.r, c.g, c.b, c.a * (1 - v)); }
         }
+        // Play 중 Destroy는 프레임 끝에 지우므로, 그 전에 숨기고 부모에서 떼어 남은 자식 수·표시에 섞이지 않게 한다.
         internal static void Release(UnityEngine.Object value)
         {
             if (value == null) return;
             if (Application.isPlaying && value is GameObject go) { go.SetActive(false); go.transform.SetParent(null, false); }
-            if (Application.isPlaying) UnityEngine.Object.Destroy(value); else UnityEngine.Object.DestroyImmediate(value);
+            RuntimeObjects.Release(value);
         }
     }
 }
