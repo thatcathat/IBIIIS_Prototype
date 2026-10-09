@@ -34,7 +34,7 @@ namespace IBIIIS
         private MotionFeedbackSettings motionFeedback;
         [SerializeField, Min(.1f), Tooltip("한 걸음 길이(칸). 이 거리를 걸을 때마다 한 번 뛰고 발소리를 냅니다. 이동 속도와 무관하게 발과 이동이 맞습니다.")] private float strideLength = .9f;
         [SerializeField, Range(0, 1), Tooltip("걸을 때 뜀 크기 배율(전투 1칸 뜀 대비). 높이·웅크림·늘어남에 함께 곱합니다. 0이면 걸음 뜀을 끕니다.")] private float walkHopScale = .5f;
-        [SerializeField, Tooltip("걸음마다 발소리를 냅니다(공용 설정의 Footstep Sound).")] private bool footsteps = true;
+        [SerializeField, Tooltip("걸음마다·멈출 때 발소리를 냅니다(공용 설정의 Footstep Sound). 구르기 착지 소리는 이 설정과 관계없이 납니다.")] private bool footsteps = true;
         [SerializeField, Min(0), Tooltip("몇 걸음마다 발밑 먼지를 낼지. 0이면 걸을 때 먼지를 내지 않습니다(멈출 때 먼지는 별도).")] private int dustEverySteps = 3;
         [SerializeField, Range(0, 1), Tooltip("멈출 때 착지처럼 납작해지는 정도의 배율(공용 Landing Squash 대비). 0이면 멈춤 반응과 멈춤 먼지를 끕니다.")] private float stopSquashScale = .6f;
         [SerializeField, Tooltip("멈춰 있을 때 숨쉬기(공용 Breath Amount·Period).")] private bool breathing = true;

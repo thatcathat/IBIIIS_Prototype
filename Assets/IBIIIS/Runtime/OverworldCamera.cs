@@ -16,26 +16,30 @@ namespace IBIIIS
         private void Awake()
         {
             if (settings != null && settings.CameraSettings != null) settings.CameraSettings.Apply(GetComponent<Camera>());
+            if (settings == null) Debug.LogWarning($"[IBIIIS] {name}: Overworld Settings가 없어 카메라 현재 각도·화각과 기본 범위(14칸)·빠르기(8)를 사용합니다.", this);
             if (target == null) Debug.LogWarning($"[IBIIIS] {name}: 따라갈 대상이 없습니다.", this);
         }
         /// <summary>현재 회전에서 대상을 화면 가운데에 두는 카메라 위치.</summary>
         public Vector3 DesiredPosition => target.position + Vector3.up * focusHeight - transform.rotation * Vector3.forward * Distance;
-        /// <summary>대상까지의 거리. Perspective면 보이는 세로 범위가 화면 높이에 맞는 거리, Orthographic이면 Size를 맞추고 충분히 떨어진 거리.</summary>
+        private float ViewHeight => settings != null ? settings.CameraViewHeight : 14;
+        /// <summary>대상까지의 거리. Perspective면 보이는 세로 범위가 화면 높이에 맞는 거리, Orthographic이면 충분히 떨어진 거리(값을 읽기만 하고 카메라를 바꾸지 않는다).</summary>
         public float Distance
         {
             get
             {
-                float height = settings != null ? settings.CameraViewHeight : 14;
                 var camera = GetComponent<Camera>();
-                if (camera.orthographic) { camera.orthographicSize = height / 2; return Mathf.Max(20, height); }
-                return height / 2 / Mathf.Tan(Mathf.Clamp(camera.fieldOfView, 1, 179) * Mathf.Deg2Rad / 2);
+                if (camera.orthographic) return Mathf.Max(20, ViewHeight);
+                return ViewHeight / 2 / Mathf.Tan(Mathf.Clamp(camera.fieldOfView, 1, 179) * Mathf.Deg2Rad / 2);
             }
         }
+        // Orthographic이면 보이는 세로 범위에 맞게 Size를 맞춘다(Snap·매 프레임).
+        private void ApplyViewSize() { var camera = GetComponent<Camera>(); if (camera.orthographic) camera.orthographicSize = ViewHeight / 2; }
         /// <summary>지연 없이 대상 위치로 옮긴다.</summary>
-        public void Snap() { if (target != null) { transform.position = DesiredPosition; snapped = true; } }
+        public void Snap() { if (target != null) { ApplyViewSize(); transform.position = DesiredPosition; snapped = true; } }
         private void LateUpdate()
         {
             if (target == null) return;
+            ApplyViewSize();
             float sharpness = settings != null ? settings.CameraFollowSharpness : 8;
             // 첫 프레임(전투에서 돌아와 위치를 옮긴 직후 포함)은 바로 붙인다.
             if (!snapped || sharpness <= 0) { Snap(); return; }

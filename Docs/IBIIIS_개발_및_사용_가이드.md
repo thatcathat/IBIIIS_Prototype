@@ -208,7 +208,7 @@ Editor 코드는 런타임과 별도 어셈블리(`IBIIIS.Editor`)에 있고, �
 
 1. 키 배치는 `Assets/IBIIIS/Settings/IBIIISInput.inputactions`의 액션 맵 `Battle`에서 관리하고 `IBIIIS > Player Settings`의 `Input Actions` 슬롯으로 연결한다. 메뉴 `IBIIIS > Create Default Input Actions`는 파일이 없을 때만 기본 배치를 만들고 설정 슬롯이 비어 있을 때만 연결한다(기존 파일·연결은 덮어쓰지 않음). 파일은 있는데 JSON 오류 등으로 가져오기에 실패했으면 기본 배치로 덮어쓰지 않고 Console에 `[IBIIIS] 입력 파일을 불러오지 못했습니다` 오류를 남긴다. Import 오류를 고친 뒤 다시 실행한다(미니맵 입력 파일도 같다).
 2. 에셋을 더블클릭해 열어 액션별 바인딩을 바꾸거나 추가한다. 액션: `MoveUp/Down/Left/Right`, `DashModifier`(누른 채 이동하면 대시), `RollUpLeft/UpRight/DownLeft/DownRight`(Q/E/Z/C), `Wait`, `Undo`, `Restart`, `ToggleRanges`. 모두 Button 타입이며 필수다. 이름을 바꾸거나 지우면 경고를 남기고 기본 배치로 동작한다.
-3. 현재 기본 바인딩은 키보드뿐이다. 게임패드 등은 같은 액션에 바인딩을 추가하면 된다(조합 배치는 미정이라 추가하지 않았다). 실행 시 에셋 사본을 만들어 쓰므로 원본에 실행 상태가 남지 않는다. 화면의 안내 문구는 각 액션의 첫 번째 바인딩을 표시한다.
+3. 현재 기본 바인딩은 키보드뿐이다. 게임패드 등은 같은 액션에 바인딩을 추가하면 된다(조합 배치는 미정이라 추가하지 않았다). 실행 시 에셋 사본을 만들어 쓰므로 원본에 실행 상태가 남지 않는다. 화면의 안내 문구는 각 액션의 첫 번째 바인딩을 표시한다. 미니맵 `Move`는 2D Vector Composite(WASD 등)로 연결해야 하며, 키 하나를 직접 연결하면 경고를 한 번 남기고 그 이동 입력을 무시한다.
 4. 코드: `Runtime/BattleInput.cs`(명령 변환·기본 배치), `Editor/InputSetup.cs`(에셋 생성). 입력 처리는 게임 규칙과 분리되어 `GridMapPlayer`가 명령만 받아 실행한다. 템플릿의 `Assets/InputSystem_Actions.inputactions`는 쓰지 않는다.
 
 ### 맵 자동 검증
@@ -315,7 +315,8 @@ Editor 코드는 런타임과 별도 어셈블리(`IBIIIS.Editor`)에 있고, �
 - 걸음 주기는 시간이 아니라 걸은 거리로 세므로 프레임 속도·이동 속도가 바뀌어도 발과 이동이 맞는다.
 - NPC: `NPC.prefab`의 `Visual`에 붙은 `BreathingSprite`가 숨쉬기를 한다. NPC마다 시작 시점이 달라 함께 움직이지 않는다. `Amount Scale`(0이면 끔)로 NPC별 크기를 조절한다.
 - 공용 값(뜀 높이·웅크림·늘어남·착지 납작함·먼지 그림·발소리·부딪힘·숨쉬기 크기와 주기)은 전투와 같은 `Assets/IBIIIS/Settings/MotionFeedback.asset`에서 읽는다. 이 에셋의 `Enabled`를 끄면 전투·미니맵·NPC 숨쉬기가 모두 꺼진다.
-- 미니맵 전용 값(`OverworldSettings`의 걷기 손맛): `Motion Feedback`(공용 에셋 연결), `Stride Length`, `Walk Hop Scale`(전투 1칸 뜀 대비 배율, 임시 0.5, 0이면 걸음 뜀 끔), `Footsteps`, `Dust Every Steps`(0이면 걸음 먼지 끔), `Stop Squash Scale`(임시 0.6, 0이면 멈춤 반응·먼지 끔), `Breathing`, `Wall Bump`. 값은 Play 시작 시 읽지 않고 매 프레임 읽으므로 Play 중에도 바로 반영된다.
+- 미니맵 전용 값(`OverworldSettings`의 걷기 손맛): `Motion Feedback`(공용 에셋 연결), `Stride Length`, `Walk Hop Scale`(전투 1칸 뜀 대비 배율, 임시 0.5, 0이면 걸음 뜀 끔), `Footsteps`(걸음·멈춤 발소리. 구르기 착지 발소리는 이 설정과 무관하게 난다), `Dust Every Steps`(0이면 걸음 먼지 끔), `Stop Squash Scale`(임시 0.6, 0이면 멈춤 반응·먼지 끔), `Breathing`, `Wall Bump`. 값은 Play 시작 시 읽지 않고 매 프레임 읽으므로 Play 중에도 바로 반영된다.
+- 미니맵 플레이어의 바라보는 방향은 `OverworldPlayer`가 직접 관리한다. 자식에 `PlayerVisual`이 없어도 구르기 방향·전투 복귀 방향은 맞고, 먼지·발소리도 그대로 나며 그림 방향과 손맛 자세만 표시하지 않는다(시작 시 경고). 카메라에 Overworld Settings가 없으면 시작 시 경고하고 카메라 현재 각도·화각과 기본 범위를 쓴다.
 - 표시 전용이다. 이동·충돌·말 걸기 범위에 영향을 주지 않는다. 미니맵은 일반 게임 시간(`Time.deltaTime`)으로 움직인다.
 - 코드: `Runtime/OverworldMotion.cs`(걸은 거리 → 걸음·자세), `Runtime/MotionEffects.cs`(전투와 공유하는 `MotionPoses`·`MotionEffects`), `Runtime/BreathingSprite.cs`, `OverworldPlayer.Update`에서 `PlayerVisual.SetPose`로 적용. 기존 NPC 프리팹에는 `IBIIIS > Overworld > Create NPC Prefab`이 숨쉬기가 없을 때만 붙인다.
 

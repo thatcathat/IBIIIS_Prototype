@@ -63,7 +63,19 @@ namespace IBIIIS
         public void Disable() { map.Disable(); }
         public void Dispose() { map.Disable(); if (asset == null) return; if (Application.isPlaying) UnityEngine.Object.Destroy(asset); else UnityEngine.Object.DestroyImmediate(asset); }
         /// <summary>이동 입력. 화면 기준 x=오른쪽, y=위(맵 +Z). 대각선은 길이 1로 정규화된다.</summary>
-        public Vector2 ReadMove() => Vector2.ClampMagnitude(map.FindAction(Move, true).ReadValue<Vector2>(), 1);
+        public Vector2 ReadMove()
+        {
+            var action = map.FindAction(Move, true);
+            // Move에 Vector2가 아닌 키를 직접 연결하면 ReadValue가 예외를 던져 매 프레임 Update가 멈춘다. 경고 한 번 뒤 무시한다.
+            var type = action.activeValueType;
+            if (type != null && type != typeof(Vector2))
+            {
+                if (!warnedMoveType) { warnedMoveType = true; Debug.LogWarning($"[IBIIIS] 미니맵 입력 '{Move}'에 {type.Name} 값을 내는 바인딩이 연결되어 있습니다. 2D Vector Composite(WASD 등)로 연결하세요. 이 입력은 무시합니다."); }
+                return Vector2.zero;
+            }
+            return Vector2.ClampMagnitude(action.ReadValue<Vector2>(), 1);
+        }
+        private bool warnedMoveType;
         public bool InteractPressed() => map.FindAction(Interact, true).WasPressedThisFrame();
         /// <summary>대시(달리기) 키를 누르고 있으면 true.</summary>
         public bool DashHeld() => map.FindAction(Dash, true).IsPressed();

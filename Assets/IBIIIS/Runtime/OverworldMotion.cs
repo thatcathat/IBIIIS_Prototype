@@ -132,7 +132,7 @@ namespace IBIIIS
             float scale = overworld != null ? overworld.StopSquashScale : .6f;
             if (scale <= 0) return;
             landingTime = 0; landingSquash = settings.LandingSquash * scale;
-            effects.Play(settings.FootstepSound, settings.FootstepVolume);
+            if (overworld == null || overworld.Footsteps) effects.Play(settings.FootstepSound, settings.FootstepVolume);
             effects.SpawnDust(settings.LandingDust, position, Vector3.zero, settings.DustScale * scale, settings.DustTime, 1);
         }
         /// <summary>위치를 순간 이동했을 때(전투에서 돌아옴 등) 진행 중인 반응을 지운다.</summary>

@@ -16,6 +16,8 @@ namespace IBIIIS
         public static IReadOnlyList<OverworldInteractable> Active => active;
         /// <summary>안내 문구에 쓸 행동 이름(예: "말 걸기"). null이면 지금은 상호작용할 수 없다.</summary>
         public abstract string PromptVerb { get; }
+        /// <summary>안내 문구에 보일 글(키 표시 뒤). 기본은 PromptVerb이고, 대상 이름을 함께 보일 때 재정의한다. null이면 안내하지 않는다.</summary>
+        public virtual string PromptText => PromptVerb;
         public abstract void Interact(OverworldPlayer player);
         /// <summary>플레이어가 범위를 벗어났을 때(말풍선 닫기 등).</summary>
         public virtual void OnLeft() { }

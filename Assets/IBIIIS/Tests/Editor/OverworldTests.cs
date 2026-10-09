@@ -271,6 +271,9 @@ namespace IBIIIS.Tests
                 Assert.AreEqual(1f, camera.WorldToViewportPoint(focus + camera.transform.up * 7).y, 1e-3f, $"화각 {fov}: 세로 14칸이 화면 높이");
             }
             Assert.AreEqual(7 / Mathf.Tan(15 * Mathf.Deg2Rad), follow.Distance, 1e-3f, "화각 30이면 약 26칸 떨어짐");
+            camera.orthographic = true; camera.orthographicSize = 3;
+            Assert.AreEqual(20, follow.Distance, 1e-4f); Assert.AreEqual(3, camera.orthographicSize, "거리를 읽기만 해서는 카메라를 바꾸지 않음");
+            follow.Snap(); Assert.AreEqual(7, camera.orthographicSize, 1e-4f, "Snap에서 세로 14칸에 맞춤");
         }
         private static Vector3 Travel(OverworldEvade evade, int frames, float total)
         {
@@ -432,6 +435,23 @@ namespace IBIIIS.Tests
             Assert.IsNull(map.FindAction(OverworldInput.Dash), "원본 에셋은 바꾸지 않음(사본 사용)");
             LogAssert.NoUnexpectedReceived();
             Object.DestroyImmediate(old);
+        }
+        [Test] public void MoveBoundToASingleKeyIsIgnoredWithOneWarning()
+        {
+            var wrong = ScriptableObject.CreateInstance<InputActionAsset>();
+            var map = wrong.AddActionMap(OverworldInput.MapName);
+            map.AddAction(OverworldInput.Move, InputActionType.Value, "<Keyboard>/w"); // Vector2가 아닌 버튼 값
+            map.AddAction(OverworldInput.Interact, InputActionType.Button, "<Keyboard>/f");
+            using (var wrongInput = new OverworldInput(wrong))
+            {
+                wrongInput.Enable();
+                InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.W)); InputSystem.Update();
+                LogAssert.Expect(LogType.Warning, new System.Text.RegularExpressions.Regex("2D Vector"));
+                Assert.AreEqual(Vector2.zero, wrongInput.ReadMove(), "예외 없이 무시");
+                Assert.AreEqual(Vector2.zero, wrongInput.ReadMove()); // 경고는 한 번만
+                LogAssert.NoUnexpectedReceived();
+            }
+            Object.DestroyImmediate(wrong);
         }
         [Test] public void AssetWithoutOverworldMapFallsBackToDefaults()
         {

@@ -28,6 +28,7 @@ namespace IBIIIS
         /// <summary>설정 오류. 정상이면 null.</summary>
         public string Problem => string.IsNullOrWhiteSpace(stageId) ? "Stage Id가 비어 있습니다." : string.IsNullOrEmpty(BattleScenePath) ? "Battle Scene이 지정되지 않았습니다." : null;
         public override string PromptVerb => Problem != null ? null : IsCleared ? "입장 (클리어)" : "입장";
+        public override string PromptText => PromptVerb == null ? null : $"{DisplayName} {PromptVerb}";
         protected override void OnEnable() { base.OnEnable(); RefreshIndicator(); }
         public void RefreshIndicator() { if (clearedIndicator != null) clearedIndicator.SetActive(IsCleared); }
         public override void Interact(OverworldPlayer player)

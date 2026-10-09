@@ -19,9 +19,12 @@ namespace IBIIIS
         private Transform effectsRoot;
         // 구르기 진행(이동량·회복·쿨다운). 진행·회복 중에는 걷기·상호작용 입력을 받지 않는다.
         private readonly OverworldEvade evade = new OverworldEvade();
+        // 바라보는 방향의 유일한 기준. 외형(PlayerVisual)이 없어도 구르기 방향·전투 복귀 방향이 맞도록 여기서 갱신한다.
         private PlayerFacing facing = PlayerFacing.Front;
+        // 안내 문구의 키 이름(입력을 켤 때 한 번 만든다).
+        private string controlsHint = "", interactKey = "";
         public OverworldSettings Settings => settings;
-        public PlayerFacing Facing => visual != null ? visual.Facing : facing;
+        public PlayerFacing Facing => facing;
         public OverworldInteractable Target => target;
         /// <summary>이번 프레임에 실제로 걸었으면 true(입력이 있어도 막혀 거의 못 움직이면 false).</summary>
         public bool IsMoving { get; private set; }
@@ -57,9 +60,11 @@ namespace IBIIIS
         {
             controller = GetComponent<CharacterController>();
             visual = GetComponentInChildren<PlayerVisual>(true);
-            if (visual == null) Debug.LogWarning($"[IBIIIS] {name}: 자식에 PlayerVisual이 없어 스프라이트 방향을 바꾸지 않습니다.", this);
+            if (visual == null) Debug.LogWarning($"[IBIIIS] {name}: 자식에 PlayerVisual이 없어 스프라이트 방향·손맛 자세를 표시하지 않습니다(이동·먼지·발소리는 그대로).", this);
             if (settings == null) Debug.LogWarning($"[IBIIIS] {name}: Overworld Settings가 없어 기본 이동 속도·키 배치를 사용합니다.", this);
             input = new OverworldInput(settings != null ? settings.InputActions : null); input.Enable();
+            interactKey = input.Key(OverworldInput.Interact);
+            controlsHint = $"미니맵 | 이동 {input.Key(OverworldInput.Move)} | 달리기 {input.Key(OverworldInput.Dash)}(누르고 있기) | 구르기 {input.Key(OverworldInput.Roll)} | 상호작용 {interactKey}";
             effectsRoot = new GameObject("Overworld Motion Effects").transform;
             UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(effectsRoot.gameObject, gameObject.scene);
             motion = new OverworldMotion(settings != null ? settings.MotionFeedback : null, settings, effectsRoot, ViewCamera);
@@ -109,7 +114,9 @@ namespace IBIIIS
             IsMoving = direction != Vector2Int.zero && !OverworldMotion.IsBlocked(intended, actual, minMove);
             IsRunning = running && IsMoving;
             ShowVisual(direction, IsMoving, IsRunning);
-            if (visual != null) visual.SetPose(motion.Tick(Time.deltaTime, transform.position, intended, actual, IsRunning, minMove), ViewCamera);
+            // 손맛(먼지·발소리 포함)은 외형이 없어도 진행하고, 자세 적용만 외형이 있을 때 한다.
+            var pose = motion.Tick(Time.deltaTime, transform.position, intended, actual, IsRunning, minMove);
+            if (visual != null) visual.SetPose(pose, ViewCamera);
             UpdateTarget();
             if (target != null && input.InteractPressed()) target.Interact(this);
         }
@@ -131,11 +138,13 @@ namespace IBIIIS
             controller.Move(intended);
             var actual = transform.position - before; actual.y = 0;
             IsMoving = true;
-            var d = evade.Direction;
+            var rollSprite = RollSpriteDirection(evade.Direction, facing);
+            facing = rollSprite.x < 0 ? PlayerFacing.Left : PlayerFacing.Right; // 구르기 그림은 좌우 옆모습 기준
+            var pose = motion.TickRoll(dt, evade.Progress);
             if (visual != null)
             {
-                visual.Show(PlayerAction.Roll, RollSpriteDirection(d, Facing), evade.Progress, true, ViewCamera); facing = visual.Facing;
-                visual.SetPose(motion.TickRoll(dt, evade.Progress), ViewCamera);
+                visual.Show(PlayerAction.Roll, rollSprite, evade.Progress, true, ViewCamera);
+                visual.SetPose(pose, ViewCamera);
             }
             // 다 나아갔거나 벽·NPC에 막히면 끝낸다. 감속 끝무렵처럼 CharacterController가 무시하는 아주 작은 이동은 막힘으로 보지 않는다.
             if (evade.ReachedEnd || OverworldMotion.IsBlocked(intended, actual, OverworldMotion.MinMoveFor(controller)))
@@ -151,14 +160,16 @@ namespace IBIIIS
             evade.TickCooldown(Time.deltaTime);
             IsMoving = IsRunning = false;
             ShowVisual(Vector2Int.zero, false);
-            if (visual != null) visual.SetPose(motion.Tick(Time.deltaTime, transform.position, Vector3.zero, Vector3.zero), ViewCamera);
+            var pose = motion.Tick(Time.deltaTime, transform.position, Vector3.zero, Vector3.zero);
+            if (visual != null) visual.SetPose(pose, ViewCamera);
             UpdateTarget();
         }
         private void ShowVisual(Vector2Int direction, bool moving, bool running = false)
         {
-            if (visual == null) return;
             // 막혀서 못 움직여도 누른 방향은 바라본다(그림은 대기). 달릴 때는 대시 그림.
-            if (direction != Vector2Int.zero) { visual.Show(running ? PlayerAction.Dash : PlayerAction.Move, direction, 0, moving, ViewCamera); facing = visual.Facing; }
+            if (direction != Vector2Int.zero) facing = PlayerVisual.FacingOf(direction);
+            if (visual == null) return;
+            if (direction != Vector2Int.zero) visual.Show(running ? PlayerAction.Dash : PlayerAction.Move, direction, 0, moving, ViewCamera);
             else visual.Show(PlayerAction.Wait, Vector2Int.zero, 0, false, ViewCamera);
         }
         private void UpdateTarget()
@@ -171,9 +182,12 @@ namespace IBIIIS
         private void OnGUI()
         {
             if (input == null) return;
-            GUI.Box(new Rect(12, 12, 560, 30), $"미니맵 | 이동 {input.Key(OverworldInput.Move)} | 달리기 {input.Key(OverworldInput.Dash)}(누르고 있기) | 구르기 {input.Key(OverworldInput.Roll)} | 상호작용 {input.Key(OverworldInput.Interact)} | 클리어 {ProgressStore.ClearedStages.Count}");
-            if (frozen || target == null || target.PromptVerb == null || !OverworldGui.ToGui(ViewCamera, target.LabelPosition, out var anchor)) return;
-            var label = target is StageEntrance stage ? $"[{input.Key(OverworldInput.Interact)}] {stage.DisplayName} {target.PromptVerb}" : $"[{input.Key(OverworldInput.Interact)}] {target.PromptVerb}";
+            if (Event.current.type != EventType.Repaint) return;
+            GUI.Box(new Rect(12, 12, 560, 30), $"{controlsHint} | 클리어 {ProgressStore.ClearedStages.Count}");
+            if (frozen || target == null || !OverworldGui.ToGui(ViewCamera, target.LabelPosition, out var anchor)) return;
+            var prompt = target.PromptText;
+            if (prompt == null) return;
+            var label = $"[{interactKey}] {prompt}";
             // 말풍선은 기준점 위, 안내 문구는 기준점 아래에 그려 겹치지 않게 한다.
             var content = new GUIContent(label); var size = OverworldGui.Prompt.CalcSize(content);
             GUI.Box(new Rect(anchor.x - size.x / 2, anchor.y + 6, size.x, size.y), content, OverworldGui.Prompt);
