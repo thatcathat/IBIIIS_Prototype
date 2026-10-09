@@ -14,6 +14,10 @@ namespace IBIIIS
         public Vector2Int StepFrom { get; internal set; }
         public Vector2Int StepTo { get; internal set; }
         public bool Alive { get; internal set; } = true;
+        /// <summary>벽에 막혀 180도 돌아선 횟수(전투 동안 늘기만 함, 되돌리기로 줄지 않음). 연출이 새 반사를 알아채는 데만 쓴다.</summary>
+        public int BounceCount { get; internal set; }
+        /// <summary>마지막 반사 때 막혀 있던 방향(돌아서기 전 방향). 연출용.</summary>
+        public Vector2Int BounceFrom { get; internal set; }
         internal EnemyActionStep[] Actions;
         // 이번 행동에서 실행 중인 행동 목록의 위치와, 현재 전진 단위에서 남은 칸 수. GridSession이 행동마다 초기화한다.
         internal int ActionIndex, CellsLeft;
@@ -252,7 +256,7 @@ namespace IBIIIS
                 if (!e.Alive || e.CellsLeft == 0) continue;
                 e.Moving = true;
                 var next = e.Position + e.Direction;
-                if (!IsWalkable(next)) { e.Direction = -e.Direction; next = e.Position + e.Direction; }
+                if (!IsWalkable(next)) { e.BounceFrom = e.Direction; e.BounceCount++; e.Direction = -e.Direction; next = e.Position + e.Direction; }
                 if (IsWalkable(next)) e.StepTo = next;
             }
         }

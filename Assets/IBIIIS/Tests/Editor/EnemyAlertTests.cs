@@ -89,6 +89,21 @@ namespace IBIIIS.Tests
             Act(PlayerAction.Wait, Vector2Int.zero);
             Assert.AreEqual(1, player.Alert.ShownAlerts); Assert.AreEqual(2, player.Alert.AlertsPlayed, "계속 인식 중이면 다시 튀어나오지 않음");
         }
+        [Test] public void QuickNextActionDoesNotReplayQuestionMark()
+        {
+            Watcher(3, 2); Build(); player.UpdateMotion(1);
+            Act(PlayerAction.Move, Vector2Int.left); Assert.AreEqual(1, player.Alert.ShownLost);
+            Act(PlayerAction.Wait, Vector2Int.zero); // ? 시간이 끝나기 전에 다음 행동
+            Assert.AreEqual(0, player.Alert.ShownLost, "행동이 끝난 뒤 남은 ?를 다시 보이지 않음");
+        }
+        [Test] public void QuickNextActionDoesNotResumeThePop()
+        {
+            Watcher(3, 2); map.SetStart(new Vector2Int(2, 0)); Build();
+            Act(PlayerAction.Move, Vector2Int.right); Assert.AreEqual(1, player.Alert.ShownAlerts);
+            Act(PlayerAction.Wait, Vector2Int.zero); // 튀어나옴이 끝나기 전에 다음 행동
+            Assert.AreEqual(settings.Size, player.Alert.AlertMark(0).localScale.x, 1e-4f, "튀어나옴을 이어 재생하지 않고 원래 크기");
+            Assert.AreEqual(1, player.Alert.AlertsPlayed);
+        }
         [Test] public void UndoMatchesStateWithoutPopOrSound()
         {
             Watcher(3, 2); Build(); player.UpdateMotion(1);

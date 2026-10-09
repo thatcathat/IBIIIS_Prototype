@@ -91,6 +91,23 @@ namespace IBIIIS.Tests
             Assert.That(EnemyVisual(0).position.x - EnemyView(0).position.x, Is.EqualTo(-settings.WallBumpDistance).Within(1e-3f), "벽(왼쪽) 쪽으로 부딪힘");
             Assert.Greater(EnemyVisual(0).localScale.x, 1, "돌아서며 눌림");
         }
+        [Test] public void WallBounceRightAfterAimStillBumpsTowardTheWall()
+        {
+            // 옆 2칸에서 인식해 왼쪽으로 조준했는데 사이 칸이 막혀 곧바로 돌아선다(최종 방향은 위→오른쪽, 90도 변화).
+            map.SetWalkable(new Vector2Int(1, 3), false); map.SetStart(new Vector2Int(0, 3));
+            Enemy(2, 3, Vector2Int.up, 1, new[] { new Vector2Int(-2, 0) }); Build();
+            Assert.True(player.TryBeginAction(PlayerAction.Wait, Vector2Int.zero));
+            Assert.AreEqual(Vector2Int.right, player.Session.Enemies[0].Direction, "조준 뒤 막혀 돌아섬");
+            player.UpdateMotion(settings.WallBumpTime / 2);
+            Assert.That(EnemyVisual(0).position.x - EnemyView(0).position.x, Is.LessThan(-settings.WallBumpDistance * .5f), "막힌 왼쪽 벽으로 부딪힘");
+        }
+        [Test] public void FirstStepLandingIsKeptWhenTheFirstFrameSkipsTheWholeStep()
+        {
+            Enemy(1, 4, Vector2Int.right); Build();
+            Assert.True(player.TryBeginAction(PlayerAction.Wait, Vector2Int.zero));
+            player.AdvanceMovement(1f); player.UpdateMotion(0); // 첫 프레임에 적 이동 단계가 통째로 끝남
+            Assert.AreEqual(new Vector2Int(2, 4), player.Session.Enemies[0].Position); Assert.AreEqual(2, DustCount, "첫 칸 착지 먼지");
+        }
         [Test] public void AimTurnSquashesWithoutWallBump()
         {
             map.SetStart(new Vector2Int(3, 4)); Enemy(3, 3, Vector2Int.right, 1, new[] { Vector2Int.left }); Build();

@@ -24,6 +24,12 @@ namespace IBIIIS
     }
     [Serializable]
     public sealed class RollFrames { public Sprite first, second; }
+    /// <summary>적 범위 표시 색. 전투 화면(Tab)과 맵 에디터가 같은 값을 쓴다.</summary>
+    public static class EnemyRangeColors
+    {
+        public static readonly Color Recognition = new Color(.95f, .88f, .25f);
+        public static readonly Color Attack = new Color(.95f, .2f, .2f);
+    }
     /// <summary>플레이어 외형 프리팹에 붙이는 표시 전용 컴포넌트. 격자 위치·판정에는 관여하지 않습니다.</summary>
     [DisallowMultipleComponent]
     public sealed class PlayerVisual : MonoBehaviour
@@ -48,6 +54,8 @@ namespace IBIIIS
         private PlayerFacing facing = PlayerFacing.Front;
         public PlayerFacing Facing => facing;
         public SpriteRenderer Renderer => spriteRenderer;
+        /// <summary>바라보는 방향만 바꾼다(되돌리기 등). 그림은 다음 Show에서 바뀐다.</summary>
+        public void SetFacing(PlayerFacing value) => facing = value;
         public static PlayerFacing FacingOf(Vector2Int direction)
             => Mathf.Abs(direction.x) >= Mathf.Abs(direction.y) ? (direction.x < 0 ? PlayerFacing.Left : PlayerFacing.Right) : (direction.y > 0 ? PlayerFacing.Back : PlayerFacing.Front);
         /// <summary>현재 행동에 맞는 스프라이트를 표시한다. moving=false면 대기 표시.</summary>
@@ -55,10 +63,22 @@ namespace IBIIIS
         {
             if (action != PlayerAction.Wait && direction != Vector2Int.zero)
                 facing = action == PlayerAction.Roll ? (direction.x < 0 ? PlayerFacing.Left : PlayerFacing.Right) : FacingOf(direction);
-            var sprite = Select(action, direction, progress, moving, out var slot);
-            if (sprite == null) Warn(slot);
-            else if (spriteRenderer != null) spriteRenderer.sprite = sprite;
-            if (spriteRenderer != null && camera != null) Face(camera);
+            if (spriteRenderer == null) { Warn("Sprite Renderer"); return; }
+            var sprite = Select(action, direction, progress, moving);
+            if (sprite == null) { Select(action, direction, progress, moving, out var slot); Warn(slot); } // 슬롯 이름은 경고할 때만 만든다
+            else spriteRenderer.sprite = sprite;
+            if (camera != null) Face(camera);
+        }
+        private Sprite Select(PlayerAction action, Vector2Int direction, float progress, bool moving)
+        {
+            if (moving && action == PlayerAction.Move) return move.Get(facing);
+            if (moving && action == PlayerAction.Dash) return dash.Get(facing);
+            if (moving && action == PlayerAction.Roll)
+            {
+                var frames = direction.y > 0 ? (direction.x > 0 ? rollBackRight : rollBackLeft) : (direction.x > 0 ? rollFrontRight : rollFrontLeft);
+                return progress >= .5f ? frames.second : frames.first;
+            }
+            return idle.Get(facing);
         }
         public Sprite Select(PlayerAction action, Vector2Int direction, float progress, bool moving, out string slot)
         {
@@ -95,7 +115,7 @@ namespace IBIIIS
         }
         private void Warn(string slot)
         {
-            if (warned.Add(slot)) Debug.LogWarning($"[IBIIIS] {name}: PlayerVisual의 '{slot}' 스프라이트가 비어 있어 이전 표시를 유지합니다.", this);
+            if (warned.Add(slot)) Debug.LogWarning(slot == "Sprite Renderer" ? $"[IBIIIS] {name}: PlayerVisual의 Sprite Renderer 슬롯이 비어 있어 그림을 표시할 수 없습니다." : $"[IBIIIS] {name}: PlayerVisual의 '{slot}' 스프라이트가 비어 있어 이전 표시를 유지합니다.", this);
         }
     }
 }

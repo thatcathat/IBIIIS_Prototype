@@ -67,6 +67,16 @@ namespace IBIIIS.Tests
         private int Count(string name) { int n = 0; foreach (Transform t in player.Generated) if (t.name == name) n++; return n; }
         private void Run(float seconds, float step = .02f) { for (float t = 0; t < seconds; t += step) { player.AdvanceMovement(step); player.UpdateMotion(step); } }
 
+        [Test] public void UndoRestoresTheFacingBeforeTheAction()
+        {
+            Build(); var visual = player.Generated.GetComponentInChildren<PlayerVisual>();
+            Assert.AreEqual(PlayerFacing.Front, visual.Facing);
+            Assert.True(player.TryBeginAction(PlayerAction.Move, Vector2Int.left)); Run(.5f);
+            Assert.AreEqual(PlayerFacing.Left, visual.Facing);
+            Assert.True(player.TryBeginAction(PlayerAction.Wait, Vector2Int.zero)); Run(.5f);
+            Assert.True(player.TryUndo()); Assert.AreEqual(PlayerFacing.Left, visual.Facing, "대기를 되돌리면 대기 전 방향");
+            Assert.True(player.TryUndo()); Assert.AreEqual(PlayerFacing.Front, visual.Facing, "이동을 되돌리면 시작 방향");
+        }
         [Test] public void HopPoseStartsAndEndsAtRestAndPeaksMidway()
         {
             var motion = new MotionFeedback(settings, null, c => Vector3.zero, 1, null);
@@ -124,6 +134,7 @@ namespace IBIIIS.Tests
             Assert.AreEqual(2, Count("Dash Afterimage"), "잔상 3개 기준 25%·50% 지점을 지남");
             player.AdvanceMovement(.3f); player.UpdateMotion(0);
             Assert.AreEqual(new Vector2Int(5, 0), player.Session.Position);
+            Assert.AreEqual(2, Count("Dash Afterimage"), "한 프레임에 도착까지 지나간 75% 지점의 잔상은 생략(문서와 같음)");
             player.UpdateMotion(settings.LandingTime / 2);
             Assert.That(Pose.Squash.x, Is.EqualTo(1 + settings.DashStopSquash).Within(1e-3f), "미끄러지며 멈춤"); Assert.AreEqual(0, Pose.Tilt);
             player.UpdateMotion(1f); AssertIdentity(Pose); Assert.AreEqual(0, Count("Dash Afterimage")); Assert.AreEqual(0, DustCount);

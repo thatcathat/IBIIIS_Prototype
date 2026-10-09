@@ -33,7 +33,8 @@ namespace IBIIIS
         public int AlertsPlayed { get; private set; }
         public Transform AlertMark(int enemy) => marks.TryGetValue(enemy, out var m) && m.Alert != null ? m.Alert.transform : null;
         public Transform LostMark(int enemy) => marks.TryGetValue(enemy, out var m) && m.Lost != null ? m.Lost.transform : null;
-        /// <summary>매 프레임 호출한다. show가 false(행동 진행 중 등)면 모두 숨기고 이전 상태를 유지한다. skip이 true인 적(충돌 연출 중)도 숨긴다.</summary>
+        /// <summary>매 프레임 호출한다. show가 false(행동 진행 중 등)면 모두 숨긴다. 인식 여부는 유지하지만 튀어나옴·? 연출은 끝낸다(다시 보일 때 남은 연출을 이어 재생하지 않는다).
+        /// skip이 true인 적(충돌 연출 중)도 숨긴다.</summary>
         public void Update(float seconds, GridSession session, IReadOnlyList<EnemyDefinition> views, bool show, Func<int, bool> skip)
         {
             if (!Active || session == null || views == null) { HideAll(); return; }
@@ -44,7 +45,7 @@ namespace IBIIIS
                 if (view == null) continue;
                 var m = Get(i);
                 bool visible = show && state.Alive && (skip == null || !skip(i));
-                if (!visible) { Hide(m); if (!state.Alive) { m.Recognizing = false; m.AlertTime = m.LostTime = -1; } continue; }
+                if (!visible) { Hide(m); m.AlertTime = m.LostTime = -1; if (!state.Alive) m.Recognizing = false; continue; }
                 bool now = session.IsRecognizing(state);
                 if (now && !m.Recognizing) { m.AlertTime = 0; m.LostTime = -1; newAlert = true; }
                 else if (!now && m.Recognizing) { m.LostTime = settings.LostSprite != null ? 0 : -1; m.AlertTime = -1; }

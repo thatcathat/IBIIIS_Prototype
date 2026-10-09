@@ -8,8 +8,10 @@ namespace IBIIIS.Editor
     internal sealed class MapCanvas : VisualElement
     {
         private static readonly Color EmptyCell = new Color(.16f, .19f, .23f);
-        private static readonly Color RecognitionColor = new Color(.95f, .88f, .25f);
-        private static readonly Color AttackColor = new Color(.95f, .2f, .2f);
+        private static readonly Color RecognitionColor = EnemyRangeColors.Recognition;
+        private static readonly Color AttackColor = EnemyRangeColors.Attack;
+        // 경고(놓을 수 없는 칸·패배)는 범위 색과 따로 둔다.
+        private static readonly Color WarningColor = new Color(.95f, .2f, .2f);
         private static readonly Color SelectionColor = new Color(.3f, .85f, 1f);
         private readonly MapEditorWindow owner;
         private float size = 32;
@@ -146,7 +148,7 @@ namespace IBIIIS.Editor
                 painter.strokeColor = Color.white; painter.lineWidth = 3; painter.lineCap = LineCap.Round;
                 painter.BeginPath(); painter.MoveTo(Center(frame.From)); painter.LineTo(Center(frame.Player)); painter.Stroke();
             }
-            var playerColor = frame.Phase == BattlePhase.Lost ? AttackColor : frame.Phase == BattlePhase.Won ? new Color(.35f, .9f, .45f) : SelectionColor;
+            var playerColor = frame.Phase == BattlePhase.Lost ? WarningColor : frame.Phase == BattlePhase.Won ? new Color(.35f, .9f, .45f) : SelectionColor;
             painter.BeginPath(); painter.Arc(Center(frame.Player), size * .28f, new Angle(0), new Angle(360)); painter.ClosePath();
             painter.fillColor = playerColor; painter.Fill(); painter.strokeColor = Color.white; painter.lineWidth = 2; painter.Stroke();
         }
@@ -193,7 +195,7 @@ namespace IBIIIS.Editor
                 case MapTool.EraseEnemy:
                     if (valid && (owner.Tool == MapTool.EraseEnemy || Map.IsWalkable(cell)))
                     {
-                        var o = Origin(cell); painter.strokeColor = AttackColor; painter.lineWidth = 2;
+                        var o = Origin(cell); painter.strokeColor = WarningColor; painter.lineWidth = 2;
                         painter.BeginPath(); painter.MoveTo(o + Vector2.one * 6); painter.LineTo(o + Vector2.one * (size - 6));
                         painter.MoveTo(o + new Vector2(size - 6, 6)); painter.LineTo(o + new Vector2(6, size - 6)); painter.Stroke();
                     }
@@ -204,7 +206,7 @@ namespace IBIIIS.Editor
                     if (valid && definition != null) { var c = definition.EditorColor; Triangle(painter, cell, owner.PlaceFacing, new Color(c.r, c.g, c.b, .55f), Color.white); }
                     break;
             }
-            OutlineCell(painter, cell, valid ? Color.white : AttackColor, valid ? 1.5f : 2.5f, 0);
+            OutlineCell(painter, cell, valid ? Color.white : WarningColor, valid ? 1.5f : 2.5f, 0);
         }
     }
 }

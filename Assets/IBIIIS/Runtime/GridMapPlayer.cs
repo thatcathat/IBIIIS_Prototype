@@ -25,7 +25,12 @@ namespace IBIIIS
         private Transform[] moveHints;
         private readonly List<EnemyDefinition> enemyViews = new List<EnemyDefinition>();
         // 되돌리기 시 외형(마지막 행동·방향)을 복원하기 위해 GridSession의 행동 기록과 같은 순서로 쌓는다.
-        private readonly Stack<KeyValuePair<PlayerAction, Vector2Int>> actionHistory = new Stack<KeyValuePair<PlayerAction, Vector2Int>>();
+        // 되돌리기용: 행동 직전의 마지막 행동·방향과 바라보던 방향(대기는 방향을 바꾸지 않으므로 따로 기억한다).
+        private struct ActionMemo { public PlayerAction Action; public Vector2Int Direction; public PlayerFacing Facing; }
+        private readonly Stack<ActionMemo> actionHistory = new Stack<ActionMemo>();
+        // 매 프레임 쓰는 콜백과 HUD 문자열은 한 번만 만든다.
+        private Func<int, bool> ownsEnemy;
+        private string controlsHint = "";
         private Transform rangeRoot;
         private readonly List<Transform> attackMarks = new List<Transform>(), recognitionMarks = new List<Transform>();
         private Material attackMaterial, recognitionMaterial;
@@ -93,7 +98,7 @@ namespace IBIIIS
             alert = new EnemyAlert(playerSettings != null ? playerSettings.EnemyAlert : null, generated, viewCamera, cellSize);
             UpdateMotion(0); // 적 방향 등 현재 상태를 기준으로 기억해 첫 행동의 방향 전환도 반응하게 한다
             EnsureRuntimeEnvironment();
-            if (Application.IsPlaying(gameObject)) { input = new BattleInput(playerSettings != null ? playerSettings.InputActions : null); input.Enable(); }
+            if (Application.IsPlaying(gameObject)) { input = new BattleInput(playerSettings != null ? playerSettings.InputActions : null); input.Enable(); controlsHint = ControlsHint(); }
             if (Application.IsPlaying(gameObject)) MovementWorldTime.Register(this);
         }
         public void RefreshPreview()
@@ -161,7 +166,7 @@ namespace IBIIIS
                     if (tile != null && tile.SurfaceMaterial != null) visual.GetComponent<Renderer>().sharedMaterial = tile.SurfaceMaterial;
                     else Tint(visual.gameObject, map.GetFloorColor(p));
                 }
-            if (map.HasStart && map.IsWalkable(map.Start)) CreatePlayer(preview ? map.Start : session.Position);
+            if (map.HasStart && map.IsWalkable(map.Start)) CreatePlayer(preview ? map.Start : session.Position, preview);
             var ground = FlatSurface("Background Ground", new Vector3((map.Width + map.GroundMargin * 2) * cellSize, (map.Height + map.GroundMargin * 2) * cellSize, 1));
             ground.localPosition = new Vector3((map.Width - 1) * cellSize / 2, 0, (map.Height - 1) * cellSize / 2);
             var groundMaterial = map.GroundMaterial != null ? map.GroundMaterial : Resources.Load<Material>("IBIIIS/DefaultGround");
@@ -172,15 +177,18 @@ namespace IBIIIS
             if (preview)
                 foreach (var child in generated.GetComponentsInChildren<Transform>(true)) child.gameObject.hideFlags = HideFlags.HideAndDontSave;
         }
-        private void CreatePlayer(Vector2Int position)
+        private void CreatePlayer(Vector2Int position, bool preview)
         {
             player = new GameObject("Player Logic Anchor").transform;
             player.SetParent(generated, false); player.localPosition = LocalPosition(position);
             if (PlayerVisualPrefab != null)
             {
                 var instance = Instantiate(PlayerVisualPrefab, player, false);
-                playerView = instance.GetComponentInChildren<PlayerVisual>();
-                if (playerView != null) { instance.transform.localScale = Vector3.one * cellSize; ShowPlayerVisual(); }
+                instance.transform.localScale = Vector3.one * cellSize;
+                playerView = instance.GetComponentInChildren<PlayerVisual>(true);
+                if (playerView != null) ShowPlayerVisual();
+                // 미리보기는 자주 다시 만들므로 실행할 때만 알린다.
+                else if (!preview) Debug.LogWarning($"[IBIIIS] {name}: Visual Prefab '{PlayerVisualPrefab.name}'에 PlayerVisual이 없어 방향 그림·손맛·패배 연출 없이 표시합니다.", PlayerVisualPrefab);
             }
             else
             {
@@ -304,7 +312,7 @@ namespace IBIIIS
             if (rangeRoot == null)
             {
                 rangeRoot = new GameObject("Enemy Ranges").transform; rangeRoot.SetParent(generated, false);
-                attackMaterial = OverlayMaterial(new Color(.95f, .2f, .2f)); recognitionMaterial = OverlayMaterial(new Color(.95f, .88f, .25f));
+                attackMaterial = OverlayMaterial(EnemyRangeColors.Attack); recognitionMaterial = OverlayMaterial(EnemyRangeColors.Recognition);
             }
             rangeRoot.gameObject.SetActive(true);
             var attack = new HashSet<Vector2Int>(); var recognition = new HashSet<Vector2Int>();
@@ -344,9 +352,12 @@ namespace IBIIIS
             if (session == null || !session.TryAct(action, direction, duration, playerSettings != null ? playerSettings.EnemyStepDuration : .25f)) return false;
             if (Application.IsPlaying(gameObject)) MovementWorldTime.SetMoving(this, true);
             shownCollisions = 0; shownDefeat = false; motion?.BeginAction(action, session.Position, direction);
-            actionHistory.Push(new KeyValuePair<PlayerAction, Vector2Int>(lastAction, lastDirection));
+            actionHistory.Push(new ActionMemo { Action = lastAction, Direction = lastDirection, Facing = playerView != null ? playerView.Facing : PlayerFacing.Front });
             lastAction = action; lastDirection = direction; ShowPlayerVisual();
-            UpdateEnemyViews(); RefreshMoveHints(); return true;
+            UpdateEnemyViews(); RefreshMoveHints();
+            // 첫 프레임이 적 이동 단계보다 길어도 첫 칸 착지를 놓치지 않도록 행동 시작 상태를 바로 알린다.
+            TickEnemyMotion(0);
+            return true;
         }
         /// <summary>마지막 플레이어 행동 한 번을 되돌린다. 행동 진행 중에는 무시한다.</summary>
         public bool TryUndo()
@@ -354,8 +365,9 @@ namespace IBIIIS
             if (session == null || !session.TryUndo()) return false;
             feedback?.Clear(); motion?.Clear(); shownCollisions = 0; shownDefeat = false;
             if (playerView != null) playerView.SetPose(MotionPose.Identity, viewCamera);
-            var previous = actionHistory.Count > 0 ? actionHistory.Pop() : new KeyValuePair<PlayerAction, Vector2Int>(PlayerAction.Wait, Vector2Int.zero);
-            lastAction = previous.Key; lastDirection = previous.Value;
+            var previous = actionHistory.Count > 0 ? actionHistory.Pop() : new ActionMemo { Action = PlayerAction.Wait, Facing = PlayerFacing.Front };
+            lastAction = previous.Action; lastDirection = previous.Direction;
+            if (playerView != null) playerView.SetFacing(previous.Facing);
             if (player != null) player.localPosition = LocalPosition(session.Position);
             if (Application.IsPlaying(gameObject)) MovementWorldTime.SetMoving(this, false);
             ShowPlayerVisual(); UpdateEnemyViews(); RefreshMoveHints();
@@ -399,21 +411,23 @@ namespace IBIIIS
             if (away.sqrMagnitude < 1e-6f) away = -(Vector2)lastDirection;
             return new Vector3(away.x, 0, away.y);
         }
-        /// <summary>플레이어 이동 손맛 자세를 갱신한다(매 프레임). 충돌·패배 연출이 플레이어를 맡고 있으면 건드리지 않는다.</summary>
+        /// <summary>표시 연출을 갱신한다(매 프레임): 적 인식 표시, 먼지·잔상, 적 손맛, 플레이어 손맛 자세. 충돌·패배 연출이 플레이어를 맡고 있으면 플레이어 자세는 건드리지 않는다.</summary>
         public void UpdateMotion(float seconds)
         {
             UpdateAlert(seconds);
             if (motion == null || session == null) return;
             motion.TickEffects(seconds);
-            motion.TickEnemies(seconds, session, enemyViews, i => feedback != null && feedback.Owns(i), p => map != null && map.IsWalkable(p));
+            TickEnemyMotion(seconds);
             if (playerView == null || (feedback != null && feedback.OwnsPlayer)) return;
             playerView.SetPose(motion.Tick(seconds, session, lastAction, lastDirection, playerView.Renderer), viewCamera);
         }
+        private bool OwnsEnemy(int i) => feedback != null && feedback.Owns(i);
+        private void TickEnemyMotion(float seconds) { if (motion != null && session != null) motion.TickEnemies(seconds, session, enemyViews, ownsEnemy ??= OwnsEnemy); }
         // 적 인식 표시는 판정이 확정된 입력 대기·승패 상태에서만 보인다(행동·연출 중에는 숨김). 충돌로 날아가는 적은 건너뛴다.
         private void UpdateAlert(float seconds)
         {
             if (alert == null || session == null) return;
-            alert.Update(seconds, session, enemyViews, !session.IsBusy && !IsPresenting, i => feedback != null && feedback.Owns(i));
+            alert.Update(seconds, session, enemyViews, !session.IsBusy && !IsPresenting, ownsEnemy ??= OwnsEnemy);
         }
         /// <summary>행동을 시작한다. 입력 대기 중인데 갈 수 없는 방향이면 그쪽으로 부딪히는 반응만 보이고 false를 돌려준다(시간·판정 변화 없음).</summary>
         public bool TryActionOrBump(PlayerAction action, Vector2Int direction)
@@ -443,8 +457,8 @@ namespace IBIIIS
         }
         private void OnGUI()
         {
-            if (Application.IsPlaying(gameObject) && session != null) GUI.Box(new Rect(12, 12, 560, 96),
-                $"{session.Phase} | Enemies {session.AliveCount} | Evasion {(session.EvasionLocked ? "cooldown" : "ready")}\n{ControlsHint()}\nUndo ({session.UndoCount}) | Enemy ranges {(showRanges ? "ON" : "OFF")} (red=attack, yellow=recognition)\nCell ({session.Position.x}, {session.Position.y})");
+            if (Event.current.type == EventType.Repaint && Application.IsPlaying(gameObject) && session != null) GUI.Box(new Rect(12, 12, 560, 96),
+                $"{session.Phase} | Enemies {session.AliveCount} | Evasion {(session.EvasionLocked ? "cooldown" : "ready")}\n{controlsHint}\nUndo ({session.UndoCount}) | Enemy ranges {(showRanges ? "ON" : "OFF")} (red=attack, yellow=recognition)\nCell ({session.Position.x}, {session.Position.y})");
         }
         // 안내 문구는 현재 입력 에셋의 첫 번째 바인딩을 보여 준다(재바인딩 반영).
         private string ControlsHint()

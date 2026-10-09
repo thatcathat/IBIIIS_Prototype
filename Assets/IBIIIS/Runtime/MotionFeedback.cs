@@ -14,7 +14,7 @@ namespace IBIIIS
         private sealed class EnemyMotion
         {
             public Transform Visual; public Vector3 BasePosition, BaseScale;
-            public Vector2Int LastDirection; public bool MovingThisStep;
+            public Vector2Int LastDirection; public bool MovingThisStep; public int LastBounce;
             public float LandTime = -1, TurnTime = -1, BumpTime = -1; public Vector2Int BumpDirection;
             public void Reset() { LandTime = TurnTime = BumpTime = -1; MovingThisStep = false; }
         }
@@ -23,7 +23,6 @@ namespace IBIIIS
         private readonly Transform parent;
         private readonly Func<Vector2Int, Vector3> cellPosition;
         private readonly float cellSize;
-        private readonly Camera camera;
         // 먼지·잔상·효과음은 미니맵과 공유하는 연출 부품이 맡는다.
         private readonly MotionEffects effects;
         // 이번 행동의 착지를 아직 처리하지 않았으면 true. 중간 프레임을 보지 못해도(긴 프레임) 착지를 놓치지 않는다.
@@ -41,7 +40,7 @@ namespace IBIIIS
         {
             ownsSettings = settings == null;
             if (settings == null) { settings = ScriptableObject.CreateInstance<MotionFeedbackSettings>(); settings.hideFlags = HideFlags.HideAndDontSave; }
-            this.settings = settings; this.parent = parent; this.cellPosition = cellPosition; this.cellSize = cellSize; this.camera = camera;
+            this.settings = settings; this.parent = parent; this.cellPosition = cellPosition; this.cellSize = cellSize;
             effects = new MotionEffects(parent, camera);
         }
         public MotionFeedbackSettings Settings => settings;
@@ -65,9 +64,9 @@ namespace IBIIIS
             bumpDirection = direction; bumpTime = 0; landingTime = -1; breathTime = 0;
             Play(settings.BumpSound, settings.BumpVolume);
         }
-        /// <summary>매 프레임 호출한다. 현재 행동과 진행도로 플레이어 자세를 계산해 돌려준다. sprite는 잔상을 복사할 플레이어 스프라이트(없으면 잔상 생략).</summary>
         /// <summary>먼지·잔상을 흐리게 하고 다 사라지면 지운다(매 프레임, 플레이어 외형이 없어도 호출).</summary>
         public void TickEffects(float seconds) => effects.Tick(seconds);
+        /// <summary>매 프레임 호출한다. 현재 행동과 진행도로 플레이어 자세를 계산해 돌려준다. sprite는 잔상을 복사할 플레이어 스프라이트(없으면 잔상 생략).</summary>
         public MotionPose Tick(float seconds, GridSession session, PlayerAction action, Vector2Int direction, SpriteRenderer sprite = null)
         {
             if (!settings.Enabled || session == null) { landingTime = bumpTime = -1; return MotionPose.Identity; }
@@ -115,8 +114,9 @@ namespace IBIIIS
         public MotionPose HopPose(float progress, float height, float takeoffSquash, float airStretch)
             => MotionPoses.Hop(progress, height, takeoffSquash, airStretch, settings.TakeoffPortion);
 
-        /// <summary>적 외형 손맛을 갱신한다(매 프레임). skip이 true인 적(충돌 연출 중 등)과 죽은 적은 건드리지 않는다. walkable은 벽 반사 판단에 쓴다.</summary>
-        public void TickEnemies(float seconds, GridSession session, IReadOnlyList<EnemyDefinition> views, Func<int, bool> skip, Func<Vector2Int, bool> walkable)
+        /// <summary>적 외형 손맛을 갱신한다(매 프레임, 행동을 시작한 직후에도 0초로 한 번). skip이 true인 적(충돌 연출 중 등)과 죽은 적은 건드리지 않는다.
+        /// 벽 반사는 GridSession이 기록한 반사 횟수로 알아챈다(조준 직후 반사처럼 방향 변화만으로는 알 수 없는 경우 포함).</summary>
+        public void TickEnemies(float seconds, GridSession session, IReadOnlyList<EnemyDefinition> views, Func<int, bool> skip)
         {
             if (session == null || views == null) return;
             bool enabled = settings.Enabled;
@@ -128,21 +128,17 @@ namespace IBIIIS
                 var view = views[i]; var state = session.Enemies[i];
                 if (view == null || view.Visual == null) continue;
                 if (!enemyMotions.TryGetValue(i, out var m) || m.Visual != view.Visual)
-                    enemyMotions[i] = m = new EnemyMotion { Visual = view.Visual, BasePosition = view.Visual.localPosition, BaseScale = view.Visual.localScale, LastDirection = state.Direction };
-                if ((skip != null && skip(i)) || !state.Alive) { m.Reset(); m.LastDirection = state.Direction; continue; }
-                if (!enabled) { m.Reset(); m.LastDirection = state.Direction; Apply(m, view.transform, MotionPose.Identity); continue; }
+                    enemyMotions[i] = m = new EnemyMotion { Visual = view.Visual, BasePosition = view.Visual.localPosition, BaseScale = view.Visual.localScale, LastDirection = state.Direction, LastBounce = state.BounceCount };
+                if ((skip != null && skip(i)) || !state.Alive) { m.Reset(); m.LastDirection = state.Direction; m.LastBounce = state.BounceCount; continue; }
+                if (!enabled) { m.Reset(); m.LastDirection = state.Direction; m.LastBounce = state.BounceCount; Apply(m, view.transform, MotionPose.Identity); continue; }
                 // 진행 중인 반응 시간을 먼저 흘린 뒤 새 반응을 감지한다(새 반응은 이번 프레임에 0에서 시작).
                 if (m.TurnTime >= 0) { m.TurnTime += seconds; if (m.TurnTime >= settings.TurnTime) m.TurnTime = -1; }
                 if (m.BumpTime >= 0) { m.BumpTime += seconds; if (m.BumpTime >= settings.WallBumpTime) m.BumpTime = -1; }
                 // 방금 끝난 단계에서 움직였던 적은 착지한다. 긴 프레임으로 여러 단계를 건너뛰어도 한 번은 착지한다.
                 if (stepEnded && m.MovingThisStep) { m.LandTime = 0; anyLanded = true; if (settings.EnemyDustScale > 0) SpawnDust(state.Position, Vector2Int.zero, settings.EnemyDustScale * cellSize); }
-                if (!resyncEnemies && state.Direction != m.LastDirection)
-                {
-                    m.TurnTime = 0;
-                    var before = session.IsEnemiesMoving ? state.StepFrom : state.Position;
-                    if (state.Direction == -m.LastDirection && walkable != null && !walkable(before + m.LastDirection)) { m.BumpTime = 0; m.BumpDirection = m.LastDirection; }
-                }
-                m.LastDirection = state.Direction;
+                if (!resyncEnemies && state.Direction != m.LastDirection) m.TurnTime = 0;
+                if (!resyncEnemies && state.BounceCount != m.LastBounce) { m.BumpTime = 0; m.BumpDirection = state.BounceFrom; }
+                m.LastDirection = state.Direction; m.LastBounce = state.BounceCount;
                 m.MovingThisStep = session.IsEnemiesMoving && state.StepFrom != state.StepTo;
 
                 MotionPose pose;
@@ -186,7 +182,7 @@ namespace IBIIIS
         {
             landingTime = 0; landingSquash = squash; bumpTime = -1;
             Play(settings.FootstepSound, settings.FootstepVolume);
-            if (skid != Vector2Int.zero) SpawnDust(cell, skid); else SpawnDust(cell, Vector2Int.zero);
+            SpawnDust(cell, skid); // skid가 0이면 화면 좌우로 퍼진다
         }
         // 먼지 두 덩이. away가 0이면 화면 좌우로, 아니면 그 방향(맵 기준) 양옆으로 퍼진다.
         private void SpawnDust(Vector2Int cell, Vector2Int away) => SpawnDust(cell, away, settings.DustScale * cellSize);
