@@ -237,26 +237,39 @@ namespace IBIIIS.Tests
             var sum = Vector3.zero; for (int i = 0; i < frames && evade.Active; i++) { sum += evade.Advance(total / frames); if (evade.ReachedEnd) evade.Finish(); }
             return sum;
         }
-        [Test] public void EvadeTravelsItsDistanceRegardlessOfFramesThenCoolsDown()
+        [Test] public void RollTravelsItsDistanceRegardlessOfFramesThenCoolsDown()
         {
             var a = new OverworldEvade(); var b = new OverworldEvade();
-            Assert.IsTrue(a.TryStart(PlayerAction.Dash, new Vector3(1, 0, 1), 2.5f, .25f, .3f));
-            Assert.IsTrue(b.TryStart(PlayerAction.Dash, new Vector3(1, 0, 1), 2.5f, .25f, .3f));
-            var oneFrame = Travel(a, 1, .25f); var manyFrames = Travel(b, 37, .25f);
-            Assert.AreEqual(2.5f, oneFrame.magnitude, 1e-4f); Assert.AreEqual(oneFrame.x, manyFrames.x, 1e-4f); Assert.AreEqual(oneFrame.z, manyFrames.z, 1e-4f);
+            Assert.IsTrue(a.TryStart(new Vector3(1, 0, 1), 1.5f, .35f, .3f));
+            Assert.IsTrue(b.TryStart(new Vector3(1, 0, 1), 1.5f, .35f, .3f));
+            var oneFrame = Travel(a, 1, .35f); var manyFrames = Travel(b, 37, .35f);
+            Assert.AreEqual(1.5f, oneFrame.magnitude, 1e-4f); Assert.AreEqual(oneFrame.x, manyFrames.x, 1e-4f); Assert.AreEqual(oneFrame.z, manyFrames.z, 1e-4f);
             Assert.AreEqual(oneFrame.x, oneFrame.z, 1e-4f, "대각선 방향 그대로");
             Assert.IsFalse(a.Active); Assert.IsFalse(a.CanStart, "끝나면 쿨다운");
-            Assert.IsFalse(a.TryStart(PlayerAction.Roll, Vector3.right, 1.5f, .35f, .3f), "대시·구르기 쿨다운 공유");
+            Assert.IsFalse(a.TryStart(Vector3.right, 1.5f, .35f, .3f), "쿨다운 중에는 다시 구를 수 없음");
             a.TickCooldown(.2f); Assert.IsFalse(a.CanStart); a.TickCooldown(.11f); Assert.IsTrue(a.CanStart);
-            Assert.IsTrue(a.TryStart(PlayerAction.Roll, Vector3.right, 1.5f, .35f, .3f));
+            Assert.IsTrue(a.TryStart(Vector3.right, 1.5f, .35f, .3f));
             a.Advance(.1f); a.Finish(); Assert.IsFalse(a.Active, "막히면 일찍 끝냄"); Assert.Greater(a.CooldownLeft, 0);
-            Assert.IsFalse(new OverworldEvade().TryStart(PlayerAction.Move, Vector3.right, 1, 1, 0), "대시·구르기만");
+            Assert.IsFalse(new OverworldEvade().TryStart(Vector3.zero, 1, 1, 0), "방향이 없으면 시작하지 않음");
+        }
+        [Test] public void BlockedCheckWorksAtAnyFrameRate()
+        {
+            float minMove = .001f * 1.5f; // 미니맵 플레이어 프리팹의 CharacterController.minMoveDistance 기준
+            foreach (var dt in new[] { .001f, .02f })
+            {
+                var start = new Vector3(8.57f * dt, 0, 0); // 구르기 첫 프레임(1.5칸·0.35초·감속 1의 시작 속도)
+                Assert.IsTrue(OverworldMotion.IsBlocked(start, Vector3.zero, minMove), $"dt {dt}: 벽 앞이면 막힘");
+                Assert.IsFalse(OverworldMotion.IsBlocked(start, start, minMove), $"dt {dt}: 빈 공간은 막힘 아님");
+                Assert.IsFalse(OverworldMotion.IsBlocked(start, start * .5f, minMove), $"dt {dt}: 벽을 따라 미끄러지면 막힘 아님");
+            }
+            Assert.IsFalse(OverworldMotion.IsBlocked(new Vector3(.0005f, 0, 0), Vector3.zero, minMove), "CharacterController가 무시하는 최소 이동 미만은 막힘으로 보지 않음");
+            Assert.IsFalse(OverworldMotion.IsBlocked(new Vector3(0, .5f, 0), Vector3.zero, minMove), "수평 성분만 봄");
         }
         [Test] public void RollBurstsOutThenStopsAndRecoversBeforeCooldown()
         {
             var a = new OverworldEvade(); var b = new OverworldEvade();
-            Assert.IsTrue(a.TryStart(PlayerAction.Roll, Vector3.right, 1.5f, .35f, .25f, 1, .2f));
-            Assert.IsTrue(b.TryStart(PlayerAction.Roll, Vector3.right, 1.5f, .35f, .25f, 1, .2f));
+            Assert.IsTrue(a.TryStart(Vector3.right, 1.5f, .35f, .25f, 1, .2f));
+            Assert.IsTrue(b.TryStart(Vector3.right, 1.5f, .35f, .25f, 1, .2f));
             var firstHalf = a.Advance(.175f).x;
             Assert.AreEqual(1.5f * .75f, firstHalf, 1e-4f, "시간 절반에 거리 3/4(처음이 빠름)");
             var first = b.Advance(.035f).x; b.Advance(.28f); var last = b.Advance(.035f).x;
@@ -266,7 +279,7 @@ namespace IBIIIS.Tests
             a.TickCooldown(.15f); Assert.IsTrue(a.Recovering); Assert.AreEqual(.25f, a.CooldownLeft, 1e-5f, "회복 중에는 쿨다운이 줄지 않음");
             a.TickCooldown(.1f); Assert.IsFalse(a.Recovering); Assert.AreEqual(.2f, a.CooldownLeft, 1e-4f, "회복 뒤 남은 시간만큼 쿨다운 감소");
             a.TickCooldown(.2f); Assert.IsTrue(a.CanStart);
-            var total = 0f; var c = new OverworldEvade(); c.TryStart(PlayerAction.Roll, Vector3.right, 1.5f, .35f, 0, 1, .2f);
+            var total = 0f; var c = new OverworldEvade(); c.TryStart(Vector3.right, 1.5f, .35f, 0, 1, .2f);
             for (int i = 0; i < 23 && c.Active; i++) { total += c.Advance(.35f / 23).x; if (c.ReachedEnd) c.Finish(); }
             Assert.AreEqual(1.5f, total, 1e-4f, "감속해도 총 거리는 같음");
             Assert.AreEqual(.5f, OverworldEvade.Covered(.5f, 0), 1e-6f, "감속 0이면 일정한 속도(대시)");

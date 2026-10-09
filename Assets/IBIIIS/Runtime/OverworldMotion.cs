@@ -9,7 +9,18 @@ namespace IBIIIS
     public sealed class OverworldMotion : IDisposable
     {
         // 의도한 이동량에 비해 실제 이동이 이 비율보다 작으면 막힌 것으로 본다.
-        private const float BlockedRatio = .2f;
+        public const float BlockedRatio = .2f;
+        /// <summary>이번 프레임 이동이 벽·NPC에 막혔는지. 걷기·구르기·벽 부딪힘 반응이 같은 기준을 쓴다(수평 성분만 본다).
+        /// minMove는 CharacterController가 무시하는 최소 이동량(minMoveDistance)에 여유를 둔 값이다. 의도한 이동이 그 이하면
+        /// 실제로 움직이지 않아도 막힘으로 보지 않는다. 고정 거리 기준과 달리 프레임 속도가 높아도 판정이 빠지지 않는다.</summary>
+        public static bool IsBlocked(Vector3 intended, Vector3 actual, float minMove = 0)
+        {
+            intended.y = 0; actual.y = 0;
+            float want = intended.magnitude;
+            return want > Mathf.Max(minMove, 1e-5f) && actual.magnitude < want * BlockedRatio;
+        }
+        /// <summary>CharacterController의 최소 이동량에 여유(1.5배)를 둔 막힘 판정 기준.</summary>
+        public static float MinMoveFor(CharacterController controller) => controller != null ? Mathf.Max(controller.minMoveDistance, 1e-4f) * 1.5f : 0;
         private readonly MotionFeedbackSettings settings;
         private readonly bool ownsSettings;
         private readonly OverworldSettings overworld;
@@ -39,7 +50,8 @@ namespace IBIIIS
         }
         /// <summary>매 프레임 호출한다. position은 이동 후 발밑(효과 부모 기준), intended는 입력으로 의도한 이번 프레임 이동량, actual은 실제 이동량(수평).
         /// 돌려준 자세를 PlayerVisual.SetPose에 넘긴다.</summary>
-        public MotionPose Tick(float seconds, Vector3 position, Vector3 intended, Vector3 actual, bool running = false)
+        /// <param name="minMove">이 값 이하의 의도 이동은 막힘으로 보지 않는다(<see cref="MinMoveFor"/>).</param>
+        public MotionPose Tick(float seconds, Vector3 position, Vector3 intended, Vector3 actual, bool running = false, float minMove = 0)
         {
             // 걷기↔달리기가 바뀌어도 걸음 진행 비율은 이어지도록 남은 거리를 새 보폭에 맞춘다.
             float next = running ? RunStride : WalkStride;
@@ -49,7 +61,7 @@ namespace IBIIIS
             intended.y = 0; actual.y = 0;
             bool pressing = intended.sqrMagnitude > 1e-10f;
             float moved = actual.magnitude;
-            bool blocked = pressing && moved < intended.magnitude * BlockedRatio;
+            bool blocked = pressing && IsBlocked(intended, actual, minMove);
             if (!pressing) blockedLatched = false;
             if (pressing && !blocked)
             {

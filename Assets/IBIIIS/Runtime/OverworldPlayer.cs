@@ -105,10 +105,11 @@ namespace IBIIIS
                 controller.Move(intended);
             }
             var actual = transform.position - before; actual.y = 0;
-            IsMoving = direction != Vector2Int.zero && actual.magnitude >= intended.magnitude * .2f;
+            float minMove = OverworldMotion.MinMoveFor(controller);
+            IsMoving = direction != Vector2Int.zero && !OverworldMotion.IsBlocked(intended, actual, minMove);
             IsRunning = running && IsMoving;
             ShowVisual(direction, IsMoving, IsRunning);
-            if (visual != null) visual.SetPose(motion.Tick(Time.deltaTime, transform.position, intended, actual, IsRunning), ViewCamera);
+            if (visual != null) visual.SetPose(motion.Tick(Time.deltaTime, transform.position, intended, actual, IsRunning, minMove), ViewCamera);
             UpdateTarget();
             if (target != null && input.InteractPressed()) target.Interact(this);
         }
@@ -122,7 +123,7 @@ namespace IBIIIS
                 if (!input.RollPressed() || !evade.CanStart) return false;
                 float distance = settings != null ? settings.RollDistance : 1.5f, duration = settings != null ? settings.RollDuration : .35f;
                 float easeOut = settings != null ? settings.RollEaseOut : 1, recovery = settings != null ? settings.RollRecovery : .2f;
-                if (!evade.TryStart(PlayerAction.Roll, EvadeDirection(move, Facing), distance, duration, settings != null ? settings.EvadeCooldown : .25f, easeOut, recovery)) return false;
+                if (!evade.TryStart(EvadeDirection(move, Facing), distance, duration, settings != null ? settings.EvadeCooldown : .25f, easeOut, recovery)) return false;
                 IsRunning = false;
                 motion.BeginRoll();
             }
@@ -136,8 +137,8 @@ namespace IBIIIS
                 visual.Show(PlayerAction.Roll, RollSpriteDirection(d, Facing), evade.Progress, true, ViewCamera); facing = visual.Facing;
                 visual.SetPose(motion.TickRoll(dt, evade.Progress), ViewCamera);
             }
-            // 다 나아갔거나 벽·NPC에 막히면 끝낸다. 감속 끝무렵의 아주 작은 이동은 CharacterController가 무시할 수 있어 막힘으로 보지 않는다.
-            if (evade.ReachedEnd || (intended.magnitude > .01f && actual.magnitude < intended.magnitude * .2f))
+            // 다 나아갔거나 벽·NPC에 막히면 끝낸다. 감속 끝무렵처럼 CharacterController가 무시하는 아주 작은 이동은 막힘으로 보지 않는다.
+            if (evade.ReachedEnd || OverworldMotion.IsBlocked(intended, actual, OverworldMotion.MinMoveFor(controller)))
             {
                 motion.EndRoll(transform.position);
                 evade.Finish();
