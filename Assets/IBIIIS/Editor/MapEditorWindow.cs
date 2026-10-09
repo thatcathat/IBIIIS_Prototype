@@ -37,6 +37,11 @@ namespace IBIIIS.Editor
         private MapReplay replay;
         internal MapReplay Replay => replay;
         private int undoGroup = -1;
+        // 이번 스트로크에서 실제로 맵을 바꿨는지. 처음 바꾸기 직전에만 Undo를 기록한다.
+        private bool strokeRecorded;
+        // 검증 결과가 만들어진 시점의 맵·적 정의·바닥 정의. 이것이 바뀌었을 때만 결과를 지운다.
+        private string analysisSnapshot;
+        private Vector2Int? hoverCell;
 
         // 캔버스가 읽는 편집 상태
         internal GridMap Map => map;
@@ -49,8 +54,16 @@ namespace IBIIIS.Editor
 
         [MenuItem("IBIIIS/Map Editor")]
         public static void Open() { GetWindow<MapEditorWindow>("IBIIIS Map Editor").Show(); }
-        public static void OpenMap(GridMap value) { var window = GetWindow<MapEditorWindow>("IBIIIS Map Editor"); window.map = value; window.hasSelection = false; window.CreateGUI(); window.Show(); }
+        public static void OpenMap(GridMap value) { var window = GetWindow<MapEditorWindow>("IBIIIS Map Editor"); window.SetMap(value); window.CreateGUI(); window.Show(); }
+        /// <summary>편집할 맵을 바꾼다. 실제로 다른 맵일 때만 선택·검증 결과·재생을 지운다(같은 맵을 다시 열면 결과 유지).</summary>
+        private void SetMap(GridMap value)
+        {
+            if (value == map) return;
+            EndStroke(); map = value; selectedFloor = null; hasSelection = false; hoverCell = null; ClearAnalysis();
+        }
         private void OnEnable() { Undo.undoRedoPerformed += UndoRedoPerformed; EditorApplication.projectChanged += ProjectChanged; EditorApplication.playModeStateChanged += PlayModeChanged; }
+        // 다른 창(적 프리팹 Inspector 등)에서 돌아오면 검증 결과가 아직 현재 데이터와 맞는지 확인한다.
+        private void OnFocus() { if (analysis != null && !AnalysisStillValid()) { ClearAnalysis(); Message("맵 또는 적·바닥 설정이 바뀌어 검증 결과를 지웠습니다. 다시 검증하세요."); } }
         private void OnDisable() { EndStroke(); Undo.undoRedoPerformed -= UndoRedoPerformed; EditorApplication.projectChanged -= ProjectChanged; EditorApplication.playModeStateChanged -= PlayModeChanged; }
         private void PlayModeChanged(PlayModeStateChange _) { rootVisualElement.SetEnabled(!EditorApplication.isPlayingOrWillChangePlaymode); }
 
@@ -63,7 +76,7 @@ namespace IBIIIS.Editor
             rootVisualElement.Q(className: "map-root").style.flexGrow = 1;
             var picker = rootVisualElement.Q<ObjectField>("map"); picker.objectType = typeof(GridMap); picker.allowSceneObjects = false;
             picker.SetValueWithoutNotify(map);
-            picker.RegisterValueChangedCallback(e => { EndStroke(); map = e.newValue as GridMap; selectedFloor = null; hasSelection = false; ClearAnalysis(); Refresh(); });
+            picker.RegisterValueChangedCallback(e => { SetMap(e.newValue as GridMap); Refresh(); });
             status = rootVisualElement.Q<Label>("status");
             canvas = new MapCanvas(this); canvas.AddToClassList("canvas");
             var host = rootVisualElement.Q("canvas-host"); host.Insert(0, canvas);
@@ -97,7 +110,7 @@ namespace IBIIIS.Editor
             Hook("default-enemies", () => { EnemyPrefabSetup.EnsureDefaults(); enemyPrefabs = null; RefreshEnemyPalette(); Message($"기본 적 3종: {AssetPaths.Enemies} — 적 탭에서 선택하세요."); });
             // 단축키: 입력 칸에 글자를 치는 중에는 무시한다.
             rootVisualElement.RegisterCallback<KeyDownEvent>(OnKeyDown, TrickleDown.TrickleDown);
-            Refresh(); PlayModeChanged(default);
+            Refresh(); RefreshAnalysisPanel(); PlayModeChanged(default);
         }
         private void Hook(string name, Action action) { rootVisualElement.Q<Button>(name).clicked += action; }
 
@@ -208,7 +221,12 @@ namespace IBIIIS.Editor
             => string.Join(" → ", definition.Actions.Select(a => a.Type == EnemyActionType.AimAtPlayer ? "조준" : a.Type == EnemyActionType.MoveForward ? $"전진 {a.Cells}칸" : $"회전({a.Turn})"));
         // 프로젝트의 적 프리팹 목록. 프로젝트가 바뀔 때만 다시 찾는다.
         private List<GameObject> enemyPrefabs;
-        private void ProjectChanged() { enemyPrefabs = null; Refresh(); }
+        private void ProjectChanged()
+        {
+            enemyPrefabs = null;
+            if (analysis != null && !AnalysisStillValid()) { ClearAnalysis(); Message("맵 또는 적·바닥 설정이 바뀌어 검증 결과를 지웠습니다. 다시 검증하세요."); }
+            Refresh();
+        }
         private static List<GameObject> FindEnemyPrefabs()
         {
             var found = new List<GameObject>();
@@ -253,7 +271,7 @@ namespace IBIIIS.Editor
         }
 
         // ---------- 편집 ----------
-        internal void BeginStroke() { EndStroke(); Undo.IncrementCurrentGroup(); undoGroup = Undo.GetCurrentGroup(); Undo.SetCurrentGroupName("Paint map"); if (map != null) Undo.RegisterCompleteObjectUndo(map, "Paint map"); }
+        internal void BeginStroke() { EndStroke(); Undo.IncrementCurrentGroup(); undoGroup = Undo.GetCurrentGroup(); Undo.SetCurrentGroupName("Paint map"); strokeRecorded = false; }
         internal void EndStroke() { if (undoGroup >= 0) { Undo.CollapseUndoOperations(undoGroup); undoGroup = -1; } }
         /// <summary>현재 도구로 칸을 바꿀 수 있는지. 캔버스의 미리보기와 실제 적용이 같은 기준을 쓴다.</summary>
         internal bool CanApply(Vector2Int p)
@@ -270,9 +288,29 @@ namespace IBIIIS.Editor
                 default: return true;
             }
         }
+        /// <summary>현재 도구를 이 칸에 적용하면 맵이 실제로 바뀌는지. 바뀌지 않는 클릭은 저장 표시·Undo·검증 결과에 영향을 주지 않는다.</summary>
+        internal bool WouldChange(Vector2Int p)
+        {
+            if (map == null || !map.Contains(p)) return false;
+            switch (tool)
+            {
+                case MapTool.Start: return !(map.HasStart && map.Start == p);
+                case MapTool.Erase: return !string.IsNullOrEmpty(map.GetId(p));
+                case MapTool.EraseEnemy: return map.EnemyAt(p) != null;
+                case MapTool.PlaceEnemy:
+                    var existing = map.EnemyAt(p);
+                    return existing == null || existing.Prefab != selectedEnemy || existing.Direction != placeFacing;
+                case MapTool.Paint: return !(map.IsWalkable(p) && map.GetTile(p) == selectedFloor);
+                default: return false;
+            }
+        }
         internal void Paint(Vector2Int p)
         {
             if (map == null || !map.Contains(p)) return;
+            if (tool == MapTool.PlaceEnemy && selectedEnemy == null) { Message("적 탭에서 배치할 적을 먼저 선택하세요."); return; }
+            if (!WouldChange(p)) return;
+            if (!CanApply(p)) { Message(tool == MapTool.Start ? "시작 위치는 적이 없는 이동 가능한 칸에 지정하세요." : "적은 시작 위치를 제외한 이동 가능한 칸에 배치하세요."); return; }
+            if (!strokeRecorded) { Undo.RegisterCompleteObjectUndo(map, "Paint map"); strokeRecorded = true; }
             try
             {
                 switch (tool)
@@ -280,9 +318,7 @@ namespace IBIIIS.Editor
                     case MapTool.Start: map.SetStart(p); break;
                     case MapTool.Erase: map.SetWalkable(p, false); break;
                     case MapTool.EraseEnemy: map.RemoveEnemy(p); break;
-                    case MapTool.PlaceEnemy:
-                        if (selectedEnemy == null) { Message("적 탭에서 배치할 적을 먼저 선택하세요."); return; }
-                        map.PlaceEnemy(p, selectedEnemy, placeFacing); break;
+                    case MapTool.PlaceEnemy: map.PlaceEnemy(p, selectedEnemy, placeFacing); break;
                     case MapTool.Paint: map.PaintFloor(p, selectedFloor); break;
                     default: return;
                 }
@@ -292,6 +328,7 @@ namespace IBIIIS.Editor
         }
         internal void SetHover(Vector2Int? p)
         {
+            hoverCell = p;
             var label = rootVisualElement.Q<Label>("status-hover"); if (label == null) return;
             if (map == null || p == null || !map.Contains(p.Value)) { label.style.display = DisplayStyle.None; return; }
             var enemy = map.EnemyAt(p.Value);
@@ -312,7 +349,7 @@ namespace IBIIIS.Editor
                     path = $"{AssetPaths.Maps}/{name}/{name}.asset";
                 }
                 var next = MapEditorSetup.CreateMapWithScene(path, out var scenePath);
-                map = next; selectedFloor = null; hasSelection = false; ClearAnalysis(); rootVisualElement.Q<ObjectField>("map").SetValueWithoutNotify(map); canvas.ResetView(); Refresh();
+                SetMap(next); rootVisualElement.Q<ObjectField>("map").SetValueWithoutNotify(map); canvas.ResetView(); Refresh();
                 Message($"맵·씬 생성 완료: {scenePath} · 바닥과 시작 위치를 지정하세요.");
             }
             catch (Exception e) { EditorUtility.DisplayDialog("맵·씬 생성 실패", e.Message, "확인"); }
@@ -369,12 +406,29 @@ namespace IBIIIS.Editor
         }
 
         // ---------- 검증 ----------
-        private void UndoRedoPerformed() { ClearAnalysis(); Refresh(); }
+        // 맵과 관계없는 실행 취소(다른 에셋·씬 편집)로는 결과를 지우지 않는다.
+        private void UndoRedoPerformed() { if (analysis != null && !AnalysisStillValid()) ClearAnalysis(); Refresh(); }
+        // 분석 결과를 좌우하는 데이터: 맵 자체, 배치된 적 프리팹의 EnemyDefinition, 팔레트 바닥 정의.
+        private string AnalysisSnapshot()
+        {
+            if (map == null) return null;
+            var text = new System.Text.StringBuilder(EditorJsonUtility.ToJson(map));
+            var seen = new HashSet<GameObject>();
+            foreach (var enemy in map.Enemies)
+            {
+                if (enemy == null || enemy.Prefab == null || !seen.Add(enemy.Prefab)) continue;
+                var definition = enemy.Prefab.GetComponent<EnemyDefinition>();
+                text.Append('|').Append(definition != null ? EditorJsonUtility.ToJson(definition) : "none");
+            }
+            foreach (var tile in map.Palette) text.Append('|').Append(tile != null ? EditorJsonUtility.ToJson(tile) : "missing");
+            return text.ToString();
+        }
+        internal bool AnalysisStillValid() => analysis != null && analysisSnapshot == AnalysisSnapshot();
         // 맵 검증은 실행 시점의 맵 기준이다. 맵이 바뀌면 오래된 결과와 재생이 남지 않도록 지운다.
         private void ClearAnalysis()
         {
             bool hadReplay = replay != null;
-            analysis = null; replay = null; RefreshAnalysisPanel();
+            analysis = null; replay = null; analysisSnapshot = null; RefreshAnalysisPanel();
             if (hadReplay) canvas?.MarkDirtyRepaint();
         }
         private void Analyze()
@@ -382,6 +436,7 @@ namespace IBIIIS.Editor
             if (map == null) { Message("먼저 맵을 선택하세요."); return; }
             EndStroke(); replay = null;
             analysis = MapAnalysisRunner.Compute(map, rootVisualElement.Q<IntegerField>("max-states").value);
+            analysisSnapshot = AnalysisSnapshot();
             RefreshAnalysisPanel(); canvas.MarkDirtyRepaint();
             Message(analysis.Errors.Count > 0 ? "맵 오류: " + analysis.Errors[0] : analysis.States == 0 && analysis.Notes.Count > 0 ? "맵 검증: " + analysis.Notes[0] : analysis.Solvable ? $"맵 검증: 클리어 가능(최단 {analysis.ShortestWin}행동)" : analysis.Completed ? "맵 검증: 클리어 불가능" : "맵 검증: 결과 불완전");
             Debug.Log($"[IBIIIS] 맵 분석: {map.name}\n{analysis.ToReport()}", map);
@@ -453,7 +508,8 @@ namespace IBIIIS.Editor
             if (legend != null) legend.text = "경로 재생 중 — 흰 원: 플레이어 · 흰 선: 이번 행동의 이동 · 빨간 칸: 이번 행동 뒤 공격 범위 · 흐린 ×: 제거된 적 · ←/→ 단계 이동 · Esc 닫기";
             rootVisualElement.Q<Label>("replay-title").text = $"{replay.Title} ({replay.Frames.Count - 1}행동)";
             var slider = rootVisualElement.Q<SliderInt>("replay-slider");
-            slider.lowValue = 0; slider.highValue = Mathf.Max(1, replay.Frames.Count - 1); slider.SetValueWithoutNotify(replay.Index);
+            // 범위를 줄이기 전에 값을 먼저 0으로 두어야, 이전 재생의 큰 값이 잘리면서 변경 이벤트가 새 재생의 위치를 덮어쓰지 않는다.
+            slider.SetValueWithoutNotify(0); slider.lowValue = 0; slider.highValue = Mathf.Max(1, replay.Frames.Count - 1); slider.SetValueWithoutNotify(replay.Index);
             var frame = replay.Current;
             string phase = frame.Phase == BattlePhase.Won ? "승리" : frame.Phase == BattlePhase.Lost ? "패배" : "진행 중";
             rootVisualElement.Q<Label>("replay-step").text = $"{replay.Index} / {replay.Frames.Count - 1} · {frame.Label} · {phase} · 남은 적 {frame.AliveCount} · 플레이어 ({frame.Player.x}, {frame.Player.y})" + (replay.Problem != null ? "\n" + replay.Problem : "");
@@ -527,6 +583,7 @@ namespace IBIIIS.Editor
             Chip("status-enemies", $"적 {map.Enemies.Count}{(map.Enemies.Count % 2 != 0 ? " (홀수)" : "")}");
             var errors = map.ValidateMap();
             Chip("status-errors", errors.Count == 0 ? "플레이 준비 완료" : $"확인 필요 {errors.Count}: {errors[0]}", errors.Count == 0 ? "ok" : "warn");
+            SetHover(hoverCell); // 편집·실행 취소 뒤 마우스 아래 칸 정보도 현재 상태로 맞춘다
         }
     }
     [CustomEditor(typeof(GridMap))]
