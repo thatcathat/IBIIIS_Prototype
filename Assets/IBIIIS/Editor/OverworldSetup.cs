@@ -46,19 +46,26 @@ namespace IBIIIS.Editor
             if (File.Exists(path)) EditorUtility.RevealInFinder(path);
             else { Directory.CreateDirectory(Path.GetDirectoryName(path)); EditorUtility.RevealInFinder(Path.GetDirectoryName(path)); Debug.Log($"[IBIIIS] 아직 클리어 기록 파일이 없습니다: {path}"); }
         }
-        public static OverworldSettings EnsureSettings()
+        /// <summary>미니맵 설정 에셋. 새로 만들 때와 fillEmptySlots(테스트 씬 생성)일 때만 빈 슬롯에 기본 카메라·입력·손맛 설정을 연결한다.
+        /// 설정 메뉴로 열기만 할 때는 사용자가 일부러 비운 슬롯을 다시 채우지 않는다. 입력 파일에 빠진 액션 보충은 항상 한다.</summary>
+        public static OverworldSettings EnsureSettings(bool fillEmptySlots = false)
         {
             var settings = AssetDatabase.LoadAssetAtPath<OverworldSettings>(AssetPaths.OverworldSettings);
-            if (settings == null)
+            bool created = settings == null;
+            if (created)
             {
                 Directory.CreateDirectory(AssetPaths.Settings); AssetDatabase.Refresh();
                 settings = ScriptableObject.CreateInstance<OverworldSettings>();
                 AssetDatabase.CreateAsset(settings, AssetPaths.OverworldSettings);
             }
-            var so = new SerializedObject(settings);
-            Fill(so, "cameraSettings", EnsureCameraSettings());
-            Fill(so, "inputActions", EnsureInput());
-            Fill(so, "motionFeedback", AssetDatabase.LoadAssetAtPath<MotionFeedbackSettings>(AssetPaths.MotionFeedback));
+            if (created || fillEmptySlots)
+            {
+                var so = new SerializedObject(settings);
+                Fill(so, "cameraSettings", EnsureCameraSettings);
+                Fill(so, "inputActions", EnsureInput);
+                Fill(so, "motionFeedback", () => AssetDatabase.LoadAssetAtPath<MotionFeedbackSettings>(AssetPaths.MotionFeedback));
+            }
+            if (AssetDatabase.LoadAssetAtPath<InputActionAsset>(AssetPaths.OverworldInput) != null) AddMissingInputActions();
             AssetDatabase.SaveAssetIfDirty(settings);
             return settings;
         }
@@ -74,14 +81,9 @@ namespace IBIIIS.Editor
         }
         public static InputActionAsset EnsureInput()
         {
-            var existing = AssetDatabase.LoadAssetAtPath<InputActionAsset>(AssetPaths.OverworldInput);
-            if (existing != null) { AddMissingInputActions(); return AssetDatabase.LoadAssetAtPath<InputActionAsset>(AssetPaths.OverworldInput); }
-            Directory.CreateDirectory(AssetPaths.Settings);
-            var created = OverworldInput.CreateDefaultAsset();
-            try { File.WriteAllText(AssetPaths.OverworldInput, created.ToJson()); }
-            finally { Object.DestroyImmediate(created); }
-            AssetDatabase.ImportAsset(AssetPaths.OverworldInput, ImportAssetOptions.ForceUpdate);
-            return AssetDatabase.LoadAssetAtPath<InputActionAsset>(AssetPaths.OverworldInput);
+            var existing = InputSetup.LoadOrCreate(AssetPaths.OverworldInput, OverworldInput.CreateDefaultAsset);
+            if (existing == null) return null;
+            AddMissingInputActions(); return AssetDatabase.LoadAssetAtPath<InputActionAsset>(AssetPaths.OverworldInput);
         }
         /// <summary>이전에 만든 입력 파일에 대시·구르기처럼 나중에 추가된 액션이 없으면 기본 키로 추가한다. 다른 액션·바인딩은 그대로 둔다.</summary>
         public static bool AddMissingInputActions()
@@ -140,7 +142,7 @@ namespace IBIIIS.Editor
             {
                 // 새 오브젝트가 사용자가 열어 둔 씬에 잠시라도 생기지 않도록 새 씬을 활성 씬으로 둔다.
                 SceneManager.SetActiveScene(scene);
-                var settings = EnsureSettings();
+                var settings = EnsureSettings(true);
                 var playerPrefab = EnsurePlayerPrefab(settings);
                 var ground = MapEditorSetup.EnsureGroundMaterial();
                 var npcPrefab = EnsureNpcPrefab();
@@ -302,10 +304,13 @@ namespace IBIIIS.Editor
             AssetDatabase.CreateAsset(material, path);
             return material;
         }
-        private static void Fill(SerializedObject so, string property, Object value)
+        /// <summary>슬롯이 비어 있을 때만 값을 구해(에셋 생성 포함) 연결한다.</summary>
+        private static void Fill(SerializedObject so, string property, Func<Object> getValue)
         {
             var field = so.FindProperty(property);
-            if (field.objectReferenceValue != null || value == null) return;
+            if (field.objectReferenceValue != null) return;
+            var value = getValue();
+            if (value == null) return;
             field.objectReferenceValue = value; so.ApplyModifiedPropertiesWithoutUndo(); EditorUtility.SetDirty(so.targetObject);
         }
     }

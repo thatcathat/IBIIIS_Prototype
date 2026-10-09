@@ -94,7 +94,7 @@ Editor 코드는 런타임과 별도 어셈블리(`IBIIIS.Editor`)에 있고, �
 | `Assets/Sandbox` | SampleScene 등 실험용. 빌드 씬 목록의 SampleScene도 이 경로를 가리킨다 |
 
 - 에디터 도구의 기본 생성·조회 경로는 `Assets/IBIIIS/Editor/AssetPaths.cs` 한 곳에서 관리한다. 폴더를 다시 바꿀 때는 Unity Project 창(또는 AssetDatabase)에서 이동해 GUID를 보존하고 이 파일의 경로를 함께 수정한다. 파일 탐색기·git으로 옮기지 않는다.
-- `새 맵`의 저장 대화상자는 `Maps`에서 열린다. `Maps` 바로 아래에 이름을 지정하면 `Maps/<이름>/` 폴더를 만들어 맵·씬 쌍을 넣는다. 다른 폴더를 고르면 그 폴더에 생성한다. `새 바닥`은 `Tiles`, `새 환경 프리팹`은 `Environments`에서 열린다.
+- `새 맵`의 저장 대화상자는 `Maps`에서 열린다. `Maps` 바로 아래에 이름을 지정하면 `Maps/<이름>/` 폴더를 만들어 맵·씬 쌍을 넣는다. Play 중이거나 이름 없는 씬이 열려 있으면 폴더를 만들기 전에 거부하고, 생성이 실패하면 이번에 만든 빈 폴더를 지운다. 다른 폴더를 고르면 그 폴더에 생성한다. `새 바닥`은 `Tiles`, `새 환경 프리팹`은 `Environments`에서 열린다.
 - 2026-10-06 폴더 구조 정리 후 씬·프리팹·에셋·재질의 GUID 참조를 조사해 끊긴 참조가 없음을 확인했다. 삭제된 `Wall.asset`을 가리키던 팔레트 참조 3건(StarterMap·TestMap·TestMap3)은 이 맵들이 사용자에 의해 삭제되어(2026-10-09 작업 트리 기준) 남아 있지 않다. 삭제된 바닥 참조가 다시 생기면 아래 '삭제된 바닥 참조 정리'로 지운다.
 - `Assets/Logs/MapScenePreview.png`는 용도 미확인으로 이동·삭제하지 않았다.
 
@@ -206,7 +206,7 @@ Editor 코드는 런타임과 별도 어셈블리(`IBIIIS.Editor`)에 있고, �
 
 ### 전투 입력(Input Actions)
 
-1. 키 배치는 `Assets/IBIIIS/Settings/IBIIISInput.inputactions`의 액션 맵 `Battle`에서 관리하고 `IBIIIS > Player Settings`의 `Input Actions` 슬롯으로 연결한다. 메뉴 `IBIIIS > Create Default Input Actions`는 파일이 없을 때만 기본 배치를 만들고 설정 슬롯이 비어 있을 때만 연결한다(기존 파일·연결은 덮어쓰지 않음).
+1. 키 배치는 `Assets/IBIIIS/Settings/IBIIISInput.inputactions`의 액션 맵 `Battle`에서 관리하고 `IBIIIS > Player Settings`의 `Input Actions` 슬롯으로 연결한다. 메뉴 `IBIIIS > Create Default Input Actions`는 파일이 없을 때만 기본 배치를 만들고 설정 슬롯이 비어 있을 때만 연결한다(기존 파일·연결은 덮어쓰지 않음). 파일은 있는데 JSON 오류 등으로 가져오기에 실패했으면 기본 배치로 덮어쓰지 않고 Console에 `[IBIIIS] 입력 파일을 불러오지 못했습니다` 오류를 남긴다. Import 오류를 고친 뒤 다시 실행한다(미니맵 입력 파일도 같다).
 2. 에셋을 더블클릭해 열어 액션별 바인딩을 바꾸거나 추가한다. 액션: `MoveUp/Down/Left/Right`, `DashModifier`(누른 채 이동하면 대시), `RollUpLeft/UpRight/DownLeft/DownRight`(Q/E/Z/C), `Wait`, `Undo`, `Restart`, `ToggleRanges`. 모두 Button 타입이며 필수다. 이름을 바꾸거나 지우면 경고를 남기고 기본 배치로 동작한다.
 3. 현재 기본 바인딩은 키보드뿐이다. 게임패드 등은 같은 액션에 바인딩을 추가하면 된다(조합 배치는 미정이라 추가하지 않았다). 실행 시 에셋 사본을 만들어 쓰므로 원본에 실행 상태가 남지 않는다. 화면의 안내 문구는 각 액션의 첫 번째 바인딩을 표시한다.
 4. 코드: `Runtime/BattleInput.cs`(명령 변환·기본 배치), `Editor/InputSetup.cs`(에셋 생성). 입력 처리는 게임 규칙과 분리되어 `GridMapPlayer`가 명령만 받아 실행한다. 템플릿의 `Assets/InputSystem_Actions.inputactions`는 쓰지 않는다.
@@ -275,7 +275,7 @@ Editor 코드는 런타임과 별도 어셈블리(`IBIIIS.Editor`)에 있고, �
 1. Unity에서 메뉴 `IBIIIS > Overworld > Create Overworld Test Scene`을 누른다. 이름 없는 씬이 열려 있으면 먼저 저장하라는 안내가 나온다. 현재 열린 씬은 바꾸지 않는다.
 2. 다음을 만든다. 이미 있는 에셋·연결은 덮어쓰지 않는다.
    - `Assets/IBIIIS/Settings/OverworldSettings.asset`: 이동 속도, 카메라, 입력 설정. 비어 있는 카메라 설정에는 미니맵 전용 `Settings/OverworldCameraSettings.asset`(처음 만들 때 GlobalCameraSettings의 각도를 따르고 화각만 30), 비어 있는 입력에는 아래 입력 에셋을 연결한다.
-   - `Assets/IBIIIS/Settings/OverworldInput.inputactions`: 액션 맵 `Overworld`(Move = WASD·방향키, Interact = F, Dash = Shift(누르고 있으면 달리기), Roll = Space). 이미 있는 파일에 Dash·Roll이 없으면 그 둘만 기본 키로 추가하고 다른 바인딩은 그대로 둔다. 실행 중에도 예전 파일에 없는 Dash·Roll은 경고 없이 기본 키로 채워 쓴다.
+   - `Assets/IBIIIS/Settings/OverworldInput.inputactions`: 액션 맵 `Overworld`(Move = WASD·방향키, Interact = F, Dash = Shift(누르고 있으면 달리기), Roll = Space). 이미 있는 파일에 Dash·Roll이 없으면 그 둘만 기본 키로 추가하고 다른 바인딩은 그대로 둔다. 가져오기에 실패한 파일은 덮어쓰지 않는다. 실행 중에도 예전 파일에 없는 Dash·Roll은 경고 없이 기본 키로 채워 쓴다.
    - `Assets/IBIIIS/Characters/NPC/NPC.prefab`과 임시 실루엣 `NPC_Placeholder.png`: NPC 기본 프리팹(아래 NPC 추가). 메뉴 `IBIIIS > Overworld > Create NPC Prefab`으로 따로 만들 수도 있다.
    - `Assets/IBIIIS/Overworld/ClearedFlag.prefab`과 임시 그림 `ClearedFlag.png`: 카메라를 바라보는 클리어 깃발 스프라이트.
    - `Assets/IBIIIS/Characters/Player/OverworldPlayer.prefab`: CharacterController + OverworldPlayer, 자식에 GlobalPlayerSettings의 플레이어 외형 프리팹을 중첩한다. 외형 프리팹이 없으면 만들지 않고 안내한다.
@@ -302,7 +302,7 @@ Editor 코드는 런타임과 별도 어셈블리(`IBIIIS.Editor`)에 있고, �
 
 ### 편집 항목
 
-- **Overworld Settings**(`IBIIIS > Overworld > Overworld Settings`): `Move Speed`(칸/초, 임시 3.5), `Camera Settings`(각도·화각, 기본 `OverworldCameraSettings`: 회전 40°·화각 30, 비우면 카메라 현재 값), `Camera View Height`(플레이어 위치에서 화면 세로로 보이는 범위, 칸, 임시 14), `Camera Follow Sharpness`(0이면 지연 없음, 임시 8), `Input Actions`, 달리기·구르기(`Run Speed` 6칸/초, `Run Stride Length` 1.3칸, `Roll Distance` 1.5칸, `Roll Duration` 0.35초, `Roll Ease Out` 1(0이면 일정한 속도), `Roll Recovery` 0.2초, `Evade Cooldown` 0.25초, 모두 임시). 걷기 손맛(아래 항목) 값도 여기에 있다.
+- **Overworld Settings**(`IBIIIS > Overworld > Overworld Settings`): 이 메뉴는 설정 에셋이 없을 때만 만들고, 그때만 빈 슬롯(카메라·입력·손맛)에 기본 에셋을 연결한다. 이미 있는 에셋을 열 때는 사용자가 비운 슬롯을 다시 채우지 않는다(입력 파일의 빠진 Dash·Roll 보충만 한다). 빈 슬롯 채우기는 `Create Overworld Test Scene`을 실행할 때 한다. 항목: `Move Speed`(칸/초, 임시 3.5), `Camera Settings`(각도·화각, 기본 `OverworldCameraSettings`: 회전 40°·화각 30, 비우면 카메라 현재 값), `Camera View Height`(플레이어 위치에서 화면 세로로 보이는 범위, 칸, 임시 14), `Camera Follow Sharpness`(0이면 지연 없음, 임시 8), `Input Actions`, 달리기·구르기(`Run Speed` 6칸/초, `Run Stride Length` 1.3칸, `Roll Distance` 1.5칸, `Roll Duration` 0.35초, `Roll Ease Out` 1(0이면 일정한 속도), `Roll Recovery` 0.2초, `Evade Cooldown` 0.25초, 모두 임시). 걷기 손맛(아래 항목) 값도 여기에 있다.
 - **미니맵 카메라 화각**(2026-10-07): 화각 75에서는 화면 가장자리 바닥이 늘어나 보이는 왜곡이 커서 미니맵만 화각 30으로 좁혔다(전투는 별도의 GlobalCameraSettings, 현재 50). 카메라 거리는 `Camera View Height`와 화각으로 자동 계산하므로(화각 30이면 약 26칸, 75면 약 9칸) 화각을 바꿔도 화면에 담기는 범위는 같고 왜곡만 줄어든다. 화각은 `Assets/IBIIIS/Settings/OverworldCameraSettings.asset`의 Field Of View에서, 보이는 범위는 `Camera View Height`에서 바꾼다. 이전의 `Camera Distance`(거리 직접 지정)는 이 항목으로 바뀌었고, 기본 14칸은 이전 거리 9·화각 75와 거의 같은 범위다. Orthographic을 켜면 Size가 보이는 범위의 절반으로 맞춰진다. 전투와 같게 하려면 `Camera Settings`에 GlobalCameraSettings를 연결한다.
 - **NPC 추가**: `Assets/IBIIIS/Characters/NPC/NPC.prefab`을 씬에 끌어다 놓고, 루트의 `NpcSpeaker`에서 `Display Name`, `Lines`(항목 하나가 말풍선 한 번), `Radius`(상호작용 거리, 칸), `Label Height`(말풍선 높이, 칸)를 정한다. 그림은 자식 `Visual`의 SpriteRenderer 스프라이트를, 크기는 `Visual`의 Scale(현재 1.5)을 바꾼다. 막힘은 루트의 보이지 않는 CapsuleCollider, 말 걸기 범위는 바닥 평면 거리로 판정하므로 그림·크기를 바꿔도 달라지지 않는다. NPC마다 다른 그림을 오래 쓸 거라면 프리팹 변형(Prefab Variant)으로 만든다. 지금은 정면 한 장만 쓰며 돌아보기는 없다.
 - **카메라 바라보기**: 플레이어·적·NPC 그림은 모두 카메라 회전과 같은 회전으로 세워진다(`CameraFacingSprite`). NPC는 Play 중 매 프레임 맞추며, 편집 중 Scene에서는 똑바로 서 있는 상태로 보인다.

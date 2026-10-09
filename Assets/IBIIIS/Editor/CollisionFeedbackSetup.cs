@@ -23,11 +23,14 @@ namespace IBIIIS.Editor
             if (settings == null)
             {
                 settings = ScriptableObject.CreateInstance<CollisionFeedbackSettings>();
-                var so = new SerializedObject(settings);
-                so.FindProperty("impactPrefab").objectReferenceValue = burst; so.FindProperty("impactSound").objectReferenceValue = sound;
-                so.ApplyModifiedPropertiesWithoutUndo();
-                AssetDatabase.CreateAsset(settings, AssetPaths.CollisionFeedback); AssetDatabase.SaveAssetIfDirty(settings);
+                AssetDatabase.CreateAsset(settings, AssetPaths.CollisionFeedback);
             }
+            // 에셋이 이미 있어도 비어 있는 슬롯만 기본 충격 연출로 채운다. 연결된 슬롯은 그대로 둔다.
+            var serialized = new SerializedObject(settings); bool filled = false;
+            void Fill(string name, UnityEngine.Object value) { var slot = serialized.FindProperty(name); if (slot.objectReferenceValue == null && value != null) { slot.objectReferenceValue = value; filled = true; } }
+            Fill("impactPrefab", burst); Fill("impactSound", sound);
+            if (filled) { serialized.ApplyModifiedPropertiesWithoutUndo(); EditorUtility.SetDirty(settings); }
+            AssetDatabase.SaveAssetIfDirty(settings);
             var player = AssetDatabase.LoadAssetAtPath<PlayerSettings>(AssetPaths.PlayerSettings);
             if (player != null)
             {

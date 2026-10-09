@@ -339,20 +339,29 @@ namespace IBIIIS.Editor
         {
             var path = EditorUtility.SaveFilePanelInProject("새 맵과 씬", "NewMap", "asset", "같은 폴더에 같은 이름의 GridMap(.asset)과 씬(.unity)을 생성합니다. Maps 폴더를 고르면 맵 이름 폴더를 만들어 넣습니다.", AssetPaths.Maps);
             if (string.IsNullOrEmpty(path)) return;
+            string createdFolder = null;
             try
             {
+                // 폴더를 만들기 전에 씬을 만들 수 있는지(Play 중·이름 없는 씬) 먼저 확인한다.
+                MapEditorSetup.EnsureCanCreateScene();
                 // Maps 바로 아래를 고르면 Maps/<이름>/ 폴더에 맵·씬 쌍을 둔다.
                 if (System.IO.Path.GetDirectoryName(path).Replace('\\', '/') == AssetPaths.Maps)
                 {
                     var name = System.IO.Path.GetFileNameWithoutExtension(path);
-                    if (!AssetDatabase.IsValidFolder(AssetPaths.Maps + "/" + name)) AssetDatabase.CreateFolder(AssetPaths.Maps, name);
-                    path = $"{AssetPaths.Maps}/{name}/{name}.asset";
+                    var folder = AssetPaths.Maps + "/" + name;
+                    if (!AssetDatabase.IsValidFolder(folder)) { AssetDatabase.CreateFolder(AssetPaths.Maps, name); createdFolder = folder; }
+                    path = $"{folder}/{name}.asset";
                 }
                 var next = MapEditorSetup.CreateMapWithScene(path, out var scenePath);
                 SetMap(next); rootVisualElement.Q<ObjectField>("map").SetValueWithoutNotify(map); canvas.ResetView(); Refresh();
                 Message($"맵·씬 생성 완료: {scenePath} · 바닥과 시작 위치를 지정하세요.");
             }
-            catch (Exception e) { EditorUtility.DisplayDialog("맵·씬 생성 실패", e.Message, "확인"); }
+            catch (Exception e)
+            {
+                // 이번에 만든 폴더가 비어 있으면 실패 흔적을 남기지 않도록 지운다.
+                if (createdFolder != null && AssetDatabase.IsValidFolder(createdFolder) && System.IO.Directory.GetFileSystemEntries(createdFolder).Length == 0) AssetDatabase.DeleteAsset(createdFolder);
+                EditorUtility.DisplayDialog("맵·씬 생성 실패", e.Message, "확인");
+            }
         }
         private void NewFloor()
         {

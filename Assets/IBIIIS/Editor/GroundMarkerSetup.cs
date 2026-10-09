@@ -29,7 +29,6 @@ namespace IBIIIS.Editor
                 var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
                 if (prefab != null && prefab.GetComponent<EnemyDefinition>() != null) Attach(path, shadow, arrow);
             }
-            AssetDatabase.SaveAssets();
         }
 
         private static Sprite EnsureTexture(string path, Func<float, float, float> alpha, Color color)

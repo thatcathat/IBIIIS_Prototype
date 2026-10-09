@@ -100,7 +100,7 @@ namespace IBIIIS.Editor
                 throw;
             }
         }
-        private static void EnsureCanCreateScene()
+        public static void EnsureCanCreateScene()
         {
             if (EditorApplication.isPlayingOrWillChangePlaymode) throw new InvalidOperationException("Play 모드를 종료한 뒤 테스트 씬을 만드세요.");
             for (int i = 0; i < SceneManager.sceneCount; i++)
