@@ -310,7 +310,21 @@ namespace IBIIIS.Tests
                 Assert.AreEqual(before + .001f / overworld.StrideLength, run.StrideProgress, 1e-4f, "걷기로 바뀌어도 걸음 진행 비율은 이어짐");
             }
         }
-        [Test] public void SpeechBubbleAdvancesLineByLineThenCloses()
+        [Test] public void PopupOffersReturnWhenBattleCannotStart()
+        {
+            var map = ScriptableObject.CreateInstance<GridMap>(); map.Resize(3, 3); // 시작 위치가 없어 전투를 시작할 수 없는 맵
+            var battle = Track(new GameObject("Battle")).AddComponent<GridMapPlayer>(); battle.Configure(map, null, null);
+            LogAssert.Expect(LogType.Error, new System.Text.RegularExpressions.Regex("시작 위치"));
+            battle.Build();
+            var popup = StageResultPopup.Create(new StageRun("stage-a", "A", "Assets/Battle.unity", "Assets/Overworld.unity", Vector3.zero, PlayerFacing.Front));
+            Track(popup.gameObject);
+            Assert.IsNull(popup.Problem, "지켜볼 전투가 없으면 문제 없음");
+            popup.Watch(battle);
+            Assert.IsNull(battle.Session); Assert.IsFalse(battle.enabled);
+            StringAssert.Contains("전투를 시작하지 못했습니다", popup.Problem);
+            Object.DestroyImmediate(map);
+        }
+                [Test] public void SpeechBubbleAdvancesLineByLineThenCloses()
         {
             var npc = Npc(Vector3.zero, "첫째", "둘째");
             Assert.IsFalse(npc.IsTalking); Assert.AreEqual("말 걸기", npc.PromptVerb);

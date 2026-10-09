@@ -171,5 +171,18 @@ namespace IBIIIS.Tests
             }
             finally { AssetDatabase.DeleteAsset(path); }
         }
+        [Test] public void DeletedFloorInPaletteBlocksPlayUntilRemovedWithoutTouchingCells()
+        {
+            var deleted = ScriptableObject.CreateInstance<TileDefinition>(); deleted.Initialize("deleted", "Deleted", true, Color.red);
+            map.AddTile(deleted); UnityEngine.Object.DestroyImmediate(deleted); // 쓰는 칸이 없는 바닥 에셋이 삭제된 상황
+            Assert.AreEqual(1, map.MissingTileCount);
+            Assert.That(map.ValidateMap(), Has.Some.Contains("삭제된 바닥 참조"));
+            Assert.Throws<ArgumentException>(() => new GridSession(map), "지금은 Play할 수 없음");
+            Assert.AreEqual(1, map.RemoveMissingTiles());
+            Assert.AreEqual(0, map.MissingTileCount); CollectionAssert.IsEmpty(map.ValidateMap());
+            Assert.AreEqual(2, map.Palette.Count, "남은 바닥은 그대로");
+            Assert.AreSame(floor, map.GetTile(new Vector2Int(2, 2))); Assert.AreEqual(Vector2Int.zero, map.Start);
+            Assert.DoesNotThrow(() => new GridSession(map));
+        }
     }
 }

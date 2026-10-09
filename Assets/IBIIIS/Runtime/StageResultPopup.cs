@@ -15,7 +15,7 @@ namespace IBIIIS
         public static StageResultPopup Create(StageRun run)
         {
             var go = new GameObject("Stage Result Popup");
-            DontDestroyOnLoad(go);
+            if (Application.isPlaying) DontDestroyOnLoad(go);
             var popup = go.AddComponent<StageResultPopup>(); popup.run = run;
             return popup;
         }
@@ -26,13 +26,20 @@ namespace IBIIIS
             if (run == null) return;
             if (closing && scene.path == run.ReturnScene) { Destroy(gameObject); return; }
             if (scene.path != run.BattleScene) return;
+            GridMapPlayer found = null;
             foreach (var root in scene.GetRootGameObjects())
             {
-                battle = root.GetComponentInChildren<GridMapPlayer>(true);
-                if (battle != null) break;
+                found = root.GetComponentInChildren<GridMapPlayer>(true);
+                if (found != null) break;
             }
-            if (battle == null) problem = $"전투 씬 '{scene.path}'에 Grid Map Player가 없습니다.";
+            if (found == null) problem = $"전투 씬 '{scene.path}'에 Grid Map Player가 없습니다.";
+            else Watch(found);
         }
+        /// <summary>결과를 지켜볼 전투를 정한다(씬을 불러온 뒤 자동으로 호출).</summary>
+        public void Watch(GridMapPlayer value) { battle = value; }
+        /// <summary>팝업에 보여 줄 문제. 맵 설정 오류 등으로 전투를 시작하지 못했으면(GridMapPlayer가 꺼지고 세션 없음) 복귀를 안내한다.</summary>
+        public string Problem => problem ?? (battle != null && battle.Session == null && !battle.enabled
+            ? "전투를 시작하지 못했습니다. Console의 [IBIIIS] 오류(맵 설정)를 확인하세요." : null);
         /// <summary>표시할 결과. 충돌·패배 연출이 끝난 뒤에만 Won/Lost를 돌려준다. 되돌리기·재시작하면 다시 Waiting이 된다.</summary>
         public BattlePhase Result => battle != null && battle.Session != null && !battle.IsPresenting ? battle.Session.Phase : BattlePhase.Waiting;
         private void Update()
@@ -46,10 +53,11 @@ namespace IBIIIS
         {
             if (run == null || closing) return;
             var result = Result;
-            if (problem == null && result != BattlePhase.Won && result != BattlePhase.Lost) return;
+            var shown = Problem;
+            if (shown == null && result != BattlePhase.Won && result != BattlePhase.Lost) return;
             string heading = result == BattlePhase.Won ? "클리어!" : result == BattlePhase.Lost ? "패배" : "확인 필요";
             string message = result == BattlePhase.Won ? $"{run.DisplayName}을(를) 클리어했습니다." : result == BattlePhase.Lost ? $"{run.DisplayName}에서 패배했습니다." : "";
-            if (problem != null) message = (message.Length > 0 ? message + "\n" : "") + problem;
+            if (shown != null) message = (message.Length > 0 ? message + "\n" : "") + shown;
             const float width = 420, height = 220;
             var rect = new Rect((Screen.width - width) / 2, (Screen.height - height) / 2, width, height);
             GUI.Box(rect, GUIContent.none); GUI.Box(rect, GUIContent.none);

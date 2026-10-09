@@ -49,6 +49,11 @@ namespace IBIIIS
         public bool HasStart => hasStart;
         public Vector2Int Start => start;
         public IReadOnlyList<TileDefinition> Palette => palette;
+        /// <summary>삭제된 바닥 에셋을 가리키는 팔레트 항목 수.</summary>
+        public int MissingTileCount { get { int count = 0; foreach (var tile in palette) if (tile == null) count++; return count; } }
+        /// <summary>삭제된 바닥 에셋을 가리키는 팔레트 항목을 지우고 지운 개수를 돌려준다. 칸·시작 위치·적 배치는 바꾸지 않는다.
+        /// 지운 바닥을 쓰는 칸이 있으면 그 칸은 셀 ID 검사가 계속 오류로 알린다.</summary>
+        public int RemoveMissingTiles() => palette.RemoveAll(tile => tile == null);
         public bool Contains(Vector2Int p) => p.x >= 0 && p.y >= 0 && p.x < width && p.y < height;
         public string GetId(Vector2Int p) => Contains(p) && cells != null && cells.Length == width * height ? cells[p.y * width + p.x] : null;
         public TileDefinition GetTile(Vector2Int p)
@@ -103,7 +108,7 @@ namespace IBIIIS
             var ids = new HashSet<string> { WalkableCellId };
             foreach (var tile in palette)
             {
-                if (tile == null) { errors.Add("팔레트에 누락된 타일 참조가 있습니다."); continue; }
+                if (tile == null) { errors.Add("팔레트에 삭제된 바닥 참조가 있습니다. 맵 에디터 '칠하기' 탭의 '삭제된 바닥 참조 정리'로 지우세요."); continue; }
                 if (string.IsNullOrEmpty(tile.Id) || !ids.Add(tile.Id)) errors.Add($"타일 '{tile.name}'의 ID가 비어 있거나 중복됩니다.");
             }
             for (int i = 0; i < cells.Length; i++)

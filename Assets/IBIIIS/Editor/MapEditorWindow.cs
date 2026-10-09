@@ -85,6 +85,7 @@ namespace IBIIIS.Editor
             rootVisualElement.Q("map-settings").RegisterCallback<SerializedPropertyChangeEvent>(_ => { canvas.MarkDirtyRepaint(); if (map != null) UpdateStatus(); });
             var floorPicker = rootVisualElement.Q<ObjectField>("floor-asset"); floorPicker.objectType = typeof(TileDefinition); floorPicker.allowSceneObjects = false;
             Hook("new-floor", NewFloor);
+            Hook("remove-missing-floors", RemoveMissingFloors);
             Hook("add-floor", () =>
             {
                 var tile = floorPicker.value as TileDefinition;
@@ -326,6 +327,16 @@ namespace IBIIIS.Editor
             AssetDatabase.CreateAsset(tile, AssetDatabase.GenerateUniqueAssetPath(path)); AssetDatabase.SaveAssetIfDirty(tile);
             Undo.RecordObject(map, "Register floor"); map.AddFloor(tile); selectedFloor = tile; SelectTool(MapTool.Paint); Changed();
         }
+        // 삭제된 바닥 에셋을 가리키는 팔레트 항목은 Inspector에 보이지 않으므로 여기서만 지울 수 있다. 저장은 다른 편집과 같이 '저장'으로 한다.
+        private void RemoveMissingFloors()
+        {
+            if (map == null || map.MissingTileCount == 0) return;
+            EndStroke();
+            Undo.RecordObject(map, "Remove missing floors");
+            int removed = map.RemoveMissingTiles();
+            Changed();
+            Message($"삭제된 바닥 참조 {removed}개를 팔레트에서 지웠습니다. '저장'을 눌러 맵에 반영하세요.");
+        }
         private void ChooseFloor(TileDefinition tile) { EndStroke(); selectedFloor = tile; SelectTool(MapTool.Paint); Refresh(); }
         private void RefreshPalette()
         {
@@ -468,6 +479,10 @@ namespace IBIIIS.Editor
             if (canvas == null || status == null) return;
             if (selectedFloor != null && (map == null || !selectedFloor.Walkable || !map.Palette.Contains(selectedFloor))) selectedFloor = null;
             SelectTool(tool); RefreshPalette(); RefreshEnemyPalette(); RefreshEnemySummary(); RefreshFacing();
+            var removeMissing = rootVisualElement.Q<Button>("remove-missing-floors");
+            int missing = map != null ? map.MissingTileCount : 0;
+            removeMissing.style.display = missing > 0 ? DisplayStyle.Flex : DisplayStyle.None;
+            removeMissing.text = $"삭제된 바닥 참조 {missing}개 정리";
             var floorSettings = rootVisualElement.Q("floor-settings"); floorSettings.Unbind(); floorSettings.Clear();
             if (selectedFloor != null)
             {

@@ -33,6 +33,7 @@
           <ui:Tab name="tab-paint" label="칠하기">
             <ui:ScrollView class="tab-body">
               <ui:Label text="이동 바닥" class="section-title" />
+              <ui:Button name="remove-missing-floors" text="삭제된 바닥 참조 정리" tooltip="팔레트에서 삭제된 바닥 에셋을 가리키는 항목만 지웁니다. 칸·시작 위치·적은 그대로이며 실행 취소할 수 있습니다." />
               <ui:VisualElement name="floor-palette" class="palette" />
               <ui:VisualElement name="floor-settings" />
               <ui:Button name="new-floor" text="새 바닥 만들기" />
