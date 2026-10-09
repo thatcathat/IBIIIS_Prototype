@@ -312,8 +312,7 @@ namespace IBIIIS.Tests
             SetActions(go,EnemyActionStep.Move(1)); var so=new SerializedObject(definition); so.FindProperty("actions").GetArrayElementAtIndex(0).FindPropertyRelative("cells").intValue=3; so.ApplyModifiedPropertiesWithoutUndo();
             Assert.False(definition.IsValid); Assert.Throws<ArgumentException>(()=>map.PlaceEnemy(new Vector2Int(4,5),go,Vector2Int.up));
             var problems=definition.DescribeProblems(); Assert.AreEqual(1,problems.Count); StringAssert.Contains("행동 1번",problems[0]);
-            StringAssert.Contains("행동 1번",string.Join("
-",map.ValidateMap(false))); // 맵 검증도 같은 이유를 보여 준다
+            StringAssert.Contains("행동 1번",string.Join("|",map.ValidateMap(false))); // 맵 검증도 같은 이유를 보여 준다
             var legacy=Enemy(2,5,Vector2Int.up,2).GetComponent<EnemyDefinition>(); Assert.True(legacy.UsesLegacyActions);
             Assert.True(EnemyDefinitionEditor.ConvertLegacy(new SerializedObject(legacy))); Assert.False(legacy.UsesLegacyActions);
             var converted=legacy.Actions; Assert.AreEqual(2,converted.Length); Assert.AreEqual(EnemyActionType.AimAtPlayer,converted[0].Type); Assert.AreEqual(2,converted[1].Cells);
