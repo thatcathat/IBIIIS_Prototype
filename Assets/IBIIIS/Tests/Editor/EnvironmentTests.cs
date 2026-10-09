@@ -74,6 +74,39 @@ namespace IBIIIS.Tests
             instance.transform.localPosition = Vector3.right;
             map.SetEnvironmentPrefab(null); Assert.False(MapEnvironmentEditor.Synchronize(owner, false)); Assert.AreSame(instance, owner.EnvironmentInstance);
         }
+        [Test] public void SlotChangeAndSceneReplacementUndoTogether()
+        {
+            var first = CreatePrefab(); Assert.True(MapEnvironmentEditor.Synchronize(owner, false));
+            var second = CreatePrefab(); map.SetEnvironmentPrefab(first); // 만들기만 하면 슬롯이 새 프리팹으로 바뀌므로 되돌려 둔다
+            MapEnvironmentEditor.ConnectPrefab(map, second, () => MapEnvironmentEditor.Synchronize(owner, false));
+            Assert.AreEqual(second, map.EnvironmentPrefab); Assert.AreEqual(second, owner.EnvironmentSource);
+            Undo.PerformUndo();
+            Assert.AreEqual(first, map.EnvironmentPrefab, "map slot"); Assert.AreEqual(first, owner.EnvironmentSource, "scene source");
+            Assert.IsNotNull(owner.EnvironmentInstance); Assert.AreEqual(first, PrefabUtility.GetCorrespondingObjectFromSource(owner.EnvironmentInstance));
+            Undo.PerformRedo();
+            Assert.AreEqual(second, map.EnvironmentPrefab); Assert.AreEqual(second, owner.EnvironmentSource);
+            Assert.AreEqual(second, PrefabUtility.GetCorrespondingObjectFromSource(owner.EnvironmentInstance));
+            Undo.ClearUndo(map); Undo.ClearUndo(owner);
+        }
+        [Test] public void InvalidRootIsRejectedWithReason()
+        {
+            var prefab = CreatePrefab(); var path = AssetDatabase.GetAssetPath(prefab);
+            var contents = PrefabUtility.LoadPrefabContents(path);
+            try { contents.transform.localScale = Vector3.one * 2; PrefabUtility.SaveAsPrefabAsset(contents, path); }
+            finally { PrefabUtility.UnloadPrefabContents(contents); }
+            prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+            StringAssert.Contains("크기", MapEnvironmentEditor.GetPrefabProblem(prefab));
+            Assert.False(MapEnvironmentEditor.ValidPrefab(prefab));
+            Assert.False(MapEnvironmentEditor.Synchronize(owner, false)); Assert.IsNull(owner.EnvironmentInstance);
+            Assert.IsNull(MapEnvironmentEditor.GetPrefabProblem(null));
+        }
+        [Test] public void DeletedInstanceLeavesStaleLinkUntilButtonCleansIt()
+        {
+            CreatePrefab(); Assert.True(MapEnvironmentEditor.Synchronize(owner, false)); var source = owner.EnvironmentSource;
+            Object.DestroyImmediate(owner.EnvironmentInstance); map.SetEnvironmentPrefab(null);
+            Assert.True(MapEnvironmentEditor.Synchronize(owner, false)); Assert.AreEqual(source, owner.EnvironmentSource);
+            Assert.True(MapEnvironmentEditor.Synchronize(owner, true)); Assert.IsNull(owner.EnvironmentSource);
+        }
         private void PrepareRunnerScene()
         {
             var runnerScene = SceneManager.GetActiveScene();
