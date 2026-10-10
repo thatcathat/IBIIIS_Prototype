@@ -24,3 +24,4 @@ MonoBehaviour:
   collisionFeedback: {fileID: 11400000, guid: 13a9fccc82a1feb45990ecdb0f16a222, type: 2}
   motionFeedback: {fileID: 11400000, guid: f6692306c5f5bef4b912052e55506410, type: 2}
   enemyAlert: {fileID: 11400000, guid: 06c02d2a361db284b98e55725004eb3c, type: 2}
+  gameUi: {fileID: 11400000, guid: b077a0c6cd1c8c045b171d047fcb86d0, type: 2}

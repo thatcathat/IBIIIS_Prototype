@@ -85,6 +85,8 @@ namespace IBIIIS
         public bool IsEnemiesMoving => IsBusy && !enemiesComplete;
         public float EnemyProgress => IsEnemiesMoving ? Mathf.Clamp01(enemyElapsed / enemyDuration) : 0;
         public bool EvasionLocked { get; private set; }
+        /// <summary>회피기(대시·구르기)를 다시 쓸 수 있을 때까지 남은 일반 행동 수. 현재 규칙은 회피 뒤 일반 행동 1회이므로 0 또는 1. 표시용.</summary>
+        public int EvasionCooldownTurns => EvasionLocked ? 1 : 0;
         public float Progress => IsBusy ? Mathf.Clamp01(elapsed / duration) : 0;
         public float ActiveDuration => duration;
         public int AliveCount { get { int count = 0; foreach (var e in enemies) if (e.Alive) count++; return count; } }

@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace IBIIIS
 {
-    /// <summary>미니맵·결과 팝업의 임시 화면 표시(IMGUI). 정식 UI가 정해지면 교체한다.</summary>
+    /// <summary>임시 화면 표시(IMGUI). NPC 말풍선과, Game UI 설정이 없을 때 미니맵 안내·결과 팝업의 대체 표시에 쓴다.</summary>
     internal static class OverworldGui
     {
         private static GUIStyle bubble, prompt, title, body, button;

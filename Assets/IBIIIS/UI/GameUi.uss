@@ -1,0 +1,67 @@
+/* IBIIIS 게임 화면 공용 스타일(전투 HUD·결과 팝업·미니맵 안내). 색·크기·글꼴은 여기서 바꾼다. 임시 디자인. */
+.game-ui {
+    -unity-font-definition: url("Fonts/NotoSansKR-Regular.otf");
+    color: rgb(240, 240, 245);
+    font-size: 22px;
+    flex-grow: 1;
+}
+.panel {
+    background-color: rgba(18, 22, 32, 0.78);
+    border-radius: 10px;
+    padding: 10px 16px;
+    border-width: 1px;
+    border-color: rgba(255, 255, 255, 0.12);
+}
+.bold { -unity-font-definition: url("Fonts/NotoSansKR-Bold.otf"); }
+
+/* 전투 HUD */
+.hud { position: absolute; left: 0; top: 0; right: 0; bottom: 0; justify-content: space-between; padding: 20px; }
+.hud-top { flex-direction: row; justify-content: space-between; align-items: flex-start; }
+.hud-bottom { flex-direction: row; justify-content: space-between; align-items: flex-end; }
+.stage-name { font-size: 28px; -unity-font-definition: url("Fonts/NotoSansKR-Bold.otf"); margin-bottom: 4px; }
+.stats { flex-direction: row; }
+.stat { margin-right: 18px; }
+.evasion { align-items: center; }
+.evasion-icon {
+    width: 64px; height: 64px;
+    background-color: rgba(90, 200, 255, 0.25);
+    border-radius: 32px;
+    -unity-background-scale-mode: scale-to-fit;
+    align-items: center; justify-content: center;
+}
+.evasion-icon.locked { -unity-background-image-tint-color: rgb(110, 110, 110); background-color: rgba(120, 120, 120, 0.25); }
+.evasion-cooldown { font-size: 30px; -unity-font-definition: url("Fonts/NotoSansKR-Bold.otf"); color: rgb(255, 255, 255); -unity-text-outline-width: 1px; -unity-text-outline-color: rgb(0, 0, 0); }
+.evasion-caption { font-size: 16px; margin-top: 4px; }
+.controls { font-size: 17px; white-space: normal; max-width: 900px; }
+.hud-buttons { flex-direction: row; }
+.hud-button {
+    font-size: 18px;
+    margin-left: 10px; padding: 8px 14px;
+    background-color: rgba(18, 22, 32, 0.85);
+    color: rgb(240, 240, 245);
+    border-radius: 8px; border-width: 1px; border-color: rgba(255, 255, 255, 0.25);
+}
+.hud-button:hover { background-color: rgba(60, 80, 120, 0.9); }
+.hud-button:active { background-color: rgba(90, 120, 170, 0.95); }
+.hud-button:disabled { opacity: 0.4; }
+.hud-button.on { border-color: rgb(255, 210, 90); color: rgb(255, 225, 140); }
+.debug { position: absolute; left: 20px; bottom: 90px; font-size: 15px; color: rgb(170, 255, 170); background-color: rgba(0, 0, 0, 0.6); padding: 4px 8px; }
+
+/* 결과 팝업 */
+.popup-overlay { position: absolute; left: 0; top: 0; right: 0; bottom: 0; background-color: rgba(0, 0, 0, 0.45); align-items: center; justify-content: center; }
+.popup { width: 560px; align-items: center; padding: 28px 32px; }
+.popup-title { font-size: 44px; -unity-font-definition: url("Fonts/NotoSansKR-Bold.otf"); margin-bottom: 12px; }
+.popup-title.won { color: rgb(255, 220, 110); }
+.popup-title.lost { color: rgb(255, 130, 130); }
+.popup-message { font-size: 22px; white-space: normal; -unity-text-align: middle-center; margin-bottom: 22px; }
+.popup-button { font-size: 22px; width: 200px; height: 52px; }
+
+/* 미니맵 안내 */
+.overworld { position: absolute; left: 0; top: 0; right: 0; bottom: 0; }
+.overworld-hint { position: absolute; left: 20px; top: 20px; font-size: 18px; }
+.prompt {
+    position: absolute;
+    translate: -50% 0;
+    font-size: 20px; color: rgb(255, 230, 130);
+    padding: 6px 12px;
+}

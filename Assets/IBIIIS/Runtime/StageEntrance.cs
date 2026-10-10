@@ -34,7 +34,7 @@ namespace IBIIIS
         public override void Interact(OverworldPlayer player)
         {
             if (Problem != null) { Debug.LogError($"[IBIIIS] 스테이지 입구 '{name}': {Problem}", this); return; }
-            if (StageFlow.Enter(new StageRun(stageId, DisplayName, BattleScenePath, gameObject.scene.path, player.transform.position, player.Facing))) player.Freeze();
+            if (StageFlow.Enter(new StageRun(stageId, DisplayName, BattleScenePath, gameObject.scene.path, player.transform.position, player.Facing), player.Settings != null ? player.Settings.GameUi : null)) player.Freeze();
         }
         private void Start()
         {

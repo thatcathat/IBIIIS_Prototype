@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace IBIIIS
 {
@@ -23,6 +24,10 @@ namespace IBIIIS
         private PlayerFacing facing = PlayerFacing.Front;
         // 안내 문구의 키 이름(입력을 켤 때 한 번 만든다).
         private string controlsHint = "", interactKey = "";
+        // 정식 안내 화면(UI Toolkit). Game UI 설정이 없으면 null이고 OnGUI의 임시 표시를 쓴다.
+        private Label hintLabel, promptLabel;
+        private bool usesGameUi;
+        private string shownHint;
         public OverworldSettings Settings => settings;
         public PlayerFacing Facing => facing;
         public OverworldInteractable Target => target;
@@ -68,6 +73,15 @@ namespace IBIIIS
             effectsRoot = new GameObject("Overworld Motion Effects").transform;
             UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(effectsRoot.gameObject, gameObject.scene);
             motion = new OverworldMotion(settings != null ? settings.MotionFeedback : null, settings, effectsRoot, ViewCamera);
+            var ui = settings != null ? settings.GameUi : null;
+            var document = ui != null ? ui.CreateDocument("Overworld UI", ui.OverworldHud, effectsRoot, 0) : null;
+            if (document != null)
+            {
+                usesGameUi = true;
+                hintLabel = GameUiSettings.Find<Label>(document.rootVisualElement, "hint", "미니맵 안내");
+                promptLabel = GameUiSettings.Find<Label>(document.rootVisualElement, "prompt", "미니맵 안내");
+                if (promptLabel != null) promptLabel.style.display = DisplayStyle.None;
+            }
         }
         private void Start()
         {
@@ -180,15 +194,33 @@ namespace IBIIIS
             if (target != null) target.OnLeft();
             target = next;
         }
+        /// <summary>상호작용 안내 문구("[F] 말 걸기" 등). 대상이 없거나 안내할 것이 없으면 null.</summary>
+        public string PromptLabel => frozen || target == null || target.PromptText == null ? null : $"[{interactKey}] {target.PromptText}";
+        /// <summary>정식 안내 화면을 쓰고 있으면 true(테스트·디버그용).</summary>
+        public bool UsesGameUi => usesGameUi;
+        // 카메라가 움직인 뒤 대상 위치에 안내를 붙인다(대상 기준점 바로 아래, 말풍선은 기준점 위).
+        private void LateUpdate()
+        {
+            if (!usesGameUi || input == null) return;
+            var hint = $"{controlsHint} | 클리어 {ProgressStore.ClearedStages.Count}";
+            if (hintLabel != null && hint != shownHint) { hintLabel.text = hint; shownHint = hint; }
+            if (promptLabel == null) return;
+            var label = PromptLabel; var camera = ViewCamera;
+            bool visible = label != null && camera != null && promptLabel.panel != null && camera.WorldToScreenPoint(target.LabelPosition).z > 0;
+            promptLabel.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
+            if (!visible) return;
+            if (promptLabel.text != label) promptLabel.text = label;
+            var point = RuntimePanelUtils.CameraTransformWorldToPanel(promptLabel.panel, target.LabelPosition, camera);
+            promptLabel.style.left = point.x; promptLabel.style.top = point.y + 6;
+        }
+        // Game UI 설정이 없을 때만 쓰는 임시 표시(IMGUI).
         private void OnGUI()
         {
-            if (input == null) return;
+            if (usesGameUi || input == null) return;
             if (Event.current.type != EventType.Repaint) return;
             GUI.Box(new Rect(12, 12, 560, 30), $"{controlsHint} | 클리어 {ProgressStore.ClearedStages.Count}");
-            if (frozen || target == null || !OverworldGui.ToGui(ViewCamera, target.LabelPosition, out var anchor)) return;
-            var prompt = target.PromptText;
-            if (prompt == null) return;
-            var label = $"[{interactKey}] {prompt}";
+            var label = PromptLabel;
+            if (label == null || !OverworldGui.ToGui(ViewCamera, target.LabelPosition, out var anchor)) return;
             // 말풍선은 기준점 위, 안내 문구는 기준점 아래에 그려 겹치지 않게 한다.
             var content = new GUIContent(label); var size = OverworldGui.Prompt.CalcSize(content);
             GUI.Box(new Rect(anchor.x - size.x / 2, anchor.y + 6, size.x, size.y), content, OverworldGui.Prompt);

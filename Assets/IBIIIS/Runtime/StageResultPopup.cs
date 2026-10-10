@@ -1,6 +1,8 @@
 using System;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
+using UnityEngine.UIElements;
 
 namespace IBIIIS
 {
@@ -14,13 +16,43 @@ namespace IBIIIS
         // 클리어 기록 저장에 실패했는지, 확인 버튼으로 다시 시도했는지
         private bool saveFailed, retried;
         private string problem;
-        public static StageResultPopup Create(StageRun run)
+        // 정식 팝업 화면(UI Toolkit). Game UI 설정이 없으면 null이고 OnGUI의 임시 표시를 쓴다.
+        private VisualElement view;
+        private Label title, message;
+        /// <param name="ui">선택. 팝업 화면 구성을 가진 Game UI 설정(미니맵 Overworld Settings의 것).</param>
+        public static StageResultPopup Create(StageRun run, GameUiSettings ui = null)
         {
             var go = new GameObject("Stage Result Popup");
             if (Application.isPlaying) DontDestroyOnLoad(go);
             var popup = go.AddComponent<StageResultPopup>(); popup.run = run;
+            var document = ui != null ? ui.CreateDocument("Result Popup UI", ui.ResultPopup, go.transform, 100) : null;
+            if (document != null) popup.Bind(document.rootVisualElement);
             return popup;
         }
+        private void Bind(VisualElement root)
+        {
+            const string screen = "결과 팝업";
+            view = root;
+            title = GameUiSettings.Find<Label>(root, "title", screen);
+            message = GameUiSettings.Find<Label>(root, "message", screen);
+            var confirm = GameUiSettings.Find<Button>(root, "confirm", screen);
+            if (confirm != null) confirm.clicked += Confirm;
+            view.style.display = DisplayStyle.None;
+        }
+        /// <summary>지금 보여 줄 팝업 내용. 보일 것이 없으면(결과 전, 닫는 중) false.</summary>
+        public bool TryGetView(out string heading, out string text, out BattlePhase result)
+        {
+            heading = text = null; result = Result;
+            if (run == null || closing) return false;
+            var shown = Problem;
+            if (shown == null && result != BattlePhase.Won && result != BattlePhase.Lost) return false;
+            heading = result == BattlePhase.Won ? "클리어!" : result == BattlePhase.Lost ? "패배" : "확인 필요";
+            text = result == BattlePhase.Won ? $"{run.DisplayName}을(를) 클리어했습니다." : result == BattlePhase.Lost ? $"{run.DisplayName}에서 패배했습니다." : "";
+            if (shown != null) text = (text.Length > 0 ? text + "\n" : "") + shown;
+            return true;
+        }
+        /// <summary>정식 팝업 화면을 쓰고 있으면 true(테스트·디버그용).</summary>
+        public bool UsesGameUi => view != null;
         private void OnEnable() { SceneManager.sceneLoaded += OnSceneLoaded; }
         private void OnDisable() { SceneManager.sceneLoaded -= OnSceneLoaded; }
         private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
@@ -44,7 +76,18 @@ namespace IBIIIS
             ? "전투를 시작하지 못했습니다. Console의 [IBIIIS] 오류(맵 설정)를 확인하세요." : null);
         /// <summary>표시할 결과. 충돌·패배 연출이 끝난 뒤에만 Won/Lost를 돌려준다. 되돌리기·재시작하면 다시 Waiting이 된다.</summary>
         public BattlePhase Result => battle != null && battle.Session != null && !battle.IsPresenting ? battle.Session.Phase : BattlePhase.Waiting;
-        private void Update() => CheckResult();
+        private void Update()
+        {
+            CheckResult();
+            if (view == null) return;
+            bool visible = TryGetView(out var heading, out var text, out var result);
+            view.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
+            if (!visible) return;
+            if (title != null) { title.text = heading; title.EnableInClassList("won", result == BattlePhase.Won); title.EnableInClassList("lost", result == BattlePhase.Lost); }
+            if (message != null) message.text = text;
+            var keyboard = Keyboard.current;
+            if (keyboard != null && (keyboard.enterKey.wasPressedThisFrame || keyboard.numpadEnterKey.wasPressedThisFrame)) Confirm();
+        }
         /// <summary>승리가 확정되었으면 클리어 기록을 한 번 저장한다(매 프레임 호출).</summary>
         internal void CheckResult()
         {
@@ -57,15 +100,10 @@ namespace IBIIIS
             try { ProgressStore.MarkCleared(run.StageId); saveFailed = false; return true; }
             catch (Exception e) { saveFailed = true; problem = $"클리어 기록을 저장하지 못했습니다: {e.Message}"; Debug.LogException(e); return false; }
         }
+        // Game UI 설정이 없을 때만 쓰는 임시 표시(IMGUI).
         private void OnGUI()
         {
-            if (run == null || closing) return;
-            var result = Result;
-            var shown = Problem;
-            if (shown == null && result != BattlePhase.Won && result != BattlePhase.Lost) return;
-            string heading = result == BattlePhase.Won ? "클리어!" : result == BattlePhase.Lost ? "패배" : "확인 필요";
-            string message = result == BattlePhase.Won ? $"{run.DisplayName}을(를) 클리어했습니다." : result == BattlePhase.Lost ? $"{run.DisplayName}에서 패배했습니다." : "";
-            if (shown != null) message = (message.Length > 0 ? message + "\n" : "") + shown;
+            if (view != null || !TryGetView(out var heading, out var message, out _)) return;
             const float width = 420, height = 220;
             var rect = new Rect((Screen.width - width) / 2, (Screen.height - height) / 2, width, height);
             GUI.Box(rect, GUIContent.none); GUI.Box(rect, GUIContent.none);
@@ -74,17 +112,19 @@ namespace IBIIIS
             bool confirm = GUI.Button(new Rect(rect.x + (width - 160) / 2, rect.yMax - 60, 160, 40), "확인", OverworldGui.Button);
             var e = Event.current;
             if (e.type == EventType.KeyDown && (e.keyCode == KeyCode.Return || e.keyCode == KeyCode.KeypadEnter)) { confirm = true; e.Use(); }
-            if (confirm)
+            if (confirm) Confirm();
+        }
+        /// <summary>확인(버튼·Enter). 저장 실패 뒤 첫 확인은 다시 저장을 시도한다. 또 실패하면 안내하고, 다음 확인에서는 저장 없이 돌아간다.</summary>
+        public void Confirm()
+        {
+            if (!TryGetView(out _, out _, out _)) return; // 보이지 않을 때(결과 전·닫는 중)는 무시해 중복 처리를 막는다
+            if (saveFailed && !retried)
             {
-                // 저장 실패 뒤 첫 확인은 다시 저장을 시도한다. 또 실패하면 안내하고, 다음 확인에서는 저장 없이 돌아간다.
-                if (saveFailed && !retried)
-                {
-                    retried = true;
-                    if (!TrySaveClear()) { problem += "\n다시 시도했지만 실패했습니다. 확인을 누르면 저장하지 않고 미니맵으로 돌아갑니다."; return; }
-                    problem = null;
-                }
-                Close();
+                retried = true;
+                if (!TrySaveClear()) { problem += "\n다시 시도했지만 실패했습니다. 확인을 누르면 저장하지 않고 미니맵으로 돌아갑니다."; return; }
+                problem = null;
             }
+            Close();
         }
         private void Close()
         {

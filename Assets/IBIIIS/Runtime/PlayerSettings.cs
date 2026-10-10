@@ -25,6 +25,9 @@ namespace IBIIIS
         [SerializeField, Tooltip("선택. 적 인식 표시(머리 위 !·?) 설정. 비우면 표시하지 않습니다. `IBIIIS > Create Default Enemy Alert`로 기본 에셋을 만듭니다.")]
         private EnemyAlertSettings enemyAlert;
         public EnemyAlertSettings EnemyAlert => enemyAlert;
+        [SerializeField, Tooltip("선택. 게임 화면 UI(전투 HUD·결과 팝업) 설정. 미니맵 Overworld Settings와 같은 에셋을 연결합니다. 비우면 왼쪽 위 임시 디버그 표시를 씁니다. `IBIIIS > Create Default Game UI`로 만듭니다.")]
+        private GameUiSettings gameUi;
+        public GameUiSettings GameUi => gameUi;
         public bool ShowEnemyRanges => showEnemyRanges;
         public float EnemyStepDuration => float.IsNaN(enemyStepDuration) || float.IsInfinity(enemyStepDuration) ? .25f : Mathf.Max(.01f, enemyStepDuration);
         public GameObject VisualPrefab => visualPrefab;

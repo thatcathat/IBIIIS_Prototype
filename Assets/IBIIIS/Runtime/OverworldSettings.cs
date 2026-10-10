@@ -57,5 +57,8 @@ namespace IBIIIS
         public float CameraViewHeight => Mathf.Max(1, cameraViewHeight);
         public float CameraFollowSharpness => Mathf.Max(0, cameraFollowSharpness);
         public UnityEngine.InputSystem.InputActionAsset InputActions => inputActions;
+        [SerializeField, Tooltip("선택. 게임 화면 UI(미니맵 안내·결과 팝업) 설정. 전투 Player Settings와 같은 에셋을 연결합니다. 비우면 임시 IMGUI 표시를 씁니다.")]
+        private GameUiSettings gameUi;
+        public GameUiSettings GameUi => gameUi;
     }
 }

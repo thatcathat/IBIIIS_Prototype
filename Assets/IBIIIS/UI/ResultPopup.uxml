@@ -1,0 +1,11 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+  <!-- 스테이지 결과 팝업. 이름(name)은 StageResultPopup 코드가 찾는 키이므로 바꾸지 않는다. -->
+  <ui:Style src="GameUi.uss" />
+  <ui:VisualElement name="result-popup" class="game-ui popup-overlay">
+    <ui:VisualElement class="panel popup">
+      <ui:Label name="title" class="popup-title" />
+      <ui:Label name="message" class="popup-message" />
+      <ui:Button name="confirm" text="확인" class="hud-button popup-button" />
+    </ui:VisualElement>
+  </ui:VisualElement>
+</ui:UXML>

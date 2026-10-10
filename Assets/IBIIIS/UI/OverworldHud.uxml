@@ -1,0 +1,8 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+  <!-- 미니맵 안내(조작 안내·상호작용 대상 안내). 이름(name)은 OverworldPlayer 코드가 찾는 키이므로 바꾸지 않는다. -->
+  <ui:Style src="GameUi.uss" />
+  <ui:VisualElement name="overworld-hud" class="game-ui overworld" picking-mode="Ignore">
+    <ui:Label name="hint" class="panel overworld-hint" />
+    <ui:Label name="prompt" class="panel prompt" />
+  </ui:VisualElement>
+</ui:UXML>

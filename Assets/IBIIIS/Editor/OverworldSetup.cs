@@ -66,6 +66,7 @@ namespace IBIIIS.Editor
                 Fill(so, "cameraSettings", EnsureCameraSettings);
                 Fill(so, "inputActions", EnsureInput);
                 Fill(so, "motionFeedback", () => AssetDatabase.LoadAssetAtPath<MotionFeedbackSettings>(AssetPaths.MotionFeedback));
+                Fill(so, "gameUi", GameUiSetup.EnsureDefault);
             }
             if (AssetDatabase.LoadAssetAtPath<InputActionAsset>(AssetPaths.OverworldInput) != null) AddMissingInputActions();
             AssetDatabase.SaveAssetIfDirty(settings);

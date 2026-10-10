@@ -24,12 +24,13 @@ namespace IBIIIS
         /// <summary>전투 정보를 기록한다. 씬 전환은 하지 않는다(테스트·내부용).</summary>
         public static void Begin(StageRun run) { Current = run; returning = false; }
         /// <summary>전투 씬으로 들어간다. 결과 팝업을 띄울 감시 오브젝트를 만들고 전투 씬을 불러온다.</summary>
-        public static bool Enter(StageRun run)
+        /// <param name="ui">선택. 결과 팝업 화면을 가진 Game UI 설정. 없으면 임시 표시를 쓴다.</param>
+        public static bool Enter(StageRun run, GameUiSettings ui = null)
         {
             if (string.IsNullOrEmpty(run.BattleScene)) { Debug.LogError($"[IBIIIS] 스테이지 '{run.StageId}'에 전투 씬이 지정되지 않았습니다."); return false; }
             if (!CanLoad(run.BattleScene)) return false;
             Begin(run);
-            StageResultPopup.Create(run);
+            StageResultPopup.Create(run, ui);
             Load(run.BattleScene);
             return true;
         }

@@ -1,0 +1,30 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+  <!-- 전투 HUD. 이름(name)은 BattleHud 코드가 찾는 키이므로 바꾸지 않는다. 배치·클래스·문구 스타일은 자유롭게 바꿔도 된다. -->
+  <ui:Style src="GameUi.uss" />
+  <ui:VisualElement name="battle-hud" class="game-ui hud" picking-mode="Ignore">
+    <ui:VisualElement class="hud-top" picking-mode="Ignore">
+      <ui:VisualElement class="panel" picking-mode="Ignore">
+        <ui:Label name="stage-name" class="stage-name" />
+        <ui:VisualElement class="stats" picking-mode="Ignore">
+          <ui:Label name="enemies" class="stat" />
+          <ui:Label name="actions" class="stat" />
+        </ui:VisualElement>
+      </ui:VisualElement>
+      <ui:VisualElement class="panel evasion" picking-mode="Ignore">
+        <ui:VisualElement name="evasion-icon" class="evasion-icon" picking-mode="Ignore">
+          <ui:Label name="evasion-cooldown" class="evasion-cooldown" />
+        </ui:VisualElement>
+        <ui:Label name="evasion-caption" class="evasion-caption" />
+      </ui:VisualElement>
+    </ui:VisualElement>
+    <ui:VisualElement class="hud-bottom" picking-mode="Ignore">
+      <ui:Label name="controls" class="panel controls" />
+      <ui:VisualElement class="hud-buttons" picking-mode="Ignore">
+        <ui:Button name="undo" class="hud-button" />
+        <ui:Button name="restart" class="hud-button" />
+        <ui:Button name="ranges" class="hud-button" />
+      </ui:VisualElement>
+    </ui:VisualElement>
+    <ui:Label name="debug" class="debug" />
+  </ui:VisualElement>
+</ui:UXML>

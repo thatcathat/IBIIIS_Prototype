@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5f9426020d3f33b428a3f45f49ec95ae, type: 3}
+  m_Name: GameUiSettings
+  m_EditorClassIdentifier: IBIIIS.Runtime::IBIIIS.GameUiSettings
+  panelSettings: {fileID: 11400000, guid: 4dca176da32d29d4e9e80b550a71552a, type: 2}
+  battleHud: {fileID: 9197481963319205126, guid: e6e5711e4f06efd49a191a979e752003, type: 3}
+  resultPopup: {fileID: 9197481963319205126, guid: ad9a351e883cecb43b55d7c7d0ad27ef, type: 3}
+  overworldHud: {fileID: 9197481963319205126, guid: 413f480fa5f8e0b48971072bc81297ae, type: 3}
+  evasionIcon: {fileID: 21300000, guid: 02a54ff3cfc72cb4a9bcb5d5714d7859, type: 3}
+  showDebugInfo: 0

@@ -32,3 +32,4 @@ MonoBehaviour:
   stopSquashScale: 0.6
   breathing: 1
   wallBump: 1
+  gameUi: {fileID: 11400000, guid: b077a0c6cd1c8c045b171d047fcb86d0, type: 2}

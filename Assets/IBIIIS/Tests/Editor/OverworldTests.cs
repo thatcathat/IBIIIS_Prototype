@@ -383,11 +383,14 @@ namespace IBIIIS.Tests
             var popup = StageResultPopup.Create(new StageRun("stage-win", "W", "Assets/Battle.unity", "Assets/Overworld.unity", Vector3.zero, PlayerFacing.Front));
             Track(popup.gameObject); popup.Watch(battle);
             popup.CheckResult(); Assert.IsFalse(ProgressStore.IsCleared("stage-win"), "승리 전에는 저장하지 않음");
+            Assert.IsFalse(popup.TryGetView(out _, out _, out _), "결과 전에는 팝업 없음"); popup.Confirm(); Assert.IsNull(StageFlow.Current, "보이지 않을 때 확인은 무시");
             Assert.True(battle.TryBeginAction(PlayerAction.Wait, Vector2Int.zero));
             for (int i = 0; i < 200 && (battle.Session.IsBusy || battle.IsPresenting); i++) { battle.AdvanceMovement(.05f); popup.CheckResult(); }
             Assert.AreEqual(BattlePhase.Won, popup.Result);
             popup.CheckResult(); Assert.IsTrue(ProgressStore.IsCleared("stage-win")); Assert.AreEqual(1, ProgressStore.ClearedStages.Count);
             Assert.IsNull(popup.Problem);
+            Assert.IsTrue(popup.TryGetView(out var heading, out var message, out _)); Assert.AreEqual("클리어!", heading); StringAssert.Contains("W", message);
+            Assert.IsFalse(popup.UsesGameUi, "Game UI 설정 없이 만들면 임시 표시");
             Assert.True(battle.TryUndo()); Assert.AreEqual(BattlePhase.Waiting, popup.Result, "되돌리면 팝업이 사라짐");
             ProgressStore.Reload(); Assert.IsTrue(ProgressStore.IsCleared("stage-win"), "저장한 기록은 유지");
             Object.DestroyImmediate(map);

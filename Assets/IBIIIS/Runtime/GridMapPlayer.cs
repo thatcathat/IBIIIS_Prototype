@@ -31,6 +31,10 @@ namespace IBIIIS
         // 매 프레임 쓰는 콜백과 HUD 문자열은 한 번만 만든다.
         private Func<int, bool> ownsEnemy;
         private string controlsHint = "";
+        // 정식 전투 HUD(UI Toolkit). Game UI 설정이 없으면 null이고 OnGUI의 임시 표시를 쓴다.
+        private BattleHud hud;
+        // HUD의 다시 시작 버튼은 그 HUD를 지우고 다시 만들므로, 클릭 처리 중이 아니라 다음 Update에서 실행한다.
+        private bool restartRequested;
         private Transform rangeRoot;
         private readonly List<Transform> attackMarks = new List<Transform>(), recognitionMarks = new List<Transform>();
         private Material attackMaterial, recognitionMaterial;
@@ -98,7 +102,7 @@ namespace IBIIIS
             alert = new EnemyAlert(playerSettings != null ? playerSettings.EnemyAlert : null, generated, viewCamera, cellSize);
             UpdateMotion(0); // 적 방향 등 현재 상태를 기준으로 기억해 첫 행동의 방향 전환도 반응하게 한다
             EnsureRuntimeEnvironment();
-            if (Application.IsPlaying(gameObject)) { input = new BattleInput(playerSettings != null ? playerSettings.InputActions : null); input.Enable(); controlsHint = ControlsHint(); }
+            if (Application.IsPlaying(gameObject)) { input = new BattleInput(playerSettings != null ? playerSettings.InputActions : null); input.Enable(); controlsHint = ControlsHint(); CreateHud(); }
             if (Application.IsPlaying(gameObject)) MovementWorldTime.Register(this);
         }
         public void RefreshPreview()
@@ -118,6 +122,7 @@ namespace IBIIIS
             MovementWorldTime.Unregister(this);
             generated = null; player = null; playerView = null; lastAction = PlayerAction.Wait; lastDirection = Vector2Int.zero; session = null; moveHints = null; enemyViews.Clear();
             if (input != null) { input.Dispose(); input = null; }
+            hud = null; restartRequested = false; // HUD 오브젝트는 generated 아래에 있어 함께 지워진다
             actionHistory.Clear(); rangeRoot = null; attackMarks.Clear(); recognitionMarks.Clear(); attackMaterial = recognitionMaterial = null;
             foreach (var material in materials) if (material != null) Release(material);
             materials.Clear();
@@ -422,17 +427,24 @@ namespace IBIIIS
             if (session != null && session.Phase == BattlePhase.Waiting && !IsPresenting && action != PlayerAction.Wait) motion?.Bump(direction);
             return false;
         }
+        /// <summary>전투를 처음 상태로 다시 만든다(R 키·다시 시작 버튼).</summary>
+        public void Restart() { ClearGenerated(); Build(); }
         private void Update()
         {
             if (!Application.IsPlaying(gameObject) || session == null) return;
             float dt = Time.unscaledDeltaTime;
-            if (session.IsBusy || IsPresenting) { AdvanceMovement(dt); UpdateMotion(dt); return; }
+            if (session.IsBusy || IsPresenting) { AdvanceMovement(dt); UpdateMotion(dt); RefreshHud(); return; }
             UpdateMotion(dt);
-            if (input == null) return;
+            if (restartRequested) { Restart(); return; }
+            if (input != null) ReadCommand();
+            RefreshHud();
+        }
+        private void ReadCommand()
+        {
             var command = input.Read();
             switch (command.Kind)
             {
-                case BattleCommandKind.Restart: ClearGenerated(); Build(); break;
+                case BattleCommandKind.Restart: Restart(); break;
                 case BattleCommandKind.ToggleRanges: ToggleEnemyRanges(); break;
                 case BattleCommandKind.Undo: TryUndo(); break;
                 case BattleCommandKind.Wait: TryBeginAction(PlayerAction.Wait, Vector2Int.zero); break;
@@ -441,18 +453,43 @@ namespace IBIIIS
                 case BattleCommandKind.Dash: TryActionOrBump(PlayerAction.Dash, command.Direction); break;
             }
         }
+        // Game UI 설정이 없을 때만 쓰는 임시 표시(IMGUI). 정식 HUD가 있으면 그리지 않는다.
         private void OnGUI()
         {
-            if (Event.current.type == EventType.Repaint && Application.IsPlaying(gameObject) && session != null) GUI.Box(new Rect(12, 12, 560, 96),
-                $"{session.Phase} | Enemies {session.AliveCount} | Evasion {(session.EvasionLocked ? "cooldown" : "ready")}\n{controlsHint}\nUndo ({session.UndoCount}) | Enemy ranges {(showRanges ? "ON" : "OFF")} (red=attack, yellow=recognition)\nCell ({session.Position.x}, {session.Position.y})");
+            if (hud != null || Event.current.type != EventType.Repaint || !Application.IsPlaying(gameObject) || session == null) return;
+            GUI.Box(new Rect(12, 12, 560, 96),
+                $"{session.Phase} | 남은 적 {session.AliveCount} | 회피 {(session.EvasionLocked ? $"쿨타임 {session.EvasionCooldownTurns}" : "가능")}\n{controlsHint}\n행동 {session.UndoCount} | 범위 표시 {(showRanges ? "켬" : "끔")} (빨강=공격, 노랑=인식)\n칸 ({session.Position.x}, {session.Position.y})");
         }
         // 안내 문구는 현재 입력 에셋의 첫 번째 바인딩을 보여 준다(재바인딩 반영).
         private string ControlsHint()
         {
             if (input == null) return "";
-            return $"Move {input.Key(BattleInput.MoveUp)}{input.Key(BattleInput.MoveLeft)}{input.Key(BattleInput.MoveDown)}{input.Key(BattleInput.MoveRight)} | {input.Key(BattleInput.DashModifier)}+Move Dash | " +
-                $"Roll {input.Key(BattleInput.RollUpLeft)}/{input.Key(BattleInput.RollUpRight)}/{input.Key(BattleInput.RollDownLeft)}/{input.Key(BattleInput.RollDownRight)} | {input.Key(BattleInput.Wait)} Wait | {input.Key(BattleInput.Undo)} Undo | {input.Key(BattleInput.ToggleRanges)} Ranges | {input.Key(BattleInput.Restart)} Restart";
+            return $"이동 {input.Key(BattleInput.MoveUp)}{input.Key(BattleInput.MoveLeft)}{input.Key(BattleInput.MoveDown)}{input.Key(BattleInput.MoveRight)} · 대시 {input.Key(BattleInput.DashModifier)}+이동 · " +
+                $"구르기 {input.Key(BattleInput.RollUpLeft)}/{input.Key(BattleInput.RollUpRight)}/{input.Key(BattleInput.RollDownLeft)}/{input.Key(BattleInput.RollDownRight)} · 대기 {input.Key(BattleInput.Wait)} · 되돌리기 {input.Key(BattleInput.Undo)} · 범위 {input.Key(BattleInput.ToggleRanges)} · 다시 시작 {input.Key(BattleInput.Restart)}";
         }
+        private void CreateHud()
+        {
+            var ui = playerSettings != null ? playerSettings.GameUi : null;
+            var document = ui != null ? ui.CreateDocument("Battle HUD", ui.BattleHud, generated, 0) : null;
+            if (document == null) return;
+            hud = new BattleHud(document.rootVisualElement, controlsHint, input.Key(BattleInput.Undo), input.Key(BattleInput.Restart), input.Key(BattleInput.ToggleRanges),
+                ui.EvasionIcon, ui.ShowDebugInfo, () => TryUndo(), () => restartRequested = true, ToggleEnemyRanges);
+            RefreshHud();
+        }
+        private void RefreshHud() { if (hud != null && session != null) hud.Refresh(HudState()); }
+        /// <summary>전투 HUD에 보일 현재 값. 미니맵에서 들어온 전투면 스테이지 이름, 아니면 맵 이름을 쓴다.</summary>
+        public BattleHudState HudState()
+        {
+            var run = StageFlow.Current;
+            return new BattleHudState
+            {
+                StageName = run != null && run.BattleScene == gameObject.scene.path ? run.DisplayName : map != null ? map.name : "",
+                AliveEnemies = session.AliveCount, TotalEnemies = session.Enemies.Count, Actions = session.UndoCount,
+                EvasionCooldown = session.EvasionCooldownTurns, Ready = !session.IsBusy && !IsPresenting, CanUndo = session.CanUndo,
+                RangesOn = showRanges, Phase = session.Phase, Cell = session.Position,
+            };
+        }
+        public BattleHud Hud => hud;
         private void OnDisable() { ClearGenerated(); }
         private void OnDestroy() { ClearGenerated(); }
     }
