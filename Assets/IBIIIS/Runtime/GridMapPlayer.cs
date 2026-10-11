@@ -162,7 +162,8 @@ namespace IBIIIS
                 {
                     var p = new Vector2Int(x, y);
                     if (!map.IsWalkable(p)) continue;
-                    var visual = FlatSurface($"Cell {x},{y}", new Vector3(cellSize * .96f, cellSize * .96f, 1));
+                    // 이동 칸은 칸 크기 그대로 깔아 이웃 칸과 틈 없이 붙인다.
+                    var visual = FlatSurface($"Cell {x},{y}", new Vector3(cellSize, cellSize, 1));
                     visual.localPosition = LocalPosition(p) + Vector3.up * .01f;
                     var tile = map.GetTile(p);
                     if (tile != null && tile.SurfaceMaterial != null) visual.GetComponent<Renderer>().sharedMaterial = tile.SurfaceMaterial;
