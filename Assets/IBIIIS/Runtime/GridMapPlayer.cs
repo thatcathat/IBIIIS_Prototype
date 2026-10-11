@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace IBIIIS
 {
@@ -99,7 +100,7 @@ namespace IBIIIS
             CreateVisuals(false);
             feedback = new CollisionFeedback(playerSettings != null ? playerSettings.CollisionFeedback : null, generated, LocalPosition, cellSize, viewCamera);
             motion = new MotionFeedback(playerSettings != null ? playerSettings.MotionFeedback : null, generated, LocalPosition, cellSize, viewCamera);
-            alert = new EnemyAlert(playerSettings != null ? playerSettings.EnemyAlert : null, generated, viewCamera, cellSize);
+            alert = new EnemyAlert(playerSettings != null ? playerSettings.EnemyAlert : null, generated, viewCamera, cellSize, player);
             UpdateMotion(0); // 적 방향 등 현재 상태를 기준으로 기억해 첫 행동의 방향 전환도 반응하게 한다
             EnsureRuntimeEnvironment();
             if (Application.IsPlaying(gameObject)) { input = new BattleInput(playerSettings != null ? playerSettings.InputActions : null); input.Enable(); controlsHint = ControlsHint(); CreateHud(); }
@@ -475,6 +476,7 @@ namespace IBIIIS
             if (document == null) return;
             hud = new BattleHud(document.rootVisualElement, controlsHint, input.Key(BattleInput.Undo), input.Key(BattleInput.Restart), input.Key(BattleInput.ToggleRanges),
                 ui.EvasionIcon, ui.ShowDebugInfo, () => TryUndo(), () => restartRequested = true, ToggleEnemyRanges);
+            alert?.AttachView(hud.Root.Q("bubbles"), ui.SpeechBubble); // 말풍선은 HUD 화면의 말풍선 층에 그린다
             RefreshHud();
         }
         private void RefreshHud() { if (hud != null && session != null) hud.Refresh(HudState()); }

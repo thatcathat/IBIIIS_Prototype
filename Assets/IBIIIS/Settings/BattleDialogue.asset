@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1d3a627b00191a94b834e3a74e7d3029, type: 3}
+  m_Name: BattleDialogue
+  m_EditorClassIdentifier: IBIIIS.Runtime::IBIIIS.BattleDialogue
+  spotted:
+  - player: "\uB4E4\uCF30\uB2E4!"
+    enemy: "\uAC70\uAE30 \uC11C!"
+  - player: "\uC557\u2026!"
+    enemy: "\uCC3E\uC558\uB2E4!"
+  - player: "\uC774\uB7F0!"
+    enemy: "\uAF3C\uC9DD \uB9C8!"
+  lost:
+  - "\uC5B4\uB514 \uAC14\uC9C0?"
+  - "\uAE30\uBD84 \uD0D3\uC778\uAC00\u2026"
+  - "\uB193\uCCE4\uB2E4\u2026"
+  noImmediateRepeat: 1

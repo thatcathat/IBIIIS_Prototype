@@ -2,6 +2,8 @@
   <!-- 전투 HUD. 이름(name)은 BattleHud 코드가 찾는 키이므로 바꾸지 않는다. 배치·클래스·문구 스타일은 자유롭게 바꿔도 된다. -->
   <ui:Style src="GameUi.uss" />
   <ui:VisualElement name="battle-hud" class="game-ui hud" picking-mode="Ignore">
+    <!-- 머리 위 말풍선이 붙는 층. 다른 HUD 요소보다 아래(먼저)에 둔다. -->
+    <ui:VisualElement name="bubbles" class="bubble-layer" picking-mode="Ignore" />
     <ui:VisualElement class="hud-top" picking-mode="Ignore">
       <ui:VisualElement class="panel" picking-mode="Ignore">
         <ui:Label name="stage-name" class="stage-name" />

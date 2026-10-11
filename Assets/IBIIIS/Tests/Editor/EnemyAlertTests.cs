@@ -1,3 +1,4 @@
+using System.Linq;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -12,8 +13,7 @@ namespace IBIIIS.Tests
         private GridMap map;
         private PlayerSettings playerSettings;
         private EnemyAlertSettings settings;
-        private Texture2D texture;
-        private Sprite alertSprite, lostSprite;
+        private BattleDialogue common;
         private Camera camera;
         private GridMapPlayer player;
         [SetUp] public void Setup()
@@ -22,13 +22,10 @@ namespace IBIIIS.Tests
             map = ScriptableObject.CreateInstance<GridMap>(); map.Resize(7, 7);
             for (int y = 0; y < 7; y++) for (int x = 0; x < 7; x++) map.SetWalkable(new Vector2Int(x, y), true);
             map.SetStart(new Vector2Int(3, 0));
-            texture = new Texture2D(4, 4);
+            common = ScriptableObject.CreateInstance<BattleDialogue>();
+            common.Set(new[] { new DialogueExchange { player = "들켰다!", enemy = "거기 서!" } }, new[] { "어디 갔지?" }, true);
             settings = ScriptableObject.CreateInstance<EnemyAlertSettings>();
-            var so = new SerializedObject(settings);
-            alertSprite = Sprite.Create(texture, new Rect(0, 0, 4, 4), new Vector2(.5f, 0)); lostSprite = Sprite.Create(texture, new Rect(0, 0, 4, 4), new Vector2(.5f, 0));
-            so.FindProperty("alertSprite").objectReferenceValue = alertSprite;
-            so.FindProperty("lostSprite").objectReferenceValue = lostSprite;
-            so.ApplyModifiedPropertiesWithoutUndo();
+            var so = new SerializedObject(settings); so.FindProperty("dialogue").objectReferenceValue = common; so.ApplyModifiedPropertiesWithoutUndo();
             playerSettings = ScriptableObject.CreateInstance<PlayerSettings>();
             so = new SerializedObject(playerSettings); so.FindProperty("enemyAlert").objectReferenceValue = settings; so.ApplyModifiedPropertiesWithoutUndo();
             camera = Add(new GameObject("Camera")).AddComponent<Camera>(); camera.transform.rotation = Quaternion.Euler(40, 0, 0);
@@ -36,12 +33,12 @@ namespace IBIIIS.Tests
         [TearDown] public void Cleanup()
         {
             if (player != null) Object.DestroyImmediate(player.gameObject);
-            Object.DestroyImmediate(map); Object.DestroyImmediate(playerSettings); Object.DestroyImmediate(settings); Object.DestroyImmediate(alertSprite); Object.DestroyImmediate(lostSprite); Object.DestroyImmediate(texture);
+            Object.DestroyImmediate(map); Object.DestroyImmediate(playerSettings); Object.DestroyImmediate(settings); Object.DestroyImmediate(common);
             EditorSceneManager.ClosePreviewScene(scene);
         }
         private GameObject Add(GameObject go) { SceneManager.MoveGameObjectToScene(go, scene); return go; }
         // 아래(-Y)를 보는 적: 바로 앞 두 칸을 인식하고, 조준만 하며 움직이거나 공격하지 않는다.
-        private void Watcher(int x, int y)
+        private EnemyDefinition Watcher(int x, int y, BattleDialogue own = null)
         {
             var go = Add(new GameObject("Enemy")); var definition = go.AddComponent<EnemyDefinition>();
             var visual = new GameObject("Visual"); visual.transform.SetParent(go.transform, false); visual.AddComponent<SpriteRenderer>();
@@ -50,8 +47,9 @@ namespace IBIIIS.Tests
             var recognition = so.FindProperty("recognition"); recognition.arraySize = 2;
             recognition.GetArrayElementAtIndex(0).vector2IntValue = new Vector2Int(0, 1); recognition.GetArrayElementAtIndex(1).vector2IntValue = new Vector2Int(0, 2);
             so.FindProperty("attack").arraySize = 0; so.FindProperty("recognizedAttack").arraySize = 0;
-            so.FindProperty("visual").objectReferenceValue = visual.transform;
+            so.FindProperty("visual").objectReferenceValue = visual.transform; so.FindProperty("dialogue").objectReferenceValue = own;
             so.ApplyModifiedPropertiesWithoutUndo(); map.PlaceEnemy(new Vector2Int(x, y), go, Vector2Int.down);
+            return definition;
         }
         private void Build()
         {
@@ -62,67 +60,80 @@ namespace IBIIIS.Tests
         private void Act(PlayerAction action, Vector2Int direction)
         {
             Assert.True(player.TryBeginAction(action, direction));
-            player.UpdateMotion(.01f); Assert.AreEqual(0, player.Alert.ShownAlerts + player.Alert.ShownLost, "행동 중에는 숨김");
+            player.UpdateMotion(.01f); Assert.AreEqual(0, player.Alert.Bubbles.Count, "행동 중에는 말풍선 없음");
             for (int i = 0; i < 100 && (player.Session.IsBusy || player.IsPresenting); i++) { player.AdvanceMovement(.02f); player.UpdateMotion(.02f); }
             player.UpdateMotion(0);
         }
-        [Test] public void AlertPopsAboveEnemyWhenPlayerStandsInRecognitionRange()
+        private SpeechBubble Of(int speaker) => player.Alert.Bubbles.FirstOrDefault(b => b.Speaker == speaker);
+
+        [Test] public void SpottingShowsThePlayerLineThenTheEnemyReply()
         {
             Watcher(3, 2); Build();
-            Assert.True(player.Session.IsRecognizing(player.Session.Enemies[0]), "(3,0)은 적 앞 두 칸 안");
-            Assert.AreEqual(1, player.Alert.ShownAlerts); Assert.AreEqual(1, player.Alert.AlertsPlayed, "전투 시작부터 인식 중이면 바로 알림");
-            var mark = player.Alert.AlertMark(0);
-            var expected = new Vector3(3, 0, 2) + camera.transform.up * settings.Height;
-            Assert.That(Vector3.Distance(expected, mark.position), Is.LessThan(1e-4f), "적 발밑에서 화면 위쪽으로 그림 머리 위");
-            Assert.AreEqual(0, mark.localScale.x, 1e-4f, "튀어나오기 시작");
-            player.UpdateMotion(settings.PopTime / 2); Assert.AreEqual(settings.Size * settings.PopScale, mark.localScale.x, 1e-3f, "가장 크게");
-            player.UpdateMotion(settings.PopTime); Assert.AreEqual(settings.Size, mark.localScale.x, 1e-4f, "원래 크기로 유지");
-            Assert.That(Quaternion.Angle(camera.transform.rotation, mark.rotation), Is.LessThan(.01f), "카메라를 바라봄");
+            var mine = Of(SpeechBubble.Player); var reply = Of(0);
+            Assert.AreEqual("들켰다!", mine.Text); Assert.IsTrue(mine.Shown, "전투 시작부터 인식 중이면 바로 대화");
+            Assert.AreEqual("거기 서!", reply.Text); Assert.IsFalse(reply.Shown, "적은 잠시 뒤 대답");
+            Assert.AreEqual(1, player.Alert.ExchangesPlayed, "효과음 한 번");
+            player.UpdateMotion(settings.ReplyDelay + .01f); Assert.IsTrue(Of(0).Shown, "대답이 뜸");
+            player.UpdateMotion(settings.SpottedTime + settings.ReplyDelay); Assert.AreEqual(0, player.Alert.Bubbles.Count, "시간이 지나면 사라짐");
+            Act(PlayerAction.Wait, Vector2Int.zero); Assert.AreEqual(0, player.Alert.Bubbles.Count, "계속 인식 중이면 다시 말하지 않음"); Assert.AreEqual(1, player.Alert.ExchangesPlayed);
         }
-        [Test] public void LeavingShowsQuestionThenFadesAndReenteringAlertsAgain()
+        [Test] public void EveryNewlySpottingEnemyRepliesToOnePlayerLine()
         {
-            Watcher(3, 2); Build(); player.UpdateMotion(1);
+            map.SetStart(new Vector2Int(3, 3)); Watcher(3, 4); Watcher(3, 5); Build();
+            Assert.AreEqual(1, player.Alert.Bubbles.Count(b => b.Speaker == SpeechBubble.Player), "플레이어 말은 한 번");
+            Assert.AreEqual("거기 서!", Of(0).Text); Assert.AreEqual("거기 서!", Of(1).Text, "인식한 적 모두 대답");
+        }
+        [Test] public void LeavingMakesTheEnemySayALostLine()
+        {
+            Watcher(3, 2); Build(); player.UpdateMotion(5);
             Act(PlayerAction.Move, Vector2Int.left);
-            Assert.AreEqual(0, player.Alert.ShownAlerts); Assert.AreEqual(1, player.Alert.ShownLost, "벗어나는 순간 ?");
-            player.UpdateMotion(settings.LostTime + .01f);
-            Assert.AreEqual(0, player.Alert.ShownLost, "?는 잠깐만");
-            Act(PlayerAction.Move, Vector2Int.right);
-            Assert.AreEqual(1, player.Alert.ShownAlerts); Assert.AreEqual(2, player.Alert.AlertsPlayed, "다시 들어오면 다시 알림·효과음");
-            Act(PlayerAction.Wait, Vector2Int.zero);
-            Assert.AreEqual(1, player.Alert.ShownAlerts); Assert.AreEqual(2, player.Alert.AlertsPlayed, "계속 인식 중이면 다시 튀어나오지 않음");
+            Assert.AreEqual("어디 갔지?", Of(0).Text); Assert.IsTrue(Of(0).Shown); Assert.IsNull(Of(SpeechBubble.Player), "놓칠 때는 적만 말함");
+            Act(PlayerAction.Wait, Vector2Int.zero); Assert.AreEqual(0, player.Alert.Bubbles.Count, "다음 행동 뒤 남은 말풍선을 다시 띄우지 않음");
+            Act(PlayerAction.Move, Vector2Int.right); Assert.AreEqual(2, player.Alert.ExchangesPlayed, "다시 들어오면 다시 대화");
         }
-        [Test] public void QuickNextActionDoesNotReplayQuestionMark()
+        [Test] public void EnemyOwnDialogueOverridesTheCommonLines()
         {
-            Watcher(3, 2); Build(); player.UpdateMotion(1);
-            Act(PlayerAction.Move, Vector2Int.left); Assert.AreEqual(1, player.Alert.ShownLost);
-            Act(PlayerAction.Wait, Vector2Int.zero); // ? 시간이 끝나기 전에 다음 행동
-            Assert.AreEqual(0, player.Alert.ShownLost, "행동이 끝난 뒤 남은 ?를 다시 보이지 않음");
+            var own = ScriptableObject.CreateInstance<BattleDialogue>();
+            try
+            {
+                own.Set(new[] { new DialogueExchange { player = "무시됨", enemy = "내 구역이다" } }, new string[0], true);
+                map.SetStart(new Vector2Int(3, 3)); Watcher(3, 4); Watcher(3, 5, own); Build();
+                Assert.AreEqual("들켰다!", Of(SpeechBubble.Player).Text, "플레이어 말은 첫 적의 목록에서");
+                Assert.AreEqual("거기 서!", Of(0).Text); Assert.AreEqual("내 구역이다", Of(1).Text, "다른 목록을 쓰는 적은 자기 대답");
+            }
+            finally { Object.DestroyImmediate(own); }
         }
-        [Test] public void QuickNextActionDoesNotResumeThePop()
+        [Test] public void NoImmediateRepeatAvoidsTheLastLine()
         {
-            Watcher(3, 2); map.SetStart(new Vector2Int(2, 0)); Build();
-            Act(PlayerAction.Move, Vector2Int.right); Assert.AreEqual(1, player.Alert.ShownAlerts);
-            Act(PlayerAction.Wait, Vector2Int.zero); // 튀어나옴이 끝나기 전에 다음 행동
-            Assert.AreEqual(settings.Size, player.Alert.AlertMark(0).localScale.x, 1e-4f, "튀어나옴을 이어 재생하지 않고 원래 크기");
-            Assert.AreEqual(1, player.Alert.AlertsPlayed);
+            common.Set(new[] { new DialogueExchange { player = "A", enemy = "a" }, new DialogueExchange { player = "B", enemy = "b" } }, new string[0], true);
+            Watcher(3, 2); Build();
+            for (int round = 0; round < 6; round++)
+            {
+                var before = Of(SpeechBubble.Player).Text;
+                Act(PlayerAction.Move, Vector2Int.left); Act(PlayerAction.Move, Vector2Int.right);
+                var now = Of(SpeechBubble.Player).Text;
+                Assert.AreNotEqual(before, now, "체크하면 연달아 같은 대사가 나오지 않음");
+                Assert.AreEqual(now.ToLower(), Of(0).Text, "대답은 고른 쌍과 짝");
+            }
         }
-        [Test] public void UndoMatchesStateWithoutPopOrSound()
+        [Test] public void UndoMatchesStateWithoutBubblesOrSound()
         {
-            Watcher(3, 2); Build(); player.UpdateMotion(1);
+            Watcher(3, 2); Build(); player.UpdateMotion(5);
             Act(PlayerAction.Move, Vector2Int.left);
             Assert.True(player.TryUndo());
-            Assert.AreEqual(1, player.Alert.ShownAlerts); Assert.AreEqual(0, player.Alert.ShownLost);
-            Assert.AreEqual(settings.Size, player.Alert.AlertMark(0).localScale.x, 1e-4f, "튀어나오지 않고 바로 원래 크기");
-            Assert.AreEqual(1, player.Alert.AlertsPlayed, "효과음 없음");
+            Assert.AreEqual(0, player.Alert.Bubbles.Count); Assert.AreEqual(1, player.Alert.ExchangesPlayed, "효과음 없음");
+            player.UpdateMotion(.1f); Assert.AreEqual(0, player.Alert.Bubbles.Count, "되돌린 뒤 인식 중이어도 다시 말하지 않음");
         }
-        [Test] public void NothingShowsWhenOffOrOutOfRange()
+        [Test] public void NothingWhenOffOutOfRangeOrLinesEmpty()
         {
-            Watcher(0, 6); Build();
-            Assert.AreEqual(0, player.Alert.ShownAlerts, "범위 밖");
-            Object.DestroyImmediate(player.gameObject); player = null;
+            Watcher(0, 6); Build(); Assert.AreEqual(0, player.Alert.Bubbles.Count, "범위 밖");
+            Object.DestroyImmediate(player.gameObject); player = null; map.RemoveEnemy(new Vector2Int(0, 6));
             var so = new SerializedObject(settings); so.FindProperty("enabledAlert").boolValue = false; so.ApplyModifiedPropertiesWithoutUndo();
-            map.RemoveEnemy(new Vector2Int(0, 6)); Watcher(3, 2); Build();
-            Assert.AreEqual(0, player.Alert.ShownAlerts, "끄면 표시 안 함");
+            Watcher(3, 2); Build(); Assert.AreEqual(0, player.Alert.Bubbles.Count, "끄면 표시 안 함");
+            Object.DestroyImmediate(player.gameObject); player = null;
+            so.FindProperty("enabledAlert").boolValue = true; so.ApplyModifiedPropertiesWithoutUndo();
+            common.Set(new DialogueExchange[0], new string[0], true); Build();
+            Assert.AreEqual(0, player.Alert.Bubbles.Count, "대사가 없으면 말풍선 없음"); Assert.AreEqual(1, player.Alert.ExchangesPlayed, "효과음은 냄");
         }
     }
 }

@@ -22,6 +22,7 @@ namespace IBIIIS.Editor
         public const string GameUiSettings = Settings + "/GameUiSettings.asset";
         public const string UI = Root + "/UI";
         public const string EnemyAlert = Settings + "/EnemyAlert.asset";
+        public const string BattleDialogue = Settings + "/BattleDialogue.asset";
         public const string Audio = Root + "/Audio";
         public const string Effects = Root + "/Effects";
         public const string Player = Root + "/Characters/Player";

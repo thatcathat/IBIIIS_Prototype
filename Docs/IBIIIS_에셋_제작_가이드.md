@@ -70,6 +70,6 @@
 
 충격 이펙트(`Effects/CollisionBurst.png`·`.prefab`)와 효과음(`Audio/CollisionImpact.wav`)은 코드로 만든 임시 에셋이다. 교체 방법과 설정은 [전투 및 적 배치 가이드](IBIIIS_전투_및_적배치_가이드.md)의 충돌 연출 항목을 따른다. 정식 이펙트 그림 규격·효과음 규격은 미정이다.
 
-## 적 인식 표시 임시 에셋
+## 전투 말풍선
 
-적 머리 위 "!"(`Effects/EnemyAlert.png`)와 "?"(`Effects/EnemyLost.png`)는 코드로 그린 256×256 그림(PPU 256, 기준점 아래 중앙, 진한 테두리)이고, 효과음 `Audio/EnemyAlert.wav`는 코드로 합성한 임시 소리다. 그림은 카메라를 바라보며 설정의 `Size`(칸)로 크기를 정하므로 해상도와 무관하게 같은 크기로 보인다. 정식 그림은 같은 비율(아래 중앙 기준)로 만들어 파일을 교체한다. 설정과 동작은 [전투 및 적 배치 가이드](IBIIIS_전투_및_적배치_가이드.md)의 적 인식 표시 항목을 따른다.
+적 인식 말풍선은 그림 파일이 아니라 UI Toolkit 화면(`Assets/IBIIIS/UI/SpeechBubble.uxml`)과 `GameUi.uss`의 `speech-*` 스타일로 그린다(흰 둥근 상자·아래 꼬리·Noto Sans KR 굵은 글자). 말풍선 그림을 쓰려면 `.speech-bubble`에 `background-image`(9-slice 테두리 지정 권장)를 넣고 꼬리 요소를 숨기면 된다. 효과음 `Audio/EnemyAlert.wav`는 코드로 합성한 임시 소리다. 이전 "!"·"?" 그림(`Effects/EnemyAlert.png`·`EnemyLost.png`)은 2026-10-11 말풍선으로 바꾸며 삭제했다. 동작·대사 편집은 [전투 및 적 배치 가이드](IBIIIS_전투_및_적배치_가이드.md)의 적 인식 말풍선 항목을 따른다.

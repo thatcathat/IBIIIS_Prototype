@@ -17,6 +17,9 @@ namespace IBIIIS
         [SerializeField] private Vector2Int[] recognizedAttack = { Vector2Int.zero, Vector2Int.up };
         [SerializeField] private Color editorColor = new Color(1f, .5f, .3f);
         [SerializeField, Tooltip("선택. 카메라를 향하게 할 스프라이트/평면 외형의 자식 Transform.")] private Transform visual;
+        [SerializeField, Tooltip("선택. 이 적만 쓸 말풍선 대사. 비우면 Enemy Alert 설정의 공용 대사를 씁니다.")] private BattleDialogue dialogue;
+        /// <summary>이 적 전용 말풍선 대사. 없으면 null(공용 대사 사용).</summary>
+        public BattleDialogue Dialogue => dialogue;
         public string Id => enemyId;
         public bool UsesLegacyActions => actions == null || actions.Length == 0;
         public int LegacyMoveCells => moveCells;

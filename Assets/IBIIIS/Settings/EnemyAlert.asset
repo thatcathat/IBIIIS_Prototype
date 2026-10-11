@@ -13,12 +13,13 @@ MonoBehaviour:
   m_Name: EnemyAlert
   m_EditorClassIdentifier: IBIIIS.Runtime::IBIIIS.EnemyAlertSettings
   enabledAlert: 1
-  alertSprite: {fileID: 21300000, guid: 2da02b9001eac4245aa3e3d10e7de436, type: 3}
-  lostSprite: {fileID: 21300000, guid: fa0e42d54bb82a247af18ee0d75bd237, type: 3}
+  dialogue: {fileID: 11400000, guid: 8fb733e7d90f6ac4fa6347abe1f2c188, type: 2}
   height: 1.45
-  size: 0.6
+  playerHeight: 1.45
+  replyDelay: 0.4
+  spottedTime: 1.5
+  lostLineTime: 1.2
   popTime: 0.25
   popScale: 1.5
-  lostTime: 0.7
   alertSound: {fileID: 8300000, guid: bf0fdb8be17bc8f469602af231222e4a, type: 3}
   alertVolume: 0.6

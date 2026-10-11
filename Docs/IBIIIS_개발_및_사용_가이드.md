@@ -65,7 +65,7 @@
 | `Runtime/GameUiSettings.cs`, `BattleHud.cs`, `Assets/IBIIIS/UI/` | 게임 화면 UI(UI Toolkit): 공용 설정, 전투 HUD, 화면 구성(UXML)·스타일(USS)·테마·글꼴. 아래 게임 화면 UI 항목 |
 | `Runtime/BattleInput.cs` | 입력 에셋을 전투 명령으로 변환 |
 | `Runtime/PlayerVisual.cs`, `CollisionFeedback.cs` | 플레이어 스프라이트 선택, 충돌·패배 연출 |
-| `Runtime/EnemyAlert.cs`, `EnemyAlertSettings.cs` | 적 인식 표시(머리 위 !·?, 표시 전용) |
+| `Runtime/EnemyAlert.cs`, `EnemyAlertSettings.cs`, `BattleDialogue.cs` | 적 인식 말풍선(플레이어 말 → 적 대답, 적 혼잣말, 표시 전용) |
 | `Runtime/CameraFacingSprite.cs` | 캐릭터 그림을 카메라와 나란히 세우는 공통 규칙(플레이어·적·NPC) |
 | `Runtime/MapSolver.cs` | 맵 클리어 가능 여부 탐색 |
 | `Runtime/Overworld*.cs`, `NpcSpeaker.cs`, `StageEntrance.cs` | 미니맵 자유 이동·걷기 손맛(`OverworldMotion`)·따라가는 카메라·입력·상호작용 대상(NPC 말풍선, 스테이지 입구) |

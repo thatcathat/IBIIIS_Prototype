@@ -1,0 +1,8 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+  <!-- 전투 말풍선 하나. 코드가 'bubble'을 복제해 말하는 이의 머리 위에 붙이고 'text'에 대사를 넣는다. 플레이어 말풍선에는 player 클래스가 붙는다.
+       모양(색·꼬리·글자 크기)은 GameUi.uss의 speech-* 스타일에서 바꾼다. -->
+  <ui:VisualElement name="bubble" class="speech-bubble" picking-mode="Ignore">
+    <ui:Label name="text" class="speech-text" picking-mode="Ignore" />
+    <ui:VisualElement class="speech-tail" picking-mode="Ignore" />
+  </ui:VisualElement>
+</ui:UXML>
