@@ -19,7 +19,10 @@ MonoBehaviour:
   replyDelay: 0.4
   spottedTime: 1.5
   lostLineTime: 1.2
-  popTime: 0.25
-  popScale: 1.5
+  appearTime: 0.35
+  riseDistance: 10
+  wobbleAngle: 30
+  wobbles: 2
+  startScale: 1
   alertSound: {fileID: 8300000, guid: bf0fdb8be17bc8f469602af231222e4a, type: 3}
   alertVolume: 0.6

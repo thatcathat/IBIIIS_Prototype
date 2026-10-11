@@ -15,8 +15,12 @@ namespace IBIIIS
         [SerializeField, Min(0), Tooltip("플레이어 말이 뜬 뒤 적이 대답하기까지의 시간(초). 플레이어 말이 비어 있으면 적이 바로 말합니다. 임시 0.4.")] private float replyDelay = .4f;
         [SerializeField, Min(.1f), Tooltip("인식 순간 대사(플레이어·적)를 보여 주는 시간(초). 마지막 25%는 흐려집니다. 임시 1.5.")] private float spottedTime = 1.5f;
         [SerializeField, Min(.1f), Tooltip("인식에서 벗어났을 때 적의 혼잣말을 보여 주는 시간(초). 임시 1.2.")] private float lostLineTime = 1.2f;
-        [SerializeField, Min(.01f), Tooltip("말풍선이 톡 튀어나오는 시간(초). 임시 0.25.")] private float popTime = .25f;
-        [SerializeField, Range(1, 3), Tooltip("튀어나올 때 가장 커지는 배율. 임시 1.3.")] private float popScale = 1.3f;
+        [Header("등장: 아래에서 떠오르며 꼬리를 축으로 좌우로 기울며 흔들림")]
+        [SerializeField, Min(.01f), Tooltip("말풍선이 떠올라 자리 잡기까지의 시간(초). 이 동안 흔들림이 줄어들어 도착하면 멈춥니다. 임시 0.35.")] private float appearTime = .35f;
+        [SerializeField, Min(0), Tooltip("처음 나타나는 위치가 최종 위치보다 아래인 거리(화면 기준 1920×1080 픽셀). 임시 20.")] private float riseDistance = 20;
+        [SerializeField, Range(0, 45), Tooltip("처음(가장 큰) 흔들림의 기울기(도). 흔들릴수록 폭이 줄어 도착하면 0이 됩니다. 임시 10.")] private float wobbleAngle = 10;
+        [SerializeField, Range(0, 6), Tooltip("떠오르는 동안 좌우로 흔들리는 횟수. 임시 2.5.")] private float wobbles = 2.5f;
+        [SerializeField, Range(.1f, 1), Tooltip("처음 크기 배율. 떠오르는 동안 1배로 커집니다. 임시 0.8.")] private float startScale = .8f;
         [SerializeField, Tooltip("선택. 새로 인식했을 때 효과음. 여러 적이 동시에 인식해도 한 번만 냅니다.")] private AudioClip alertSound;
         [SerializeField, Range(0, 1)] private float alertVolume = .6f;
         public bool Enabled => enabledAlert;
@@ -26,8 +30,11 @@ namespace IBIIIS
         public float ReplyDelay => Mathf.Max(0, replyDelay);
         public float SpottedTime => Mathf.Max(.1f, spottedTime);
         public float LostLineTime => Mathf.Max(.1f, lostLineTime);
-        public float PopTime => Mathf.Max(.01f, popTime);
-        public float PopScale => Mathf.Clamp(popScale, 1, 3);
+        public float AppearTime => Mathf.Max(.01f, appearTime);
+        public float RiseDistance => Mathf.Max(0, riseDistance);
+        public float WobbleAngle => Mathf.Clamp(wobbleAngle, 0, 45);
+        public float Wobbles => Mathf.Clamp(wobbles, 0, 6);
+        public float StartScale => Mathf.Clamp(startScale, .1f, 1);
         public AudioClip AlertSound => alertSound;
         public float AlertVolume => alertVolume;
     }

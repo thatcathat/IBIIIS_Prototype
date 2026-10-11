@@ -116,6 +116,31 @@ namespace IBIIIS.Tests
                 Assert.AreEqual(now.ToLower(), Of(0).Text, "대답은 고른 쌍과 짝");
             }
         }
+        [Test] public void BubbleRisesWhileWobblingAroundTheTailThenSettles()
+        {
+            var start = BubbleIntro.At(0, .35f, 20, 10, 2.5f, .8f);
+            Assert.AreEqual(20, start.Rise, 1e-4f, "아래에서 시작"); Assert.AreEqual(.8f, start.Scale, 1e-4f); Assert.AreEqual(0, start.Alpha, 1e-4f, "투명하게 나타남");
+            float maxAngle = 0; bool left = false, right = false; float lastRise = start.Rise;
+            for (int i = 1; i < 35; i++)
+            {
+                var pose = BubbleIntro.At(i * .01f, .35f, 20, 10, 2.5f, .8f);
+                Assert.LessOrEqual(pose.Rise, lastRise + 1e-5f, "계속 위로 떠오름"); lastRise = pose.Rise;
+                maxAngle = Mathf.Max(maxAngle, Mathf.Abs(pose.Angle)); left |= pose.Angle > 1; right |= pose.Angle < -1;
+            }
+            Assert.IsTrue(left && right, "좌우로 기울며 흔들림"); Assert.LessOrEqual(maxAngle, 10 + 1e-4f);
+            Assert.AreEqual(10, start.Angle, 1e-4f, "처음에 가장 크게 기움");
+            // 좌우 한 번씩 꺾일 때마다(흔들림의 끝점) 폭이 줄어든다.
+            float lastPeak = float.MaxValue; int peaks = 0; float prev = start.Angle, prevSlope = 0;
+            for (int i = 1; i <= 350; i++)
+            {
+                float angle = BubbleIntro.At(i * .001f, .35f, 20, 10, 2.5f, .8f).Angle, slope = angle - prev;
+                if (prevSlope != 0 && Mathf.Sign(slope) != Mathf.Sign(prevSlope)) { Assert.Less(Mathf.Abs(prev), lastPeak, "뒤로 갈수록 작게 흔들림"); lastPeak = Mathf.Abs(prev); peaks++; }
+                prev = angle; prevSlope = slope;
+            }
+            Assert.GreaterOrEqual(peaks, 3, "여러 번 흔들림");
+            var end = BubbleIntro.At(.35f, .35f, 20, 10, 2.5f, .8f);
+            Assert.AreEqual(0, end.Rise, 1e-4f); Assert.AreEqual(0, end.Angle, 1e-4f, "도착하면 멈춤"); Assert.AreEqual(1, end.Scale, 1e-4f); Assert.AreEqual(1, end.Alpha, 1e-4f);
+        }
         [Test] public void UndoMatchesStateWithoutBubblesOrSound()
         {
             Watcher(3, 2); Build(); player.UpdateMotion(5);

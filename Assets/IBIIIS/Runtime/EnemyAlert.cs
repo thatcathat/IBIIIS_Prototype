@@ -19,6 +19,25 @@ namespace IBIIIS
         public bool Shown => Delay <= 0 && Time < Duration;
         internal VisualElement View;
     }
+    /// <summary>말풍선 등장 자세(표시 전용). Rise는 최종 위치보다 아래로 내려간 거리(화면 픽셀), Angle은 꼬리를 축으로 한 기울기(도), Alpha는 나타나는 투명도.</summary>
+    public struct BubbleIntro
+    {
+        public float Rise, Angle, Scale, Alpha;
+        /// <summary>뜬 뒤 time초의 자세. 아래에서 감속하며 떠오르고, 처음에 wobbleAngle만큼 크게 기운 뒤 좌우로 흔들릴수록 폭이 빠르게 줄어 appearTime에 멈춘다.
+        /// 크기는 startScale에서 1로, 처음 10%에 나타난다(첫 큰 흔들림이 보이도록).</summary>
+        public static BubbleIntro At(float time, float appearTime, float riseDistance, float wobbleAngle, float wobbles, float startScale)
+        {
+            float u = Mathf.Clamp01(time / Mathf.Max(.0001f, appearTime));
+            float ease = 1 - (1 - u) * (1 - u);
+            return new BubbleIntro
+            {
+                Rise = riseDistance * (1 - ease),
+                Angle = wobbleAngle * (1 - u) * (1 - u) * Mathf.Cos(2 * Mathf.PI * wobbles * u),
+                Scale = Mathf.Lerp(startScale, 1, ease),
+                Alpha = Mathf.Clamp01(u / .1f),
+            };
+        }
+    }
     /// <summary>전투 인식 말풍선(표시 전용). 입력 대기·승패 상태에서 적이 플레이어를 새로 인식하면 대사 쌍 하나를 골라
     /// 플레이어 말풍선을 띄우고, 잠시 뒤 새로 인식한 적 모두가 대답한다. 인식에서 벗어나면 그 적이 혼잣말을 한다.
     /// 행동 진행 중에는 판정이 확정되지 않았으므로 말풍선을 모두 지우고, 행동이 끝난 뒤 행동 전 인식 상태와 비교해 반응한다. 판정에는 관여하지 않는다.
@@ -160,9 +179,11 @@ namespace IBIIIS
                 if (bubble.View == null) continue;
                 bubble.View.style.display = DisplayStyle.Flex;
                 var point = RuntimePanelUtils.CameraTransformWorldToPanel(layer.panel, world, camera);
-                bubble.View.style.left = point.x; bubble.View.style.top = point.y;
-                bubble.View.style.scale = new Scale(Vector3.one * PopScale(bubble.Time));
-                bubble.View.style.opacity = Mathf.Clamp01((1 - bubble.Time / bubble.Duration) / .25f);
+                var intro = BubbleIntro.At(bubble.Time, settings.AppearTime, settings.RiseDistance, settings.WobbleAngle, settings.Wobbles, settings.StartScale);
+                bubble.View.style.left = point.x; bubble.View.style.top = point.y + intro.Rise; // 화면 좌표는 아래가 +
+                bubble.View.style.scale = new Scale(Vector3.one * intro.Scale);
+                bubble.View.style.rotate = new Rotate(intro.Angle); // USS transform-origin이 아래 가운데(꼬리)라 꼬리를 축으로 기운다
+                bubble.View.style.opacity = Mathf.Min(intro.Alpha, Mathf.Clamp01((1 - bubble.Time / bubble.Duration) / .25f));
             }
         }
         private VisualElement CreateView(SpeechBubble bubble)
@@ -173,13 +194,6 @@ namespace IBIIIS
             view.EnableInClassList("player", bubble.Speaker == SpeechBubble.Player);
             view.pickingMode = PickingMode.Ignore;
             layer.Add(view); return view;
-        }
-        // 튀어나옴: 앞 절반에 0에서 최대 배율까지 커지고 뒤 절반에 1로 줄어든다. 끝나면 1.
-        private float PopScale(float time)
-        {
-            if (time < 0 || time >= settings.PopTime) return 1;
-            float u = time / settings.PopTime;
-            return u < .5f ? Mathf.Lerp(0, settings.PopScale, u / .5f) : Mathf.Lerp(settings.PopScale, 1, (u - .5f) / .5f);
         }
         /// <summary>되돌리기 등으로 상태가 순간 바뀌었을 때, 말풍선·효과음 없이 현재 인식 상태로 맞춘다.</summary>
         public void Resync(GridSession session)
