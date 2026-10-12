@@ -12,13 +12,12 @@ namespace IBIIIS.Editor
     /// 이미 있는 에셋·씬은 덮어쓰지 않는다. 기획서 좌표(행 0이 맨 위)는 맵 좌표(행 0이 맨 아래)로 옮긴다.</summary>
     public static class TutorialSetup
     {
-        public const string Folder = AssetPaths.Root + "/Tutorial";
-        // 튜토리얼 전용 에셋은 종류별 하위 폴더에 둔다(Docs 개발 및 사용 가이드의 폴더 규칙).
-        public const string SpriteFolder = Folder + "/Sprites", ScenarioFolder = AssetPaths.Scenarios + "/Tutorial";
+        // 튜토리얼 전용 그림은 Art/Sprites/Tutorial, 대본은 ScriptableObjects/Scenarios/Tutorial(Docs 개발 및 사용 가이드의 폴더 규칙).
+        public const string SpriteFolder = AssetPaths.Sprites + "/Tutorial", ScenarioFolder = AssetPaths.Scenarios + "/Tutorial";
         public const string FlySprite = SpriteFolder + "/AssiFly.png", ScarecrowSprite = SpriteFolder + "/Scarecrow.png", SwordSprite = SpriteFolder + "/Sword.png";
         // 임시: 땀 아이콘 에셋이 없어 코드로 그린 물방울. 정식 그림이 생기면 대본의 감정 표시 아이콘만 바꾼다.
         public const string SweatSprite = SpriteFolder + "/Sweat.png";
-        // 대본 자세 연출에 쓰는 플레이어 그림(Characters/Player/Sprites).
+        // 대본 자세 연출에 쓰는 플레이어 그림(Art/Sprites/Player).
         public const string SurprisedPose = PlayerPrefabSetup.SpriteFolder + "/c_motion_surprized_R.png", DangerGonePose = PlayerPrefabSetup.SpriteFolder + "/c_danger_gone.png", ProudPose = PlayerPrefabSetup.SpriteFolder + "/c_danger_cleared.png", DangerPose = PlayerPrefabSetup.SpriteFolder + "/c_danger.png";
         public const string Stage1Folder = AssetPaths.Maps + "/Tutorial1", Stage2Folder = AssetPaths.Maps + "/Tutorial2";
         public const string Stage1Map = Stage1Folder + "/Tutorial1.asset", Stage1Scene = Stage1Folder + "/Tutorial1.unity";
@@ -26,12 +25,12 @@ namespace IBIIIS.Editor
         public const string Stage1Script = ScenarioFolder + "/Tutorial1Script.asset", Stage2Script = ScenarioFolder + "/Tutorial2Script.asset";
         public const string TitleFolder = AssetPaths.Scenes, TitleScene = TitleFolder + "/Title.unity", TitleLayout = AssetPaths.UI + "/Title.uxml";
         public const string ClearId = "tutorial";
-        private const string Enemy003 = AssetPaths.Enemies + "/Enemy003/Enemy003.prefab";
+        private const string Enemy003 = AssetPaths.Enemies + "/Enemy003.prefab";
 
         [MenuItem("IBIIIS/Create Tutorial Content")]
         public static void EnsureAll()
         {
-            AssetPaths.EnsureFolder(Folder); AssetPaths.EnsureFolder(ScenarioFolder);
+            AssetPaths.EnsureFolder(SpriteFolder); AssetPaths.EnsureFolder(ScenarioFolder);
             var ui = GameUiSetup.EnsureDefault();
             DialogueSetup.EnsureDefault();
             var cast = EnsureCast();

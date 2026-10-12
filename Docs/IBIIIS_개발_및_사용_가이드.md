@@ -85,7 +85,7 @@ Unity의 프로젝트 구성 가이드(unity.com/kr/how-to/organizing-your-proje
 - **최상위는 종류, 그 안은 기능**: `Assets/IBIIIS/` 바로 아래는 종류 폴더 — `Scripts`(코드), `Scenes`(씬), `Prefabs`, `ScriptableObjects`(설정·대본·맵 데이터 등 데이터 에셋), `Art`(그림), `Audio`, `VFX`, `UI`, `Materials`, `Resources`. 각 종류 폴더 안은 기능별 하위 폴더로 나눈다(예: `Scripts/Runtime/Battle`, `ScriptableObjects/Scenarios/Tutorial`, `Art/Sprites/Player`). 새 파일은 "무슨 종류인가 → 어느 기능인가" 순서로 자리를 정한다.
 - **예외 1 — 전투 맵**: 맵 데이터(GridMap `.asset`)와 연결 씬(`.unity`)은 항상 한 쌍으로 만들고 고치므로 한 폴더에 둔다.
 - **예외 2 — 최상위 이름**: 위키독스 예시의 `_Project` 역할은 `Assets/IBIIIS/`가 한다(이름은 바꾸지 않음). 에셋 스토어·외부 플러그인을 들이면 `Assets/ThirdParty/<이름>/`처럼 따로 두고, 고친 부분은 문서에 적어 업데이트 때 다시 적용한다.
-- **진행 상황**: 1단계 코드(`Scripts/`)·2단계 데이터(`ScriptableObjects/`)·3단계 씬(`Scenes/`) 완료(2026-10-13). 4단계 그림·프리팹·이펙트·소리(`Art/`·`Prefabs/`·`VFX/`·`Audio/`)는 예정 — 그전까지는 아래 표의 현재 위치를 따른다.
+- **진행 상황**: 1단계 코드(`Scripts/`)·2단계 데이터(`ScriptableObjects/`)·3단계 씬(`Scenes/`)·4단계 그림·프리팹·이펙트·소리(`Art/`·`Prefabs/`·`VFX/`·`Audio/`) 완료(2026-10-13).
 - **코드**: `Scripts/Runtime`(어셈블리 `IBIIIS.Runtime`, 네임스페이스 `IBIIIS`), `Scripts/Editor`(`IBIIIS.Editor`), `Scripts/Tests`(`IBIIIS.Tests`). 하위 폴더는 기능별이며 네임스페이스는 바꾸지 않는다.
   - Runtime: `Core`(격자 판정·맵 데이터·클리어 기록·씬 전환·카메라 정면 규칙), `Battle`(전투 화면·입력·플레이어·적·동반 캐릭터), `Feedback`(손맛·충돌 연출·적 인식 말풍선), `Scenario`(대본·진행기·대화창), `Overworld`(미니맵), `UI`(게임 UI 설정·HUD·결과 팝업·타이틀)
   - Editor: `MapEditor`(맵 에디터·새 맵·미리보기·검증, 화면 파일 `UI/`), `DialogueEditor`(IBIIIS Dialogue Editor), `Inspectors`(Inspector·Drawer), `Setup`(기본 에셋 생성 메뉴와 경로 상수 `AssetPaths`)
@@ -98,17 +98,15 @@ Unity의 프로젝트 구성 가이드(unity.com/kr/how-to/organizing-your-proje
 |---|---|
 | `Assets/IBIIIS/Scripts/Runtime`, `Editor`, `Tests` | 코드와 asmdef(기능별 하위 폴더, 위 규칙). 맵 에디터 UXML/USS는 `Scripts/Editor/MapEditor/UI` |
 | `Assets/IBIIIS/ScriptableObjects/Settings` | GlobalPlayerSettings, GlobalCameraSettings, IBIIISInput, CollisionFeedback, MotionFeedback, EnemyAlert, OverworldSettings, OverworldInput 등 공용 설정. `Presets/`에 그림 가져오기 프리셋(아래) |
-| `Assets/IBIIIS/Characters/Player` | PlayerVisual.prefab, OverworldPlayer.prefab, `Sprites/` |
-| `Assets/IBIIIS/Characters/Enemies/<적 ID>/` | 적별 프리팹·재질·스프라이트를 한 폴더에 둔다. 새 적은 폴더 단위로 추가한다 |
-| `Assets/IBIIIS/Characters/Shared` | 공용 GroundShadow·FacingArrow 프리팹 |
-| `Assets/IBIIIS/Effects`, `Audio` | 충돌 연출 이펙트·효과음 |
+| `Assets/IBIIIS/Art/Sprites` | 그림(스프라이트): `Player/`(플레이어 그림 전부), `Enemies/`(`<적 ID>.png`), `NPC/`, `Shared/`(발밑 그림자·방향 화살표), `Overworld/`(클리어 깃발), `Tutorial/`(튜토리얼 임시 그림) |
+| `Assets/IBIIIS/Art/Portraits` | 대화 초상화 그림 |
+| `Assets/IBIIIS/Prefabs/Characters` | `Player/`(PlayerVisual, OverworldPlayer), `Enemies/`(`<적 ID>.prefab`), `NPC/`, `Shared/`(GroundShadow·FacingArrow 공용 프리팹) |
+| `Assets/IBIIIS/Prefabs/Overworld`, `Prefabs/Environments` | 미니맵 클리어 깃발, 환경 장식 프리팹 |
+| `Assets/IBIIIS/VFX`, `Audio/SFX` | 연출 이펙트(충돌 별·착지 먼지 그림과 프리팹)·효과음 |
 | `Assets/IBIIIS/ScriptableObjects/Tiles` | 이동 바닥 종류(TileDefinition) |
-| `Assets/IBIIIS/ScriptableObjects/Dialogue/Characters` | 대화 인물(DialogueCharacter). 초상화 그림은 아직 `Assets/IBIIIS/Dialogue/Portraits`(4단계에서 `Art/`로) |
-| `Assets/IBIIIS/Environments` | 환경 장식 프리팹 |
-| `Assets/IBIIIS/Materials` | 공용 재질(PrototypeUnlit) |
+| `Assets/IBIIIS/ScriptableObjects/Dialogue/Characters` | 대화 인물(DialogueCharacter). 초상화 그림은 `Art/Portraits` |
+| `Assets/IBIIIS/Materials` | 공용 재질(PrototypeUnlit, 미니맵 임시 재질) |
 | `Assets/IBIIIS/Scenes` | 씬: `Title.unity`, `OverworldTest.unity`(미니맵 테스트), `Battle/<맵>/`(전투 맵 데이터와 씬 한 쌍) |
-| `Assets/IBIIIS/Overworld` | 미니맵 클리어 깃발 그림·프리팹과 임시 재질(4단계에서 `Art/`·`Prefabs/`·`Materials/`로) |
-| `Assets/IBIIIS/Tutorial` | 튜토리얼 전용 임시 그림 `Sprites/`(4단계에서 `Art/`로) |
 | `Assets/IBIIIS/ScriptableObjects/Scenarios` | 모든 대본: `Tutorial/`(Tutorial1Script·Tutorial2Script), `NPC/`(미니맵 NPC 대화 DialogueScript). IBIIIS Dialogue Editor의 새 대본 기본 위치 |
 | `Assets/IBIIIS/Scenes/Battle/<맵 이름>/` | GridMap(.asset)과 연결 씬(.unity) 한 쌍. 샘플과 사용자 맵 모두 여기에 둔다 |
 | `Assets/IBIIIS/Resources/IBIIIS` | 이름으로 로드하는 기본 재질(DefaultGround). 이동 금지 |
@@ -116,11 +114,11 @@ Unity의 프로젝트 구성 가이드(unity.com/kr/how-to/organizing-your-proje
 | `Assets/Sandbox` | SampleScene 등 실험용. 빌드 씬 목록에 넣지 않는다(2026-10-13 SampleScene을 빌드 목록에서 뺐다) |
 
 - 에디터 도구의 기본 생성·조회 경로는 `Assets/IBIIIS/Scripts/Editor/Setup/AssetPaths.cs` 한 곳에서 관리한다. 폴더를 다시 바꿀 때는 Unity Project 창(또는 AssetDatabase)에서 이동해 GUID를 보존하고 이 파일의 경로를 함께 수정한다. 파일 탐색기·git으로 옮기지 않는다.
-- `새 맵`의 저장 대화상자는 `Scenes/Battle`에서 열린다. `Scenes/Battle` 바로 아래에 이름을 지정하면 `Scenes/Battle/<이름>/` 폴더를 만들어 맵·씬 쌍을 넣는다. Play 중이거나 이름 없는 씬이 열려 있으면 폴더를 만들기 전에 거부하고, 생성이 실패하면 이번에 만든 빈 폴더를 지운다. 다른 폴더를 고르면 그 폴더에 생성한다. `새 바닥`은 `Tiles`, `새 환경 프리팹`은 `Environments`에서 열린다.
+- `새 맵`의 저장 대화상자는 `Scenes/Battle`에서 열린다. `Scenes/Battle` 바로 아래에 이름을 지정하면 `Scenes/Battle/<이름>/` 폴더를 만들어 맵·씬 쌍을 넣는다. Play 중이거나 이름 없는 씬이 열려 있으면 폴더를 만들기 전에 거부하고, 생성이 실패하면 이번에 만든 빈 폴더를 지운다. 다른 폴더를 고르면 그 폴더에 생성한다. `새 바닥`은 `Tiles`, `새 환경 프리팹`은 `Prefabs/Environments`에서 열린다.
 - 2026-10-06 폴더 구조 정리 후 씬·프리팹·에셋·재질의 GUID 참조를 조사해 끊긴 참조가 없음을 확인했다. 삭제된 `Wall.asset`을 가리키던 팔레트 참조 3건(StarterMap·TestMap·TestMap3)은 이 맵들이 사용자에 의해 삭제되어(2026-10-09 작업 트리 기준) 남아 있지 않다. 삭제된 바닥 참조가 다시 생기면 아래 '삭제된 바닥 참조 정리'로 지운다.
 - `Assets/Logs/MapScenePreview.png`(어디서도 참조하지 않는 캡처)는 2026-10-13 프로젝트 정리 때 지웠다(사용자 승인, git 기록에서 되살릴 수 있음).
 - Unity 템플릿 기본 입력 `Assets/InputSystem_Actions.inputactions`도 2026-10-13 지웠다(사용자 결정). 게임은 쓰지 않았고 프로젝트 전역 입력(Project-wide Actions) 등록만 있어 등록을 풀고 지웠다. 게임 입력은 `ScriptableObjects/Settings/IBIIISInput`(전투)·`OverworldInput`(미니맵)이다. Project Settings > Input System Package에 전역 입력이 없다는 안내가 보여도 정상이다. 전투·미니맵 입력은 사용자 확인 대기([플레이 확인 목록](IBIIIS_플레이_확인_목록.md) B-13·O-10).
-- **그림 가져오기 프리셋**: `ScriptableObjects/Settings/Presets/PlayerSpriteImport.preset`(스프라이트, PPU 500, 발밑 기준점, 밉맵 없음)과 `EnemySpriteImport.preset`(같은 설정, PPU 600)을 Project Settings > Preset Manager의 TextureImporter 기본값에 폴더 조건으로 걸었다(`Characters/Player/Sprites/**`, `Characters/Enemies/**`). 이 폴더에 새 PNG를 넣으면 처음 가져올 때 자동으로 적용된다(이미 있는 그림은 바꾸지 않음). 그림마다 다른 값(스프라이트 이름·영역·내부 ID)은 프리셋에서 뺐다. 규격을 바꾸려면 프리셋 에셋을 고친다. `IBIIIS > Create Default Player Visual`의 그림 설정 맞추기는 그대로 남아 있다. 새 그림 자동 적용은 사용자 확인 대기([플레이 확인 목록](IBIIIS_플레이_확인_목록.md) A-02).
+- **그림 가져오기 프리셋**: `ScriptableObjects/Settings/Presets/PlayerSpriteImport.preset`(스프라이트, PPU 500, 발밑 기준점, 밉맵 없음)과 `EnemySpriteImport.preset`(같은 설정, PPU 600)을 Project Settings > Preset Manager의 TextureImporter 기본값에 폴더 조건으로 걸었다(`Art/Sprites/Player/**`, `Art/Sprites/Enemies/**`). 이 폴더에 새 PNG를 넣으면 처음 가져올 때 자동으로 적용된다(이미 있는 그림은 바꾸지 않음). 그림마다 다른 값(스프라이트 이름·영역·내부 ID)은 프리셋에서 뺐다. 규격을 바꾸려면 프리셋 에셋을 고친다. `IBIIIS > Create Default Player Visual`의 그림 설정 맞추기는 그대로 남아 있다. 새 그림 자동 적용은 사용자 확인 대기([플레이 확인 목록](IBIIIS_플레이_확인_목록.md) A-02).
 - **버전 관리**: `.meta`는 모두 커밋하고 직렬화는 Force Text다. 루트의 `.gitattributes`가 텍스트 파일을 LF로(커밋 때 줄바꿈 경고 없음), 씬·프리팹·에셋·`.meta`를 Unity Smart Merge로, 그림·소리·글꼴·문서를 바이너리로 정한다. 새 C# 파일도 LF로 만든다(Project Settings > Editor > Line Endings For New Scripts = Unix). 루트의 `.editorconfig`가 VS Code·Rider 등 편집기도 LF로 저장하게 한다. 작업 폴더의 CRLF 파일 163개를 2026-10-13 LF로 맞췄다(내용 변화 없음). Smart Merge 도구 연결은 PC마다 한 번 git 설정에 해야 한다(이 PC는 2026-10-13 설정함):
 
   ```
@@ -363,7 +361,7 @@ Unity의 프로젝트 구성 가이드(unity.com/kr/how-to/organizing-your-proje
 2. `새 환경 프리팹 만들고 연결`을 누르고 저장 경로를 정한다. 빈 `Environment` 루트 프리팹을 생성한다. 기존 에셋을 덮어쓰지 않는다. 기존 환경 프리팹을 슬롯에 직접 연결할 수도 있다.
 3. 해당 맵이 연결된 씬을 열면 `Grid Map Player` 아래에 환경 프리팹 인스턴스가 생성된다. `Scene 환경 선택` 버튼으로 선택할 수 있다. 자동 생성되어 숨겨진 타일 미리보기와 별개의 저장 가능한 오브젝트다.
 
-   현재 샘플 맵(ProtoTypeMap)에는 환경 프리팹이 연결되어 있지 않다. 이전 StarterMap용 `Assets/IBIIIS/Environments/StarterMap_Environment.prefab`(빈 Environment 루트)은 남아 있지만 쓰는 맵·씬이 없다. 장식 에셋은 사용자가 자식으로 배치한다.
+   현재 샘플 맵(ProtoTypeMap)에는 환경 프리팹이 연결되어 있지 않다. 이전 StarterMap용 `Assets/IBIIIS/Prefabs/Environments/StarterMap_Environment.prefab`(빈 Environment 루트)은 남아 있지만 쓰는 맵·씬이 없다. 장식 에셋은 사용자가 자식으로 배치한다.
 4. Environment 아래에 장식 프리팹을 자식으로 배치하고 Unity 이동·회전·크기 도구로 편집한다. 맵 내부·외부 모두 허용한다. 환경 루트는 위치·회전 0, 크기 1을 유지하고 자식에서 보정한다. 원점은 맵 (0,0) 칸 중심, XZ는 바닥, Y는 높이다. Cell Size 변경은 장식 배치를 자동 확대·축소하지 않는다.
 5. `Grid Map Player > 환경 배치를 프리팹에 적용` 또는 Unity의 Prefab Overrides 적용 기능으로 배치를 원본에 반영한다. 적용은 이 환경을 참조하는 다른 맵·씬에도 영향을 준다. 씬도 저장한다. 씬 저장만 한 변경은 해당 씬의 override이며 다른 테스트 씬에 전파되지 않는다.
 6. 새 테스트 씬에는 맵에 연결된 환경 프리팹이 자동 배치·저장된다. 이름 없는 씬이 열려 있으면 먼저 사용자가 저장해야 한다. 생성기는 현재 씬을 임의로 저장하지 않는다.
@@ -388,7 +386,7 @@ Unity의 프로젝트 구성 가이드(unity.com/kr/how-to/organizing-your-proje
 
 ## 플레이어 스프라이트 외형
 
-1. 원본: `Characters/Player/Sprites`(500×500 PNG 17장, 임시 러프 스케치). 외형 프리팹: `Characters/Player/PlayerVisual.prefab`, `GlobalPlayerSettings > Visual Prefab`에 연결됨. 메뉴 `IBIIIS > Create Default Player Visual`은 스프라이트 가져오기 설정(Sprite, PPU 500, Pivot 아래 중앙)을 맞추고, 프리팹이 없을 때만 만들며, 외형 슬롯이 비어 있을 때만 연결한다. 이미 있는 프리팹·연결은 덮어쓰지 않는다.
+1. 원본: `Art/Sprites/Player`(500×500 PNG 17장, 임시 러프 스케치). 외형 프리팹: `Prefabs/Characters/Player/PlayerVisual.prefab`, `GlobalPlayerSettings > Visual Prefab`에 연결됨. 메뉴 `IBIIIS > Create Default Player Visual`은 스프라이트 가져오기 설정(Sprite, PPU 500, Pivot 아래 중앙)을 맞추고, 프리팹이 없을 때만 만들며, 외형 슬롯이 비어 있을 때만 연결한다. 이미 있는 프리팹·연결은 덮어쓰지 않는다.
 2. 프리팹의 `PlayerVisual`에서 대기·이동·대시(뒤/오른쪽/앞/왼쪽)와 구르기(뒤왼쪽·뒤오른쪽·앞왼쪽·앞오른쪽, First/Second) 슬롯의 스프라이트를 교체한다. 외형·표시 크기를 바꿔도 이동 가능 칸·판정은 변하지 않는다(표시 전용).
 3. 방향은 카메라 Y 회전 0 기준 화면 방향이다: 격자 +Y=뒤(back), +X=오른쪽, -Y=앞(front), -X=왼쪽. 대기는 마지막 이동 방향을 유지한다. 구르기는 앞 절반에 First, 뒤 절반에 Second를 표시하고 이후 좌/우를 바라본다. 플레이어 표시는 Cell Size에 비례하고 카메라를 향한다. 크기는 프리팹의 `Sprite` 자식 Scale로 조정하며(현재 1.5, 사용자 확인 후 임시 확대) 발밑 기준점은 유지된다. 발 위치 보정은 [에셋 제작 가이드](IBIIIS_에셋_제작_가이드.md)를 따른다.
 4. 임시 대체: 정면 대기, 뒤·앞 대시는 해당 그림이 없어 `c_basic_right`를 쓴다. 그림이 제작되면 `PlayerVisual`의 해당 슬롯만 교체한다. 슬롯이 비면 이전 표시를 유지하고 콘솔에 경고를 남긴다.
@@ -405,9 +403,9 @@ Unity의 프로젝트 구성 가이드(unity.com/kr/how-to/organizing-your-proje
 2. 다음을 만든다. 이미 있는 에셋·연결은 덮어쓰지 않는다.
    - `Assets/IBIIIS/ScriptableObjects/Settings/OverworldSettings.asset`: 이동 속도, 카메라, 입력 설정. 비어 있는 카메라 설정에는 미니맵 전용 `ScriptableObjects/Settings/OverworldCameraSettings.asset`(처음 만들 때 GlobalCameraSettings의 각도를 따르고 화각만 30), 비어 있는 입력에는 아래 입력 에셋을 연결한다.
    - `Assets/IBIIIS/ScriptableObjects/Settings/OverworldInput.inputactions`: 액션 맵 `Overworld`(Move = WASD·방향키, Interact = F, Dash = Shift(누르고 있으면 달리기), Roll = Space). 이미 있는 파일에 Dash·Roll이 없으면 그 둘만 기본 키로 추가하고 다른 바인딩은 그대로 둔다. 가져오기에 실패한 파일은 덮어쓰지 않는다. 실행 중에도 예전 파일에 없는 Dash·Roll은 경고 없이 기본 키로 채워 쓴다.
-   - `Assets/IBIIIS/Characters/NPC/NPC.prefab`과 임시 실루엣 `NPC_Placeholder.png`: NPC 기본 프리팹(아래 NPC 추가). 메뉴 `IBIIIS > Overworld > Create NPC Prefab`으로 따로 만들 수도 있다.
-   - `Assets/IBIIIS/Overworld/ClearedFlag.prefab`과 임시 그림 `ClearedFlag.png`: 카메라를 바라보는 클리어 깃발 스프라이트.
-   - `Assets/IBIIIS/Characters/Player/OverworldPlayer.prefab`: CharacterController + OverworldPlayer, 자식에 GlobalPlayerSettings의 플레이어 외형 프리팹을 중첩한다. 외형 프리팹이 없으면 만들지 않고 안내한다.
+   - `Assets/IBIIIS/Prefabs/Characters/NPC/NPC.prefab`과 임시 실루엣 `NPC_Placeholder.png`: NPC 기본 프리팹(아래 NPC 추가). 메뉴 `IBIIIS > Overworld > Create NPC Prefab`으로 따로 만들 수도 있다.
+   - `Assets/IBIIIS/Prefabs/Overworld/ClearedFlag.prefab`과 임시 그림 `ClearedFlag.png`: 카메라를 바라보는 클리어 깃발 스프라이트.
+   - `Assets/IBIIIS/Prefabs/Characters/Player/OverworldPlayer.prefab`: CharacterController + OverworldPlayer, 자식에 GlobalPlayerSettings의 플레이어 외형 프리팹을 중첩한다. 외형 프리팹이 없으면 만들지 않고 안내한다.
    - `Assets/IBIIIS/Scenes/OverworldTest.unity`(같은 이름이 있으면 번호를 붙임): 24×24칸 바닥과 보이지 않는 경계 벽, 플레이어, 따라가는 카메라, NPC `NPC_Guide`(NPC 프리팹, 대사 3줄), 스테이지 입구 `Stage_ProtoTypeMap`(ID `stage-prototype-01`, `Scenes/Battle/ProtoTypeMap/ProtoTypeMap.unity` 연결). 입구 아래에는 클리어 깃발 프리팹(평소 꺼짐)을 두고 Cleared Indicator로 연결한다. 입구 발판은 `Overworld/Placeholder_Stage.mat`을 쓰는 바닥 평면 임시 도형이다.
 3. 만든 씬을 Project에서 더블클릭해 열고 Play한다.
 
@@ -433,9 +431,9 @@ Unity의 프로젝트 구성 가이드(unity.com/kr/how-to/organizing-your-proje
 
 - **Overworld Settings**(`IBIIIS > Overworld > Overworld Settings`): 이 메뉴는 설정 에셋이 없을 때만 만들고, 그때만 빈 슬롯(카메라·입력·손맛)에 기본 에셋을 연결한다. 이미 있는 에셋을 열 때는 사용자가 비운 슬롯을 다시 채우지 않는다(입력 파일의 빠진 Dash·Roll 보충만 한다). 빈 슬롯 채우기는 `Create Overworld Test Scene`을 실행할 때 한다. 항목: `Move Speed`(칸/초, 임시 3.5), `Camera Settings`(각도·화각, 기본 `OverworldCameraSettings`: 회전 40°·화각 30, 비우면 카메라 현재 값), `Camera View Height`(플레이어 위치에서 화면 세로로 보이는 범위, 칸, 임시 14), `Camera Follow Sharpness`(0이면 지연 없음, 임시 8), `Input Actions`, 달리기·구르기(`Run Speed` 6칸/초, `Run Stride Length` 1.3칸, `Roll Distance` 1.5칸, `Roll Duration` 0.35초, `Roll Ease Out` 1(0이면 일정한 속도), `Roll Recovery` 0.2초, `Evade Cooldown` 0.25초, 모두 임시). 걷기 손맛(아래 항목) 값도 여기에 있다.
 - **미니맵 카메라 화각**(2026-10-07): 화각 75에서는 화면 가장자리 바닥이 늘어나 보이는 왜곡이 커서 미니맵만 화각 30으로 좁혔다(전투는 별도의 GlobalCameraSettings, 현재 50). 카메라 거리는 `Camera View Height`와 화각으로 자동 계산하므로(화각 30이면 약 26칸, 75면 약 9칸) 화각을 바꿔도 화면에 담기는 범위는 같고 왜곡만 줄어든다. 화각은 `Assets/IBIIIS/ScriptableObjects/Settings/OverworldCameraSettings.asset`의 Field Of View에서, 보이는 범위는 `Camera View Height`에서 바꾼다. 이전의 `Camera Distance`(거리 직접 지정)는 이 항목으로 바뀌었고, 기본 14칸은 이전 거리 9·화각 75와 거의 같은 범위다. Orthographic을 켜면 Size가 보이는 범위의 절반으로 맞춰진다. 전투와 같게 하려면 `Camera Settings`에 GlobalCameraSettings를 연결한다.
-- **NPC 추가**: `Assets/IBIIIS/Characters/NPC/NPC.prefab`을 씬에 끌어다 놓고, 루트의 `NpcSpeaker`에서 `Display Name`, `Lines`(항목 하나가 말풍선 한 번), `Radius`(상호작용 거리, 칸), `Label Height`(말풍선 높이, 칸)를 정한다. 그림은 자식 `Visual`의 SpriteRenderer 스프라이트를, 크기는 `Visual`의 Scale(현재 1.5)을 바꾼다. 막힘은 루트의 보이지 않는 CapsuleCollider, 말 걸기 범위는 바닥 평면 거리로 판정하므로 그림·크기를 바꿔도 달라지지 않는다. NPC마다 다른 그림을 오래 쓸 거라면 프리팹 변형(Prefab Variant)으로 만든다. 지금은 정면 한 장만 쓰며 돌아보기는 없다.
+- **NPC 추가**: `Assets/IBIIIS/Prefabs/Characters/NPC/NPC.prefab`을 씬에 끌어다 놓고, 루트의 `NpcSpeaker`에서 `Display Name`, `Lines`(항목 하나가 말풍선 한 번), `Radius`(상호작용 거리, 칸), `Label Height`(말풍선 높이, 칸)를 정한다. 그림은 자식 `Visual`의 SpriteRenderer 스프라이트를, 크기는 `Visual`의 Scale(현재 1.5)을 바꾼다. 막힘은 루트의 보이지 않는 CapsuleCollider, 말 걸기 범위는 바닥 평면 거리로 판정하므로 그림·크기를 바꿔도 달라지지 않는다. NPC마다 다른 그림을 오래 쓸 거라면 프리팹 변형(Prefab Variant)으로 만든다. 지금은 정면 한 장만 쓰며 돌아보기는 없다.
 - **카메라 바라보기**: 플레이어·적·NPC 그림은 모두 카메라 회전과 같은 회전으로 세워진다(`CameraFacingSprite`). NPC는 Play 중 매 프레임 맞추며, 편집 중 Scene에서는 똑바로 서 있는 상태로 보인다.
-- **스테이지 입구 추가**: 오브젝트에 `StageEntrance`를 붙이고 `Stage Id`(필수, 클리어 기록 키. 정한 뒤 바꾸지 않음), `Display Name`, `Battle Scene`(필수, 맵과 함께 만든 전투 씬), `Cleared Indicator`(선택, 보통 자식으로 둔 `Overworld/ClearedFlag.prefab`을 꺼 둔 채 연결)를 정한다. Inspector가 ID 누락·중복과 빌드 씬 목록 누락(추가 버튼)·목록에 있지만 꺼짐(켜기 버튼)을 알려 준다. 에디터 Play에서는 빌드 씬 목록에 없어도 들어갈 수 있으나 빌드한 게임에서는 `빌드 씬 목록에 추가`가 필요하다. 미니맵 씬도 같다.
+- **스테이지 입구 추가**: 오브젝트에 `StageEntrance`를 붙이고 `Stage Id`(필수, 클리어 기록 키. 정한 뒤 바꾸지 않음), `Display Name`, `Battle Scene`(필수, 맵과 함께 만든 전투 씬), `Cleared Indicator`(선택, 보통 자식으로 둔 `Prefabs/Overworld/ClearedFlag.prefab`을 꺼 둔 채 연결)를 정한다. Inspector가 ID 누락·중복과 빌드 씬 목록 누락(추가 버튼)·목록에 있지만 꺼짐(켜기 버튼)을 알려 준다. 에디터 Play에서는 빌드 씬 목록에 없어도 들어갈 수 있으나 빌드한 게임에서는 `빌드 씬 목록에 추가`가 필요하다. 미니맵 씬도 같다.
 - **클리어 기록**: `IBIIIS > Overworld > Reset Clear Records`로 모두 지우고, `Show Save File`로 파일 위치를 연다. 저장 형식은 [데이터 관리 문서](IBIIIS_데이터_관리_문서.md)를 따른다.
 
 ### 걷기 손맛

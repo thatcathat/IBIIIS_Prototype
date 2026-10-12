@@ -18,8 +18,8 @@ namespace IBIIIS.Tests
             AssetDatabase.ImportAsset(path);
             return (TextureImporter)AssetImporter.GetAtPath(path);
         }
-        [TestCase("Assets/IBIIIS/Characters/Player/Sprites", 500)]
-        [TestCase("Assets/IBIIIS/Characters/Enemies/Enemy001", 600)]
+        [TestCase("Assets/IBIIIS/Art/Sprites/Player", 500)]
+        [TestCase("Assets/IBIIIS/Art/Sprites/Enemies", 600)]
         public void NewSpritesGetTheFolderPreset(string folder, float pixelsPerUnit)
         {
             var importer = ImportNew(folder);

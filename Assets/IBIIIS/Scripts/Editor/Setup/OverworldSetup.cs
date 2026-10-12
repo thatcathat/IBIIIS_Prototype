@@ -292,12 +292,12 @@ namespace IBIIIS.Editor
         }
         private static Material EnsureMaterial(string name, Color color)
         {
-            var path = $"{AssetPaths.Overworld}/{name}.mat";
+            var path = $"{AssetPaths.Materials}/{name}.mat";
             var material = AssetDatabase.LoadAssetAtPath<Material>(path);
             if (material != null) return material;
             var shader = Shader.Find("Universal Render Pipeline/Unlit");
             if (shader == null) throw new InvalidOperationException("URP/Unlit 셰이더가 없습니다.");
-            AssetPaths.EnsureFolder(AssetPaths.Overworld);
+            AssetPaths.EnsureFolder(AssetPaths.Materials);
             material = new Material(shader) { color = color };
             AssetDatabase.CreateAsset(material, path);
             return material;

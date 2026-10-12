@@ -89,7 +89,7 @@
 | ID | 확인할 것 | 준비·조작 | 기대 결과 | 상태 |
 |---|---|---|---|---|
 | A-01 | 발 위치·그림자·화살표 | 전투·미니맵에서 캐릭터를 여러 방향으로 보기 | 발이 칸 중앙 바닥에 붙어 보이고(접지·가림·표시 크기), 그림자 진하기·적 방향 화살표 크기가 괜찮음 | ⏳ |
-| A-02 | 그림 가져오기 프리셋 | `Characters/Player/Sprites`와 `Characters/Enemies/<적>`에 새 PNG를 하나씩 넣기 | Inspector에 Sprite, PPU 500(플레이어)·600(적), Bottom 기준점이 자동으로 잡힘 | ⏳ |
+| A-02 | 그림 가져오기 프리셋 | `Art/Sprites/Player`와 `Art/Sprites/Enemies`에 새 PNG를 하나씩 넣기 | Inspector에 Sprite, PPU 500(플레이어)·600(적), Bottom 기준점이 자동으로 잡힘 | ⏳ |
 
 ## 확인 결과 기록
 

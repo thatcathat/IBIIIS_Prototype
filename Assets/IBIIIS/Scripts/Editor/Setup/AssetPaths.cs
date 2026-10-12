@@ -26,14 +26,24 @@ namespace IBIIIS.Editor
         public const string UI = Root + "/UI";
         public const string EnemyAlert = Settings + "/EnemyAlert.asset";
         public const string BattleDialogue = Settings + "/BattleDialogue.asset";
-        public const string Dialogue = Root + "/Dialogue";
-        public const string Audio = Root + "/Audio";
-        public const string Effects = Root + "/Effects";
-        public const string Player = Root + "/Characters/Player";
-        // 적은 개체별 폴더(Enemies/EnemyNNN/)에 프리팹·재질·스프라이트를 함께 둔다.
-        public const string Enemies = Root + "/Characters/Enemies";
+        // 그림은 Art/, 프리팹은 Prefabs/, 효과음은 Audio/SFX, 효과는 VFX/(Docs 개발 및 사용 가이드의 Assets 폴더 구조와 규칙).
+        public const string Art = Root + "/Art";
+        public const string Sprites = Art + "/Sprites";
+        public const string Portraits = Art + "/Portraits";
+        public const string Prefabs = Root + "/Prefabs";
+        public const string CharacterPrefabs = Prefabs + "/Characters";
+        public const string Audio = Root + "/Audio/SFX";
+        public const string Effects = Root + "/VFX";
+        public const string PlayerPrefabs = CharacterPrefabs + "/Player";
+        public const string PlayerSprites = Sprites + "/Player";
+        // 적 프리팹은 Prefabs/Characters/Enemies/<적ID>.prefab, 그림은 Art/Sprites/Enemies/<적ID>.png.
+        public const string Enemies = CharacterPrefabs + "/Enemies";
+        public const string EnemySprites = Sprites + "/Enemies";
+        // 플레이어·NPC·적이 함께 쓰는 발밑 그림자·방향 화살표
+        public const string SharedMarkerPrefabs = CharacterPrefabs + "/Shared";
+        public const string SharedMarkerSprites = Sprites + "/Shared";
         public const string Tiles = Data + "/Tiles";
-        public const string Environments = Root + "/Environments";
+        public const string Environments = Prefabs + "/Environments";
         public const string Materials = Root + "/Materials";
         public const string PrototypeMaterial = Materials + "/PrototypeUnlit.mat";
         // 맵은 맵 이름 폴더에 GridMap(.asset)과 씬(.unity)을 함께 둔다.
@@ -45,19 +55,17 @@ namespace IBIIIS.Editor
         // 코드와 편집기 화면 파일은 Scripts/ 아래(Docs 개발 및 사용 가이드의 Assets 폴더 구조와 규칙).
         public const string Scripts = Root + "/Scripts";
         public const string MapEditorLayout = Scripts + "/Editor/MapEditor/UI/MapEditor.uxml";
-        // 미니맵(Overworld): 테스트 씬과 임시 재질은 Overworld 폴더, 설정은 Settings, 플레이어 프리팹은 Characters/Player.
-        public const string Overworld = Root + "/Overworld";
+        // 미니맵(Overworld): 테스트 씬은 Scenes, 임시 재질은 Materials, 설정은 Settings, 플레이어 프리팹은 Prefabs/Characters/Player.
         public const string OverworldScene = Scenes + "/OverworldTest.unity";
         public const string OverworldSettings = Settings + "/OverworldSettings.asset";
         public const string OverworldCameraSettings = Settings + "/OverworldCameraSettings.asset";
         public const string OverworldInput = Settings + "/OverworldInput.inputactions";
-        public const string OverworldPlayer = Player + "/OverworldPlayer.prefab";
+        public const string OverworldPlayer = PlayerPrefabs + "/OverworldPlayer.prefab";
         // 미니맵 NPC: 공용 기본 프리팹과 임시 실루엣 그림
-        public const string Npc = Root + "/Characters/NPC";
-        public const string NpcPrefab = Npc + "/NPC.prefab";
-        public const string NpcPlaceholderSprite = Npc + "/NPC_Placeholder.png";
-        public const string ClearedFlagPrefab = Overworld + "/ClearedFlag.prefab";
-        public const string ClearedFlagSprite = Overworld + "/ClearedFlag.png";
+        public const string NpcPrefab = CharacterPrefabs + "/NPC/NPC.prefab";
+        public const string NpcPlaceholderSprite = Sprites + "/NPC/NPC_Placeholder.png";
+        public const string ClearedFlagPrefab = Prefabs + "/Overworld/ClearedFlag.prefab";
+        public const string ClearedFlagSprite = Sprites + "/Overworld/ClearedFlag.png";
         public const string OverworldTestStage = Maps + "/ProtoTypeMap/ProtoTypeMap.unity";
     }
 }

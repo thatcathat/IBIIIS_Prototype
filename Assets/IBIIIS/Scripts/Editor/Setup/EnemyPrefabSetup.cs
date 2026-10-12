@@ -8,25 +8,26 @@ using UnityEngine.SceneManagement;
 namespace IBIIIS.Editor
 {
     /// <summary>기본 적 3종(Enemy001~003) 프리팹을 현재 규격으로 만든다: 루트에 EnemyDefinition, 자식 Visual(SpriteRenderer, 1.5배, 발밑 기준점 스프라이트),
-    /// 발밑 그림자·진행 방향 화살표. 이미 있는 프리팹은 건드리지 않는다. 그림은 폴더의 &lt;이름&gt;.png가 있으면 그것을, 없으면 코드로 그린 임시 그림을 쓴다.</summary>
+    /// 발밑 그림자·진행 방향 화살표. 이미 있는 프리팹은 건드리지 않는다. 그림은 그림 폴더의 &lt;이름&gt;.png가 있으면 그것을, 없으면 코드로 그린 임시 그림을 쓴다.</summary>
     public static class EnemyPrefabSetup
     {
-        public const string Folder = AssetPaths.Enemies;
         // 임시 그림 색(맵 에디터 표시 색과 같음)
         private static readonly Color[] Colors = { new Color(.95f, .5f, .3f), new Color(.3f, .8f, .4f), new Color(.35f, .5f, 1f) };
         [MenuItem("IBIIIS/Create Default Enemy Prefabs")]
-        public static void EnsureDefaults() => EnsureDefaults(Folder);
-        /// <summary>folder 아래 Enemy00N/Enemy00N.prefab이 없을 때만 만든다(테스트는 임시 폴더를 쓴다). 만든 프리팹 경로를 돌려준다.</summary>
-        public static List<string> EnsureDefaults(string folder)
+        public static void EnsureDefaults() => EnsureDefaults(AssetPaths.Enemies, AssetPaths.EnemySprites);
+        /// <summary>프리팹과 그림을 한 폴더에 둔다(테스트용 임시 폴더).</summary>
+        public static List<string> EnsureDefaults(string folder) => EnsureDefaults(folder, folder);
+        /// <summary>prefabFolder/Enemy00N.prefab이 없을 때만 만든다. 그림은 spriteFolder에서 찾거나 만든다. 만든 프리팹 경로를 돌려준다.</summary>
+        public static List<string> EnsureDefaults(string prefabFolder, string spriteFolder)
         {
             var created = new List<string>();
             for (int type = 1; type <= 3; type++)
             {
-                string name = "Enemy00" + type, typeFolder = folder + "/" + name, path = typeFolder + "/" + name + ".prefab";
+                string name = "Enemy00" + type, path = prefabFolder + "/" + name + ".prefab";
                 if (AssetDatabase.LoadAssetAtPath<GameObject>(path) != null) continue;
-                AssetPaths.EnsureFolder(typeFolder);
+                AssetPaths.EnsureFolder(prefabFolder); AssetPaths.EnsureFolder(spriteFolder);
                 var color = Colors[type - 1];
-                var sprite = EnsureSprite(typeFolder, name, color);
+                var sprite = EnsureSprite(spriteFolder, name, color);
                 var scene = EditorSceneManager.NewPreviewScene();
                 try
                 {

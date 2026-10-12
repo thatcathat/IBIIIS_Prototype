@@ -20,7 +20,7 @@
 | 공통 시간·이동·전투 규칙 | 게임 시스템 기획서 | 코드(`Scripts/Runtime/Core/GridSession.cs`)가 판정을 구현한다. 채택 규칙은 전투 및 적 배치 가이드 |
 | 적 ID·이름 | 엑셀의 적 기본정보 시트 | 적 프리팹 `EnemyDefinition`의 Enemy Id. 표시 이름 필드는 없다 |
 | 적 체력·행동 주기 | 엑셀의 적 기본정보 시트 | 미구현. 현재 적은 체력이 없고, 플레이어 행동 한 번마다 행동 목록을 수행한다 |
-| 적 행동 목록(조준·전진·회전 순서)·이동 칸·인식·공격 범위 | 엑셀 행동 패턴 시트(기획 문장) | **적 프리팹의 `EnemyDefinition`이 실행 기준**이다. 값을 옮길 때는 프리팹을 직접 수정한다. 기본 3종은 `Characters/Enemies/EnemyNNN/` 프리팹 |
+| 적 행동 목록(조준·전진·회전 순서)·이동 칸·인식·공격 범위 | 엑셀 행동 패턴 시트(기획 문장) | **적 프리팹의 `EnemyDefinition`이 실행 기준**이다. 값을 옮길 때는 프리팹을 직접 수정한다. 기본 3종은 `Prefabs/Characters/Enemies/EnemyNNN.prefab` |
 | 패턴 ID·패턴 전환·타깃·예고 규칙 | 엑셀의 행동 패턴 시트 | 미구현. 패턴 ID 없이 적 프리팹마다 행동 목록 하나를 가진다 |
 | 플레이어 외형·이동 시간·표시·입력·연출 설정 | 게임 시스템 기획서 | `Assets/IBIIIS/ScriptableObjects/Settings/GlobalPlayerSettings.asset`과 연결된 설정 에셋(아래) |
 | 이미지·애니메이션·효과음 참조 | 엑셀의 현재 열 구조에 없음 | 플레이어는 `PlayerVisual.prefab`의 슬롯, 적은 프리팹의 `Visual` 자식, 충돌 연출은 `CollisionFeedback.asset`. 절차는 [에셋 제작 가이드](IBIIIS_에셋_제작_가이드.md) |

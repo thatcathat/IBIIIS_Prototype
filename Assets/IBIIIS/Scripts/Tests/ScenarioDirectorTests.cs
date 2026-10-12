@@ -55,7 +55,7 @@ namespace IBIIIS.Tests
             director.Tick(0);
         }
 
-        private const string Enemy003 = "Assets/IBIIIS/Characters/Enemies/Enemy003/Enemy003.prefab";
+        private const string Enemy003 = "Assets/IBIIIS/Prefabs/Characters/Enemies/Enemy003.prefab";
         [Test] public void SpawnedEnemiesJoinAndUndoRemovesThem()
         {
             var prefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>(Enemy003);

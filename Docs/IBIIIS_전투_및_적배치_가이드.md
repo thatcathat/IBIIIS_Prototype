@@ -5,7 +5,7 @@
 ## 맵에서 적 배치
 
 1. `IBIIIS > Map Editor`에서 사용할 GridMap을 선택한다. 11×11로 제작하려면 가로·세로에 11을 입력해 크기를 적용하고 바닥과 플레이어 시작 위치를 배치한다.
-2. 하단 `적` 탭의 적 타일(Enemy001~003 등, 프로젝트의 EnemyDefinition 프리팹을 자동 수집)에서 하나를 클릭한다. 선택 시 `적 배치 N` 도구로 전환한다. 기본 프리팹은 `Assets/IBIIIS/Characters/Enemies/EnemyNNN/`에 있다.
+2. 하단 `적` 탭의 적 타일(Enemy001~003 등, 프로젝트의 EnemyDefinition 프리팹을 자동 수집)에서 하나를 클릭한다. 선택 시 `적 배치 N` 도구로 전환한다. 기본 프리팹은 `Assets/IBIIIS/Prefabs/Characters/Enemies/`에 있다.
 3. `배치 방향` 버튼(또는 `R`/`Shift+R`)으로 방향을 정한 뒤 칸을 클릭 또는 드래그한다. 마우스 아래에 놓일 적과 방향이 미리 보이고, 놓을 수 없는 칸은 빨간 테두리로 표시된다. 삼각형의 색상은 적 종류, 꼭짓점은 진행 방향이다. 같은 칸에 다시 배치하면 기존 적의 종류·방향을 교체한다. 시작 위치나 이동 불가 칸에는 배치하지 못한다. 이미 놓은 적은 `선택 V` 도구로 고른 뒤 회전(`R`, 버튼)·삭제(`Delete`, 버튼)한다.
 4. `적 지우기`는 바닥을 유지하고 적만 제거한다. 바닥 `지우기`는 해당 칸의 적도 제거한다. 맵 축소 시 범위 밖 적 배치도 제거하며 Undo/Redo로 복구 가능하다.
 5. 오른쪽 클릭이나 선택 도구로 칸을 고르면 `선택한 칸`에 적 이름·방향·행동 목록이 나온다. 적에 마우스를 올리거나 선택하면 인식·공격 범위가 캔버스에 표시된다(`모든 적 범위`로 전체 표시). 상태 표시줄에는 적 수와 홀수 배치 안내가 나온다. 짝수 배치를 권장하지만 특정 수를 강제로 생성하지 않는다.
@@ -21,7 +21,7 @@
 - 기본 설정은 사용자 제공 Word·HTML 자료를 따른다. Enemy001/002의 인식은 전방 반원 맨해튼 거리 2, Enemy003은 좌우 1칸과 앞줄 3칸이다. 제공된 Excel의 Enemy002 인식 도식과 다른 부분은 Word·HTML 기준을 채택했다.
 - Enemy001은 한 칸 이동, 기본 공격은 도착 칸, 인식 후 앞 1칸 추가. Enemy002는 두 칸 이동, 기본 앞 1칸, 인식 후 앞 2칸까지. Enemy003은 한 칸 이동, 기본 도착·앞·앞오른쪽, 인식 후 오른쪽도 추가한다.
 - 적 프리팹 루트에는 발밑 그림자(`GroundShadow`)와 진행 방향 화살표(`FacingArrow`, 4방향 스프라이트 도입 전 임시)가 중첩 프리팹으로 붙어 있다. 자세한 내용은 [에셋 제작 가이드](IBIIIS_에셋_제작_가이드.md)의 발밑 보정·그림자·화살표 항목을 따른다.
-- `Visual`은 카메라를 바라볼 자식 Transform이다. Enemy001~003의 `Visual`은 `Characters/Enemies/Enemy00N/Enemy00N.png`(임시 러프 스케치, 594×506, PPU 600, 발밑 중앙 기준점)를 쓰는 SpriteRenderer이며, 크기는 `Visual`의 Scale로 조정한다(현재 1.5, 플레이어와 같은 배율). 자식 외형을 교체해도 논리적 이동·점유는 바뀌지 않는다. 프리팹 루트 변환은 게임에서 칸 위치·방향·Cell Size로 결정한다.
+- `Visual`은 카메라를 바라볼 자식 Transform이다. Enemy001~003의 `Visual`은 `Art/Sprites/Enemies/Enemy00N.png`(임시 러프 스케치, 594×506, PPU 600, 발밑 중앙 기준점)를 쓰는 SpriteRenderer이며, 크기는 `Visual`의 Scale로 조정한다(현재 1.5, 플레이어와 같은 배율). 자식 외형을 교체해도 논리적 이동·점유는 바뀌지 않는다. 프리팹 루트 변환은 게임에서 칸 위치·방향·Cell Size로 결정한다.
 - GridMap은 프리팹 참조·좌표·방향을 저장한다. GridSession은 시작 시 이동 가능 영역과 적 규칙을 복사하고 개체별 위치·방향·생존 여부·경로를 별도로 관리한다. 프리팹 원본은 실행 중 변경하지 않는다.
 - 제공 자료의 좌표는 위쪽 행 0, 프로젝트는 아래쪽 Y=0이다. 배치를 옮길 때 `프로젝트 y = 맵 높이 - 1 - 자료 행`으로 변환한다. 11×11 자료의 플레이어 (5,10)은 프로젝트 (5,0)이다.
 
@@ -57,7 +57,7 @@
 - **판정과 분리**: 연출은 판정 결과를 보여 주기만 한다. `GridSession.Collisions`(칸·이동 단계·참여 적)를 읽어 `CollisionFeedback`이 재생한다. 연출을 끄거나 시간을 바꿔도 결과는 같다.
 - **입력**: 연출이 끝날 때까지 다음 입력을 받지 않으며 게임 시간도 흐른다. 승리·패배가 확정된 행동이라도 연출이 끝난 뒤 입력을 받는다. 되돌리기·재시작은 진행 중인 연출을 즉시 정리하고 적을 원래 모습으로 되돌린다.
 - **설정**: `Assets/IBIIIS/ScriptableObjects/Settings/CollisionFeedback.asset`(`IBIIIS > Player Settings`의 `Collision Feedback` 슬롯에 연결)에서 켜고 끄기, 맞닿음·멈춤 시간, 납작해지는 정도, 충격 이펙트 프리팹·시간·크기, 흔들림 세기(칸)·시간, 효과음·음량, 날아가는 시간을 바꾼다. 날아가는 거리(칸)·최고 높이(칸)·회전 수는 `최소 ~ 최대` 범위로 정하며, 적마다 그 사이에서 무작위로 골라 매번 조금씩 다르게 날아간다(도는 방향은 충돌한 적마다 번갈아 바뀜). 코드 기본값은 거리 1~1.8, 높이 0.5~0.9, 회전 1~2바퀴이고, 현재 에셋 값은 거리 10~15, 높이 3~7, 회전 1~2바퀴다. 거리 10~15와 높이 3~7은 사용자가 의도한 값이다(사용자 확인, 2026-10-06). 최소가 최대보다 크면 Inspector에 주황색으로 표시되고 실행 시 두 값을 바꿔 쓴다. 슬롯이 비어 있으면 그 연출만 건너뛴다. 설정 에셋 자체가 없으면 기본 수치로 이펙트·효과음 없이 재생한다. 강도는 임시값이며 사용자 확인 후 조정한다.
-- **임시 에셋**: 충격 이펙트 `Assets/IBIIIS/Effects/CollisionBurst.prefab`(만화풍 별 `CollisionBurst.png`), 효과음 `Assets/IBIIIS/Audio/CollisionImpact.wav`(코드로 합성한 0.3초 "쿵·퍽"). 메뉴 `IBIIIS > Create Default Collision Feedback`가 파일을 없을 때만 만들고, 설정 에셋이 이미 있어도 비어 있는 `Impact Prefab`·`Impact Sound` 슬롯과 공용 플레이어 설정의 연결만 채운다. 연결된 슬롯은 바꾸지 않는다. 정식 그림·소리는 파일을 교체하거나 설정 슬롯을 바꾼다.
+- **임시 에셋**: 충격 이펙트 `Assets/IBIIIS/VFX/CollisionBurst.prefab`(만화풍 별 `CollisionBurst.png`), 효과음 `Assets/IBIIIS/Audio/SFX/CollisionImpact.wav`(코드로 합성한 0.3초 "쿵·퍽"). 메뉴 `IBIIIS > Create Default Collision Feedback`가 파일을 없을 때만 만들고, 설정 에셋이 이미 있어도 비어 있는 `Impact Prefab`·`Impact Sound` 슬롯과 공용 플레이어 설정의 연결만 채운다. 연결된 슬롯은 바꾸지 않는다. 정식 그림·소리는 파일을 교체하거나 설정 슬롯을 바꾼다.
 
 ## 상황별 플레이어 그림 (2026-10-13)
 
@@ -72,8 +72,8 @@
 
 - 우선순위: 대본의 자세 그림 > 패배·회피·벗어남 그림 > 위험 그림 > 일반 그림. 패배와 다른 반응이 겹치면 패배만 보인다. 다음 행동을 시작하면 남은 반응 그림은 지운다. 되돌리면 반응 없이 그 상태의 그림으로 바로 맞춘다.
 - 「회피」의 '공격을 피함'은 '제자리에 있었으면 맞았을 공격'으로 정했다(에이전트 해석, 사용자 확인 필요 — [플레이 확인 목록](IBIIIS_플레이_확인_목록.md) B-06). 판정은 행동 직전 상태의 복사본으로 대기를 미리 계산한다(`GridSession.Predict`).
-- 설정: 플레이어 외형 프리팹 `Characters/Player/PlayerVisual.prefab`의 `PlayerVisual > 상황별 그림` — `Danger`, `Evaded`(순서대로, 장 수 자유), `Escaped`, `Defeated`, `Reaction Frame Seconds`(임시 0.4초). 슬롯이 비면 그 상황은 일반 그림을 쓴다. 움직임 종류(으쓱·한숨·떨림)는 코드에 둔 임시 선택이다.
-- 생성: `IBIIIS > Create Default Player Visual`이 프리팹의 빈 상황별 슬롯만 `Characters/Player/Sprites`의 같은 이름 그림으로 채운다. 연결한 슬롯은 바꾸지 않는다.
+- 설정: 플레이어 외형 프리팹 `Prefabs/Characters/Player/PlayerVisual.prefab`의 `PlayerVisual > 상황별 그림` — `Danger`, `Evaded`(순서대로, 장 수 자유), `Escaped`, `Defeated`, `Reaction Frame Seconds`(임시 0.4초). 슬롯이 비면 그 상황은 일반 그림을 쓴다. 움직임 종류(으쓱·한숨·떨림)는 코드에 둔 임시 선택이다.
+- 생성: `IBIIIS > Create Default Player Visual`이 프리팹의 빈 상황별 슬롯만 `Art/Sprites/Player`의 같은 이름 그림으로 채운다. 연결한 슬롯은 바꾸지 않는다.
 - 코드: `GridMapPlayer`(행동 시작 때 기록, 판정 뒤 `ChooseReaction`, 매 프레임 `TickReaction`), `PlayerVisual`(`ReactionSprite`·`InDanger`·`OverrideSprite`로 그림 선택).
 - 개발 검증: EditMode 자동 테스트로 패배 시 그 자리에서 패배 그림(날아가지 않음·충격 이펙트 없음)이 되돌리기 전까지 유지됨, 대시 회피 시 두 그림이 순서대로 나온 뒤 원래 그림, 인식 범위 안 대기의 위험 그림과 이동으로 벗어난 뒤의 벗어남 그림, 되돌리면 다시 위험 그림을 확인했다.
 - 사용자 확인 대기: [플레이 확인 목록](IBIIIS_플레이_확인_목록.md) B-06. 새 그림들도 Foot Offset 0.15를 같이 받는다.
@@ -84,7 +84,7 @@
 - **막힌 입력**: 대기 중 갈 수 없는 방향(경계·빈칸·적·회피기 쿨다운)을 누르면 그쪽으로 0.14칸 부딪혔다 돌아오며 "툭" 소리가 난다. 행동·시간·되돌리기 기록은 바뀌지 않는다.
 - **표시 전용**: 그림(스프라이트 자식)에만 뜸·밀림·납작함을 더한다. 논리 위치, 칸 판정, 이동 시간, 이동 표시는 그대로다. 이동 중 자세는 이번 행동의 진행도로만 계산하므로 프레임이 끊겨도, 되돌려도 원래 자세로 정확히 돌아온다. 되돌리기·재시작은 남은 착지 여운과 먼지를 즉시 지운다. 대본의 자세·상황별 그림의 움직임은 이 자세에 더한다.
 - **설정**: `Assets/IBIIIS/ScriptableObjects/Settings/MotionFeedback.asset`(`IBIIIS > Player Settings`의 `Motion Feedback` 슬롯)에서 켜고 끄기, 뜀 높이, 웅크림·늘어남·착지 납작함 정도, 웅크림 구간, 착지 시간, 먼지 프리팹·크기·시간, 발소리, 부딪힘 거리·시간·납작함·소리를 바꾼다. 설정 에셋이 없으면 기본 수치로 움직임만 주고 먼지·소리는 없다.
-- **임시 에셋**: 먼지 `Assets/IBIIIS/Effects/LandingDust.png`·`.prefab`, 발소리 `Assets/IBIIIS/Audio/Footstep.wav`, 막힌 입력 `Assets/IBIIIS/Audio/Bump.wav`(모두 코드로 생성). 메뉴 `IBIIIS > Create Default Motion Feedback`가 없을 때만 만들고 연결이 비어 있을 때만 채운다.
+- **임시 에셋**: 먼지 `Assets/IBIIIS/VFX/LandingDust.png`·`.prefab`, 발소리 `Assets/IBIIIS/Audio/SFX/Footstep.wav`, 막힌 입력 `Assets/IBIIIS/Audio/SFX/Bump.wav`(모두 코드로 생성). 메뉴 `IBIIIS > Create Default Motion Feedback`가 없을 때만 만들고 연결이 비어 있을 때만 채운다.
 - **코드**: `Scripts/Runtime/Feedback/MotionFeedback.cs`(전투 행동 진행도 → 자세), `Scripts/Runtime/Feedback/MotionEffects.cs`(미니맵과 공유하는 자세 계산 `MotionPoses`와 먼지·잔상·소리 `MotionEffects`), `Scripts/Runtime/Feedback/MotionFeedbackSettings.cs`, `PlayerVisual.SetPose`(발 보정·카메라 향하기 뒤에 자세를 더함), `GridMapPlayer.UpdateMotion`·`TryActionOrBump`, `Scripts/Editor/Setup/MotionFeedbackSetup.cs`.
 - **2단계(2026-10-06)**:
   - **대시**: 출발 칸 뒤로 먼지와 "휙" 소리. 이동 중 낮게 웅크리고(12%), 좌우 대시면 진행 방향으로 12도 기운다(위아래 대시는 웅크림만). 이동 구간의 25·50·75% 지점마다 현재 스프라이트를 복사한 하늘색 잔상을 남기고 0.22초에 걸쳐 사라진다(겹쳐 보이는 것은 보통 2개). 도착하면 진행 방향으로 먼지를 날리며 미끄러지듯 납작해졌다 돌아온다. 긴 프레임으로 지점을 여러 개 지나도 한꺼번에 남겨 잔상 수가 같다. 프레임이 크게 끊겨 한 프레임에 도착까지 지나가면 아직 남기지 못한 지점의 잔상은 생략한다(개수가 줄 수 있음).

@@ -4,12 +4,11 @@ using UnityEngine;
 
 namespace IBIIIS.Editor
 {
-    /// <summary>Characters/Player/Sprites의 캐릭터 스프라이트로 기본 플레이어 외형 프리팹을 만든다. 이미 있는 프리팹은 덮어쓰지 않는다.</summary>
+    /// <summary>Art/Sprites/Player의 캐릭터 스프라이트로 기본 플레이어 외형 프리팹을 만든다. 이미 있는 프리팹은 덮어쓰지 않는다.</summary>
     public static class PlayerPrefabSetup
     {
-        public const string Folder = AssetPaths.Player;
-        public const string SpriteFolder = Folder + "/Sprites";
-        public const string PrefabPath = Folder + "/PlayerVisual.prefab";
+        public const string SpriteFolder = AssetPaths.PlayerSprites;
+        public const string PrefabPath = AssetPaths.PlayerPrefabs + "/PlayerVisual.prefab";
         public const string SettingsPath = AssetPaths.PlayerSettings;
         // 500x500 캔버스 = 월드 1 단위(한 칸 너비), 기준점은 캔버스 아래 중앙(발밑).
         public const float PixelsPerUnit = 500;

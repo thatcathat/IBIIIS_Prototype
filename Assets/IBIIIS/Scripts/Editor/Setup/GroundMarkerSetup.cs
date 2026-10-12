@@ -9,9 +9,8 @@ namespace IBIIIS.Editor
     /// 이미 있는 텍스처·프리팹·자식은 덮어쓰지 않는다. 그림을 바꾸려면 생성된 PNG를 교체하고, 크기·색·순서는 공용 프리팹에서 바꾼다.</summary>
     public static class GroundMarkerSetup
     {
-        public const string Folder = AssetPaths.Root + "/Characters/Shared";
-        public const string ShadowTexture = Folder + "/GroundShadow.png", ArrowTexture = Folder + "/FacingArrow.png";
-        public const string ShadowPrefab = Folder + "/GroundShadow.prefab", ArrowPrefab = Folder + "/FacingArrow.prefab";
+        public const string ShadowTexture = AssetPaths.SharedMarkerSprites + "/GroundShadow.png", ArrowTexture = AssetPaths.SharedMarkerSprites + "/FacingArrow.png";
+        public const string ShadowPrefab = AssetPaths.SharedMarkerPrefabs + "/GroundShadow.prefab", ArrowPrefab = AssetPaths.SharedMarkerPrefabs + "/FacingArrow.prefab";
         public const string ShadowName = "GroundShadow", ArrowName = "FacingArrow";
         private const int Size = 128;
 
@@ -94,7 +93,7 @@ namespace IBIIIS.Editor
         // 그림자는 캐릭터 뒤(-1), 화살표는 4방향 스프라이트가 생기기 전까지 몸에 가려지지 않도록 캐릭터 위(1)에 그린다.
         private static void EnsureMarkers(out GameObject shadow, out GameObject arrow)
         {
-            AssetPaths.EnsureFolder(Folder);
+            AssetPaths.EnsureFolder(AssetPaths.SharedMarkerSprites); AssetPaths.EnsureFolder(AssetPaths.SharedMarkerPrefabs);
             shadow = EnsurePrefab(ShadowPrefab, ShadowName, EnsureTexture(ShadowTexture, ShadowAlpha, Color.black), -1, .7f);
             arrow = EnsurePrefab(ArrowPrefab, ArrowName, EnsureTexture(ArrowTexture, ArrowAlpha, Color.white), 1, .42f);
         }

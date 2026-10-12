@@ -16,8 +16,8 @@
 - 좌표: 기획서는 (열, 행)이고 행 0이 맨 위다. 맵·대본은 행 0이 맨 아래이므로 맵 행 = 맵 높이 − 1 − 기획서 행으로 옮겼다.
 - 표기: 화자 이름표는 「어시파리」로 통일했다(기획서 검토 의견). 정체를 밝히기 전 줄은 「???(어시파리)」. 대사 본문의 표기("어씨파리" 등)는 대본 그대로 두었다. 대사 속 플레이어 이름은 「플레이어」(이름 기능은 나중), 화자 이름표는 대본대로 「주인공」.
 - 상황별 플레이어 그림(전투 가이드)은 튜토리얼에도 같이 적용된다. 단 위험 그림(`c_danger`)은 자동으로 보이지 않고 대본의 자세 단계로만 보인다(사용자 결정, 진행기 `Script Controls Danger`). 회피(Shift+W 대시 때 c_danger_cleared → _2)·벗어남 그림은 자동으로 나오고, 패배는 자유 진행이 막으므로 나오지 않는다.
-- 감정 표시: 말풍선 없이 머리 위 아이콘만 보인다(사용자 결정). ❓·❗·🔻는 노란 굵은 글자 「?」「!」「▼」, 💦는 임시 물방울 그림(`Assets/IBIIIS/Tutorial/Sprites/Sweat.png`, 코드로 그림. 정식 아이콘이 생기면 대본의 Emote 아이콘 칸만 바꾼다).
-- 자세 연출(사용자 결정): 「화들짝 놀람」 c_motion_surprized_R + 펄쩍(Hop), 기본 그림으로 돌아올 때도 펄쩍(사용자 요청), 2단계 「살려줘 어씨파리!!!」 대사 뒤 c_danger + 떨림(Shake)을 첫 회피 행동(A)을 시작할 때까지 유지하고 돌아올 때도 떨림, 2단계 첫 왼쪽 회피 직후 c_danger_gone + 한숨(Sigh), 돌아올 때도 한숨, 「(으쓱대며) 나.. 재능 있을지도?」 c_danger_cleared + 으쓱(Proud), 돌아올 때도 으쓱. c_danger 외에는 다음 대사가 끝나면 원래 그림으로 돌아간다. 모든 자세가 돌아올 때 그림이 바뀔 때와 같은 움직임을 준다(사용자 결정). 움직임 종류는 임시 선택이며 대본 Pose 단계의 `움직임`·`돌아올 때 움직임`으로 바꾼다. 그림은 `Assets/IBIIIS/Characters/Player/Sprites/`(PPU 500, 기준점 아래 중앙). c_motion_surprized_L(이전 놀람 그림)은 쓰지 않는다.
+- 감정 표시: 말풍선 없이 머리 위 아이콘만 보인다(사용자 결정). ❓·❗·🔻는 노란 굵은 글자 「?」「!」「▼」, 💦는 임시 물방울 그림(`Assets/IBIIIS/Art/Sprites/Tutorial/Sweat.png`, 코드로 그림. 정식 아이콘이 생기면 대본의 Emote 아이콘 칸만 바꾼다).
+- 자세 연출(사용자 결정): 「화들짝 놀람」 c_motion_surprized_R + 펄쩍(Hop), 기본 그림으로 돌아올 때도 펄쩍(사용자 요청), 2단계 「살려줘 어씨파리!!!」 대사 뒤 c_danger + 떨림(Shake)을 첫 회피 행동(A)을 시작할 때까지 유지하고 돌아올 때도 떨림, 2단계 첫 왼쪽 회피 직후 c_danger_gone + 한숨(Sigh), 돌아올 때도 한숨, 「(으쓱대며) 나.. 재능 있을지도?」 c_danger_cleared + 으쓱(Proud), 돌아올 때도 으쓱. c_danger 외에는 다음 대사가 끝나면 원래 그림으로 돌아간다. 모든 자세가 돌아올 때 그림이 바뀔 때와 같은 움직임을 준다(사용자 결정). 움직임 종류는 임시 선택이며 대본 Pose 단계의 `움직임`·`돌아올 때 움직임`으로 바꾼다. 그림은 `Assets/IBIIIS/Art/Sprites/Player/`(PPU 500, 기준점 아래 중앙). c_motion_surprized_L(이전 놀람 그림)은 쓰지 않는다.
 
 ## 1단계 — 도입·조작 학습
 
@@ -36,7 +36,7 @@
 
 - 대본: `Assets/IBIIIS/ScriptableObjects/Scenarios/Tutorial/Tutorial1Script.asset`, `Tutorial2Script.asset`(ScenarioScript, Inspector에서 편집).
 - 맵·씬: `Assets/IBIIIS/Scenes/Battle/Tutorial1/`, `Tutorial2/`(각 맵·씬. 씬의 Grid Map Player에 ScenarioDirector, AssiFly·Scarecrow 오브젝트가 Actors로 연결).
-- 임시 그림: `Assets/IBIIIS/Tutorial/Sprites/AssiFly.png`·`Scarecrow.png`·`Sword.png`(코드로 그린 그림), 대화 인물 허수아비·Enemy_00·Enemy_01(`Assets/IBIIIS/ScriptableObjects/Dialogue/Characters/`, 임시 실루엣 초상화).
+- 임시 그림: `Assets/IBIIIS/Art/Sprites/Tutorial/AssiFly.png`·`Scarecrow.png`·`Sword.png`(코드로 그린 그림), 대화 인물 허수아비·Enemy_00·Enemy_01(`Assets/IBIIIS/ScriptableObjects/Dialogue/Characters/`, 임시 실루엣 초상화).
 - 메뉴 `IBIIIS > Reset Scenario Scripts`는 두 대본을 코드의 기본 대본으로 덮어쓴다(확인 창, Inspector 수정 내용 사라짐). 2026-10-13 피드백 반영 때 이 방법으로 두 대본을 다시 만들었다.
 - 메뉴 `IBIIIS > Create Tutorial Content`가 위 에셋·씬과 타이틀을 없을 때만 만들고 빌드 씬 목록에 없는 씬만 추가한다(타이틀은 맨 앞). 이미 있는 대본·씬은 덮어쓰지 않으므로, 생성 뒤 고친 내용은 보존된다.
 
