@@ -13,7 +13,7 @@
 
 ## G. 게임 흐름 (타이틀 → 튜토리얼 → 미니맵)
 
-준비: `Assets/IBIIIS/Title/Title.unity`를 열고 Play. 대본은 `ScriptableObjects/Scenarios/Tutorial/`, 진행 규칙은 [튜토리얼 문서](IBIIIS_튜토리얼_문서.md).
+준비: `Assets/IBIIIS/Scenes/Title.unity`를 열고 Play. 대본은 `ScriptableObjects/Scenarios/Tutorial/`, 진행 규칙은 [튜토리얼 문서](IBIIIS_튜토리얼_문서.md).
 
 | ID | 확인할 것 | 조작 | 기대 결과 | 상태 |
 |---|---|---|---|---|
@@ -32,7 +32,7 @@
 
 ## B. 전투
 
-준비: `Assets/IBIIIS/Maps/ProtoTypeMap/ProtoTypeMap.unity`(또는 확인할 맵 씬)를 열고 Play. 규칙은 [전투 및 적 배치 가이드](IBIIIS_전투_및_적배치_가이드.md).
+준비: `Assets/IBIIIS/Scenes/Battle/ProtoTypeMap/ProtoTypeMap.unity`(또는 확인할 맵 씬)를 열고 Play. 규칙은 [전투 및 적 배치 가이드](IBIIIS_전투_및_적배치_가이드.md).
 
 | ID | 확인할 것 | 조작 | 기대 결과 | 상태 |
 |---|---|---|---|---|
@@ -52,7 +52,7 @@
 
 ## O. 미니맵
 
-준비: 메뉴로 미니맵 테스트 씬을 만들고 `Assets/IBIIIS/Overworld/OverworldTest.unity`를 열고 Play. 설명은 [개발 및 사용 가이드](IBIIIS_개발_및_사용_가이드.md)의 미니맵(Overworld) 프로토타입.
+준비: 메뉴로 미니맵 테스트 씬을 만들고 `Assets/IBIIIS/Scenes/OverworldTest.unity`를 열고 Play. 설명은 [개발 및 사용 가이드](IBIIIS_개발_및_사용_가이드.md)의 미니맵(Overworld) 프로토타입.
 
 | ID | 확인할 것 | 조작 | 기대 결과 | 상태 |
 |---|---|---|---|---|

@@ -153,7 +153,7 @@ MonoBehaviour:
   stageId: stage-prototype-01
   displayName: "\uD504\uB85C\uD1A0\uD0C0\uC785 \uC2A4\uD14C\uC774\uC9C0"
   battleSceneAsset: {fileID: 102900000, guid: 46b652c5d11eb174d9732e351e05f080, type: 3}
-  battleScenePath: Assets/IBIIIS/Maps/ProtoTypeMap/ProtoTypeMap.unity
+  battleScenePath: Assets/IBIIIS/Scenes/Battle/ProtoTypeMap/ProtoTypeMap.unity
   clearedIndicator: {fileID: 1527129910}
 --- !u!4 &18826739
 Transform:

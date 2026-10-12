@@ -6,16 +6,16 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/IBIIIS/Title/Title.unity
+    path: Assets/IBIIIS/Scenes/Title.unity
     guid: 0a12f2f6ba4049348a53c8f7c18b0dcb
   - enabled: 1
-    path: Assets/IBIIIS/Maps/Tutorial1/Tutorial1.unity
+    path: Assets/IBIIIS/Scenes/Battle/Tutorial1/Tutorial1.unity
     guid: 3d0f8be309d7cad4f9752fd523d94b09
   - enabled: 1
-    path: Assets/IBIIIS/Maps/Tutorial2/Tutorial2.unity
+    path: Assets/IBIIIS/Scenes/Battle/Tutorial2/Tutorial2.unity
     guid: 5c1e4ad1bd5095a4cbe0c03b4cab4df4
   - enabled: 1
-    path: Assets/IBIIIS/Overworld/OverworldTest.unity
+    path: Assets/IBIIIS/Scenes/OverworldTest.unity
     guid: 89d22925be19fa54db5356d3a2b3e929
   m_configObjects: {}
   m_UseUCBPForAssetBundles: 0

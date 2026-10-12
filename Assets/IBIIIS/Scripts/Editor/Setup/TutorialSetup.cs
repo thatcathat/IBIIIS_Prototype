@@ -24,7 +24,7 @@ namespace IBIIIS.Editor
         public const string Stage1Map = Stage1Folder + "/Tutorial1.asset", Stage1Scene = Stage1Folder + "/Tutorial1.unity";
         public const string Stage2Map = Stage2Folder + "/Tutorial2.asset", Stage2Scene = Stage2Folder + "/Tutorial2.unity";
         public const string Stage1Script = ScenarioFolder + "/Tutorial1Script.asset", Stage2Script = ScenarioFolder + "/Tutorial2Script.asset";
-        public const string TitleFolder = AssetPaths.Root + "/Title", TitleScene = TitleFolder + "/Title.unity", TitleLayout = AssetPaths.UI + "/Title.uxml";
+        public const string TitleFolder = AssetPaths.Scenes, TitleScene = TitleFolder + "/Title.unity", TitleLayout = AssetPaths.UI + "/Title.uxml";
         public const string ClearId = "tutorial";
         private const string Enemy003 = AssetPaths.Enemies + "/Enemy003/Enemy003.prefab";
 

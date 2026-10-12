@@ -26,7 +26,7 @@ namespace IBIIIS.Editor
         /// <summary>겹치지 않는 테스트 씬 경로. 폴더가 없으면 GenerateUniqueAssetPath가 빈 문자열을 돌려주므로 폴더를 먼저 만든다.</summary>
         public static string NextScenePath()
         {
-            AssetPaths.EnsureFolder(AssetPaths.Overworld); // AssetPaths의 폴더 구조가 바뀌어도 중간 폴더까지 만든다
+            AssetPaths.EnsureFolder(System.IO.Path.GetDirectoryName(AssetPaths.OverworldScene).Replace('\\', '/')); // AssetPaths의 폴더 구조가 바뀌어도 중간 폴더까지 만든다
             var path = AssetDatabase.GenerateUniqueAssetPath(AssetPaths.OverworldScene);
             if (string.IsNullOrEmpty(path)) throw new InvalidOperationException($"테스트 씬 경로를 만들지 못했습니다: {AssetPaths.OverworldScene}");
             return path;

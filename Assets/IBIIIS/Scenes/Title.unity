@@ -149,7 +149,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: da586ad2b20a9454da515a83edb59dcd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: IBIIIS.Runtime::IBIIIS.TitleScreen
-  startScenePath: Assets/IBIIIS/Maps/Tutorial1/Tutorial1.unity
+  startScenePath: Assets/IBIIIS/Scenes/Battle/Tutorial1/Tutorial1.unity
 --- !u!114 &847333217
 MonoBehaviour:
   m_ObjectHideFlags: 0

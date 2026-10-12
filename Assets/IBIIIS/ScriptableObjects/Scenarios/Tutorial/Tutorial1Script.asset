@@ -1113,7 +1113,7 @@ MonoBehaviour:
     target: 
     text: 
     active: 0
-    scenePath: Assets/IBIIIS/Maps/Tutorial2/Tutorial2.unity
+    scenePath: Assets/IBIIIS/Scenes/Battle/Tutorial2/Tutorial2.unity
     prefab: {fileID: 0}
     sprite: {fileID: 0}
     motion: 0

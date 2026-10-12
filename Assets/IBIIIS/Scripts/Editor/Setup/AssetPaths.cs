@@ -37,7 +37,9 @@ namespace IBIIIS.Editor
         public const string Materials = Root + "/Materials";
         public const string PrototypeMaterial = Materials + "/PrototypeUnlit.mat";
         // 맵은 맵 이름 폴더에 GridMap(.asset)과 씬(.unity)을 함께 둔다.
-        public const string Maps = Root + "/Maps";
+        // 씬은 Scenes/ 아래. 전투 맵은 맵 데이터와 씬 한 쌍을 Scenes/Battle/<맵>/에 둔다(Docs 개발 및 사용 가이드의 Assets 폴더 구조와 규칙).
+        public const string Scenes = Root + "/Scenes";
+        public const string Maps = Scenes + "/Battle";
         public const string StarterMap = Maps + "/StarterMap/StarterMap.asset";
         public const string DefaultResources = Root + "/Resources/IBIIIS";
         // 코드와 편집기 화면 파일은 Scripts/ 아래(Docs 개발 및 사용 가이드의 Assets 폴더 구조와 규칙).
@@ -45,7 +47,7 @@ namespace IBIIIS.Editor
         public const string MapEditorLayout = Scripts + "/Editor/MapEditor/UI/MapEditor.uxml";
         // 미니맵(Overworld): 테스트 씬과 임시 재질은 Overworld 폴더, 설정은 Settings, 플레이어 프리팹은 Characters/Player.
         public const string Overworld = Root + "/Overworld";
-        public const string OverworldScene = Overworld + "/OverworldTest.unity";
+        public const string OverworldScene = Scenes + "/OverworldTest.unity";
         public const string OverworldSettings = Settings + "/OverworldSettings.asset";
         public const string OverworldCameraSettings = Settings + "/OverworldCameraSettings.asset";
         public const string OverworldInput = Settings + "/OverworldInput.inputactions";

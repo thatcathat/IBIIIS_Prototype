@@ -85,7 +85,7 @@ Unity의 프로젝트 구성 가이드(unity.com/kr/how-to/organizing-your-proje
 - **최상위는 종류, 그 안은 기능**: `Assets/IBIIIS/` 바로 아래는 종류 폴더 — `Scripts`(코드), `Scenes`(씬), `Prefabs`, `ScriptableObjects`(설정·대본·맵 데이터 등 데이터 에셋), `Art`(그림), `Audio`, `VFX`, `UI`, `Materials`, `Resources`. 각 종류 폴더 안은 기능별 하위 폴더로 나눈다(예: `Scripts/Runtime/Battle`, `ScriptableObjects/Scenarios/Tutorial`, `Art/Sprites/Player`). 새 파일은 "무슨 종류인가 → 어느 기능인가" 순서로 자리를 정한다.
 - **예외 1 — 전투 맵**: 맵 데이터(GridMap `.asset`)와 연결 씬(`.unity`)은 항상 한 쌍으로 만들고 고치므로 한 폴더에 둔다.
 - **예외 2 — 최상위 이름**: 위키독스 예시의 `_Project` 역할은 `Assets/IBIIIS/`가 한다(이름은 바꾸지 않음). 에셋 스토어·외부 플러그인을 들이면 `Assets/ThirdParty/<이름>/`처럼 따로 두고, 고친 부분은 문서에 적어 업데이트 때 다시 적용한다.
-- **진행 상황**: 1단계 코드(`Scripts/`)·2단계 데이터(`ScriptableObjects/`) 완료(2026-10-13). 3단계 씬(`Scenes/`), 4단계 그림·프리팹·이펙트·소리(`Art/`·`Prefabs/`·`VFX/`·`Audio/`)는 예정 — 그전까지는 아래 표의 현재 위치를 따른다.
+- **진행 상황**: 1단계 코드(`Scripts/`)·2단계 데이터(`ScriptableObjects/`)·3단계 씬(`Scenes/`) 완료(2026-10-13). 4단계 그림·프리팹·이펙트·소리(`Art/`·`Prefabs/`·`VFX/`·`Audio/`)는 예정 — 그전까지는 아래 표의 현재 위치를 따른다.
 - **코드**: `Scripts/Runtime`(어셈블리 `IBIIIS.Runtime`, 네임스페이스 `IBIIIS`), `Scripts/Editor`(`IBIIIS.Editor`), `Scripts/Tests`(`IBIIIS.Tests`). 하위 폴더는 기능별이며 네임스페이스는 바꾸지 않는다.
   - Runtime: `Core`(격자 판정·맵 데이터·클리어 기록·씬 전환·카메라 정면 규칙), `Battle`(전투 화면·입력·플레이어·적·동반 캐릭터), `Feedback`(손맛·충돌 연출·적 인식 말풍선), `Scenario`(대본·진행기·대화창), `Overworld`(미니맵), `UI`(게임 UI 설정·HUD·결과 팝업·타이틀)
   - Editor: `MapEditor`(맵 에디터·새 맵·미리보기·검증, 화면 파일 `UI/`), `DialogueEditor`(IBIIIS Dialogue Editor), `Inspectors`(Inspector·Drawer), `Setup`(기본 에셋 생성 메뉴와 경로 상수 `AssetPaths`)
@@ -106,16 +106,17 @@ Unity의 프로젝트 구성 가이드(unity.com/kr/how-to/organizing-your-proje
 | `Assets/IBIIIS/ScriptableObjects/Dialogue/Characters` | 대화 인물(DialogueCharacter). 초상화 그림은 아직 `Assets/IBIIIS/Dialogue/Portraits`(4단계에서 `Art/`로) |
 | `Assets/IBIIIS/Environments` | 환경 장식 프리팹 |
 | `Assets/IBIIIS/Materials` | 공용 재질(PrototypeUnlit) |
-| `Assets/IBIIIS/Overworld` | 미니맵 테스트 씬(OverworldTest.unity)과 임시 재질 |
+| `Assets/IBIIIS/Scenes` | 씬: `Title.unity`, `OverworldTest.unity`(미니맵 테스트), `Battle/<맵>/`(전투 맵 데이터와 씬 한 쌍) |
+| `Assets/IBIIIS/Overworld` | 미니맵 클리어 깃발 그림·프리팹과 임시 재질(4단계에서 `Art/`·`Prefabs/`·`Materials/`로) |
 | `Assets/IBIIIS/Tutorial` | 튜토리얼 전용 임시 그림 `Sprites/`(4단계에서 `Art/`로) |
 | `Assets/IBIIIS/ScriptableObjects/Scenarios` | 모든 대본: `Tutorial/`(Tutorial1Script·Tutorial2Script), `NPC/`(미니맵 NPC 대화 DialogueScript). IBIIIS Dialogue Editor의 새 대본 기본 위치 |
-| `Assets/IBIIIS/Maps/<맵 이름>/` | GridMap(.asset)과 연결 씬(.unity) 한 쌍. 샘플과 사용자 맵 모두 여기에 둔다 |
+| `Assets/IBIIIS/Scenes/Battle/<맵 이름>/` | GridMap(.asset)과 연결 씬(.unity) 한 쌍. 샘플과 사용자 맵 모두 여기에 둔다 |
 | `Assets/IBIIIS/Resources/IBIIIS` | 이름으로 로드하는 기본 재질(DefaultGround). 이동 금지 |
 | `Assets/Settings` | URP 렌더 설정(템플릿) |
 | `Assets/Sandbox` | SampleScene 등 실험용. 빌드 씬 목록에 넣지 않는다(2026-10-13 SampleScene을 빌드 목록에서 뺐다) |
 
 - 에디터 도구의 기본 생성·조회 경로는 `Assets/IBIIIS/Scripts/Editor/Setup/AssetPaths.cs` 한 곳에서 관리한다. 폴더를 다시 바꿀 때는 Unity Project 창(또는 AssetDatabase)에서 이동해 GUID를 보존하고 이 파일의 경로를 함께 수정한다. 파일 탐색기·git으로 옮기지 않는다.
-- `새 맵`의 저장 대화상자는 `Maps`에서 열린다. `Maps` 바로 아래에 이름을 지정하면 `Maps/<이름>/` 폴더를 만들어 맵·씬 쌍을 넣는다. Play 중이거나 이름 없는 씬이 열려 있으면 폴더를 만들기 전에 거부하고, 생성이 실패하면 이번에 만든 빈 폴더를 지운다. 다른 폴더를 고르면 그 폴더에 생성한다. `새 바닥`은 `Tiles`, `새 환경 프리팹`은 `Environments`에서 열린다.
+- `새 맵`의 저장 대화상자는 `Scenes/Battle`에서 열린다. `Scenes/Battle` 바로 아래에 이름을 지정하면 `Scenes/Battle/<이름>/` 폴더를 만들어 맵·씬 쌍을 넣는다. Play 중이거나 이름 없는 씬이 열려 있으면 폴더를 만들기 전에 거부하고, 생성이 실패하면 이번에 만든 빈 폴더를 지운다. 다른 폴더를 고르면 그 폴더에 생성한다. `새 바닥`은 `Tiles`, `새 환경 프리팹`은 `Environments`에서 열린다.
 - 2026-10-06 폴더 구조 정리 후 씬·프리팹·에셋·재질의 GUID 참조를 조사해 끊긴 참조가 없음을 확인했다. 삭제된 `Wall.asset`을 가리키던 팔레트 참조 3건(StarterMap·TestMap·TestMap3)은 이 맵들이 사용자에 의해 삭제되어(2026-10-09 작업 트리 기준) 남아 있지 않다. 삭제된 바닥 참조가 다시 생기면 아래 '삭제된 바닥 참조 정리'로 지운다.
 - `Assets/Logs/MapScenePreview.png`(어디서도 참조하지 않는 캡처)는 2026-10-13 프로젝트 정리 때 지웠다(사용자 승인, git 기록에서 되살릴 수 있음).
 - Unity 템플릿 기본 입력 `Assets/InputSystem_Actions.inputactions`도 2026-10-13 지웠다(사용자 결정). 게임은 쓰지 않았고 프로젝트 전역 입력(Project-wide Actions) 등록만 있어 등록을 풀고 지웠다. 게임 입력은 `ScriptableObjects/Settings/IBIIISInput`(전투)·`OverworldInput`(미니맵)이다. Project Settings > Input System Package에 전역 입력이 없다는 안내가 보여도 정상이다. 전투·미니맵 입력은 사용자 확인 대기([플레이 확인 목록](IBIIIS_플레이_확인_목록.md) B-13·O-10).
@@ -144,7 +145,7 @@ Unity의 프로젝트 구성 가이드(unity.com/kr/how-to/organizing-your-proje
 ### 시작과 편집
 
 1. Unity `6000.3.23f1`에서 프로젝트를 연다. 메뉴 `IBIIIS > Map Editor`로 전용 창을 연다. Scene 창이나 Play 모드는 필요 없다.
-2. 상단 맵 슬롯에 `Assets/IBIIIS/Maps/ProtoTypeMap/ProtoTypeMap.asset`을 넣는다. 샘플은 11×11칸, 적 6이다. 이전 샘플 StarterMap은 2026-10-09에 사용자가 삭제했다. `IBIIIS > Create Starter Map`은 StarterMap이 없으면 12×10칸의 빈 연습 맵을 새로 만들고, 있으면 덮어쓰지 않고 연다.
+2. 상단 맵 슬롯에 `Assets/IBIIIS/Scenes/Battle/ProtoTypeMap/ProtoTypeMap.asset`을 넣는다. 샘플은 11×11칸, 적 6이다. 이전 샘플 StarterMap은 2026-10-09에 사용자가 삭제했다. `IBIIIS > Create Starter Map`은 StarterMap이 없으면 12×10칸의 빈 연습 맵을 새로 만들고, 있으면 덮어쓰지 않고 연다.
 3. `새 맵`에서 이름과 저장 위치를 지정하면 같은 폴더에 `이름.asset`(GridMap)과 `이름.unity`(해당 맵을 연결한 씬)를 함께 생성한다. 둘 중 하나라도 같은 이름이 있으면 공통 이름에 번호를 붙여 기존 파일을 보존한다. 기본 크기는 12×12이고 모든 칸이 비어 있다. 시작 위치도 아직 없으므로 편집용 씬만 생성하고, Play 전에는 바닥과 시작 위치를 지정해야 한다. 씬에는 공용 플레이어·카메라 설정과 기본 머티리얼을 자동 연결한다. 생성된 씬은 Project에서 선택되며 더블클릭해 연다. 현재 열린 씬을 자동으로 교체하지 않는다. 이름 없는 씬이 열려 있으면 먼저 저장하라는 안내가 나오며 맵만 생성하지 않는다. 씬 생성 실패 시 이번에 만든 맵·씬을 정리한다.
 4. 왼쪽 도구 레일에서 `칠하기 B`를 선택하고 클릭·드래그한다. `지우기 E`는 이동 영역만 제거하고 배경 바닥은 남긴다. 빈칸은 이동 불가다. 드래그 한 번은 Undo 한 번으로 복구한다. 하단 `칠하기` 탭의 바닥 견본에서 종류를 선택해 칠한다. 이동 불가 타일은 등록·배치할 수 없다.
 5. `시작 위치` 도구로 이동 가능한 칸을 클릭한다. 노란 테두리가 시작 위치다. 시작 칸을 지우면 시작 위치도 해제되고 재지정 안내가 나온다. 다시 칠하기만 해서는 시작 위치가 복원되지 않는다. 잘못된 시작 위치는 플레이 준비 검증에서 거부한다.
@@ -189,7 +190,7 @@ Unity의 프로젝트 구성 가이드(unity.com/kr/how-to/organizing-your-proje
 
 ### 사용자 플레이 확인
 
-1. 샘플은 `Assets/IBIIIS/Maps/ProtoTypeMap/ProtoTypeMap.unity`를 연다. 새 맵은 함께 생성된 같은 이름의 `.unity` 씬을 연다.
+1. 샘플은 `Assets/IBIIIS/Scenes/Battle/ProtoTypeMap/ProtoTypeMap.unity`를 연다. 새 맵은 함께 생성된 같은 이름의 `.unity` 씬을 연다.
 2. 테스트 씬의 `Grid Map Player` 오브젝트에서 Map, Cell Size, Player Settings 연결을 확인한다. 플레이어 외형·이동 시간은 아래 공용 플레이어 설정에서 수정한다.
 3. Play 후 Game 창을 클릭하고 WASD를 누른다. W/S는 격자 +Y/-Y, A/D는 -X/+X다. 화면상 방향은 카메라 구도에 따라 달라진다. 한 번 누를 때 한 칸 이동하고, 키를 계속 누르고 있어도 반복 이동하지 않는다. 대시·구르기·대기와 동시 입력 우선순위는 [전투 및 적 배치 가이드](IBIIIS_전투_및_적배치_가이드.md)의 전투 진행과 조작을 따른다.
 4. 대기 중에는 게임 시간이 정지한다. 유효한 입력 시 플레이어와 적이 동시에 움직이며 게임 시간이 흐르고, 양쪽 행동이 끝나면 판정 후 다시 정지한다. 빈칸·경계 입력과 행동 중 추가 입력은 무시한다. 전투 HUD(아래 게임 화면 UI 항목)에 스테이지 이름·남은 적·행동 횟수·회피기 상태·조작 안내와 되돌리기·다시 시작·범위 표시 버튼이 표시된다.
@@ -407,7 +408,7 @@ Unity의 프로젝트 구성 가이드(unity.com/kr/how-to/organizing-your-proje
    - `Assets/IBIIIS/Characters/NPC/NPC.prefab`과 임시 실루엣 `NPC_Placeholder.png`: NPC 기본 프리팹(아래 NPC 추가). 메뉴 `IBIIIS > Overworld > Create NPC Prefab`으로 따로 만들 수도 있다.
    - `Assets/IBIIIS/Overworld/ClearedFlag.prefab`과 임시 그림 `ClearedFlag.png`: 카메라를 바라보는 클리어 깃발 스프라이트.
    - `Assets/IBIIIS/Characters/Player/OverworldPlayer.prefab`: CharacterController + OverworldPlayer, 자식에 GlobalPlayerSettings의 플레이어 외형 프리팹을 중첩한다. 외형 프리팹이 없으면 만들지 않고 안내한다.
-   - `Assets/IBIIIS/Overworld/OverworldTest.unity`(같은 이름이 있으면 번호를 붙임): 24×24칸 바닥과 보이지 않는 경계 벽, 플레이어, 따라가는 카메라, NPC `NPC_Guide`(NPC 프리팹, 대사 3줄), 스테이지 입구 `Stage_ProtoTypeMap`(ID `stage-prototype-01`, `Maps/ProtoTypeMap/ProtoTypeMap.unity` 연결). 입구 아래에는 클리어 깃발 프리팹(평소 꺼짐)을 두고 Cleared Indicator로 연결한다. 입구 발판은 `Overworld/Placeholder_Stage.mat`을 쓰는 바닥 평면 임시 도형이다.
+   - `Assets/IBIIIS/Scenes/OverworldTest.unity`(같은 이름이 있으면 번호를 붙임): 24×24칸 바닥과 보이지 않는 경계 벽, 플레이어, 따라가는 카메라, NPC `NPC_Guide`(NPC 프리팹, 대사 3줄), 스테이지 입구 `Stage_ProtoTypeMap`(ID `stage-prototype-01`, `Scenes/Battle/ProtoTypeMap/ProtoTypeMap.unity` 연결). 입구 아래에는 클리어 깃발 프리팹(평소 꺼짐)을 두고 Cleared Indicator로 연결한다. 입구 발판은 `Overworld/Placeholder_Stage.mat`을 쓰는 바닥 평면 임시 도형이다.
 3. 만든 씬을 Project에서 더블클릭해 열고 Play한다.
 
 ### 조작과 흐름
@@ -456,7 +457,7 @@ Unity의 프로젝트 구성 가이드(unity.com/kr/how-to/organizing-your-proje
 
 ### 검증
 
-- 개발 검증: Unity 컴파일 완료, 콘솔 오류 0, EditMode 100/100 통과. 테스트 씬 생성 함수를 실행해 `Overworld/OverworldTest.unity`를 만들고, 열려 있던 씬이 바뀌거나 수정되지 않았음을 확인했다. 생성된 씬에서 플레이어(미니맵 플레이어 프리팹·설정·PlayerVisual 연결), 카메라(대상·MainCamera 태그·공용 카메라 각도), NPC(대사·안내 문구), 스테이지 입구(ID·전투 씬 경로·설정 오류 없음), 설정 에셋(카메라·입력 연결, 필수 액션 누락 없음)을 확인했다. 첫 실행에서 `Overworld` 폴더가 없으면 씬 경로를 만들지 못하던 결함을 찾아 고쳤다. NPC 2D 전환: NPC 프리팹·실루엣(256×256, PPU 256, 기준점 아래 중앙)을 만들고 기존 테스트 씬의 캡슐 NPC를 위치·이름·대사를 유지한 채 프리팹으로 바꿔 저장했으며, 쓰지 않게 된 `Placeholder_NPC.mat`을 지웠다. 클리어 깃발 2D 전환: 깃발 프리팹·그림(256×256, PPU 256, 기준점 아래 중앙)을 만들고 테스트 씬의 큐브 깃발을 같은 자리(바닥 높이)·꺼진 상태로 바꿔 입구에 다시 연결했으며, 쓰지 않게 된 `Placeholder_Cleared.mat`을 지웠다. EditMode 103/103 통과. 걷기 손맛: 전투 손맛 코드에서 자세 계산과 먼지·잔상·소리를 공용으로 분리한 뒤 기존 103개가 그대로 통과함을 먼저 확인했고, 미니맵 걷기·NPC 숨쉬기를 더해 EditMode 107/107 통과. 홀드식 달리기: 대시를 2.5칸 튀어 나가는 동작에서 Shift를 누르고 있는 동안 달리기로 바꿨다. EditMode 115/115 통과(달리기 보폭·걷기 전환 시 걸음 박자 유지, Shift 누르고 있기·떼기 입력, 구르기 손맛만 남긴 모션). Play 모드 개발 검증(입력 주입, 0.02초 프레임): 걷기 3.50칸/초, W·D+Shift 6.00칸/초(위로는 `c_move_back`, 옆으로는 `c_dash_right`), Shift를 떼면 3.50칸/초, Shift만 누르면 정지, Space 구르기 정상, 콘솔 오류 없음. 구르기 막힘 판정(2026-10-09): 막힘을 고정 거리(0.01칸) 이하 무시로 판단하던 탓에 약 860fps 이상에서는 벽 앞 구르기가 끝까지 이어졌다. 걷기·구르기·벽 부딪힘이 같은 `OverworldMotion.IsBlocked`를 쓰고, CharacterController가 무시하는 최소 이동량(`minMoveDistance` × 1.5)만 제외하도록 고쳤다. 구르기 계획(`OverworldEvade`)은 구르기 전용으로 정리했다(폐기된 2.5칸 대시 경로 제거). 자동 테스트: 0.001초·0.02초 프레임 모두 벽 앞은 막힘·빈 공간과 벽을 따라 미끄러짐은 막힘 아님·최소 이동 미만은 판단하지 않음, 구르기 거리가 프레임 분할과 무관·쿨다운. 높은 프레임에서의 실제 벽 앞 구르기는 사용자 확인 대기(플레이 확인 목록 O-09). 구르기 감속·회복: EditMode 114/114 통과(신규 1: 시간 절반에 거리 3/4·첫 구간 속도 평균의 약 2배·끝 구간 거의 정지, 프레임을 나눠도 총 1.5칸, 회복 중 쿨다운이 줄지 않고 회복 뒤 이어서 감소, 감속 0은 일정한 속도). Play 모드 개발 검증(입력 주입, 0.02초 프레임): 구르기 18프레임·총 1.500칸, 프레임당 이동이 걷기(0.07칸)의 약 2.4배에서 0.001칸까지 줄어듦, 회복 0.2초(11프레임) 동안 D를 누른 채 Shift·Space·F를 눌러도 이동·동작 없음, 회복 뒤 바로 걷기 재개, 콘솔 오류 없음. 미니맵 화각 30 전환: 미니맵 전용 카메라 설정을 만들어 연결하고 테스트 씬 카메라를 갱신했으며, 화각 75·30 모두 플레이어가 화면 가운데이고 세로 14칸이 화면 높이에 맞는지 자동 테스트로 확인했다(EditMode 108/108). 테스트 씬 카메라로 화각 30·75 화면을 캡처해 비교했다. Play 모드 개발 검증(코드로 이동량·시간을 넣음): 실제 `OverworldTest` 씬에서 3칸 걷기 = 3걸음·먼지 1회, 그림 최고 0.125칸 뜀(전투 0.25의 절반), 멈출 때 납작함 1.11배·먼지, 2초 뒤 먼지 정리·원위치, NPC 숨쉬기 크기 변화, 콘솔 오류 없음을 확인했다. 실제 키보드로 걸어 본 느낌은 확인하지 않았다.
+- 개발 검증: Unity 컴파일 완료, 콘솔 오류 0, EditMode 100/100 통과. 테스트 씬 생성 함수를 실행해 `Scenes/OverworldTest.unity`를 만들고, 열려 있던 씬이 바뀌거나 수정되지 않았음을 확인했다. 생성된 씬에서 플레이어(미니맵 플레이어 프리팹·설정·PlayerVisual 연결), 카메라(대상·MainCamera 태그·공용 카메라 각도), NPC(대사·안내 문구), 스테이지 입구(ID·전투 씬 경로·설정 오류 없음), 설정 에셋(카메라·입력 연결, 필수 액션 누락 없음)을 확인했다. 첫 실행에서 `Overworld` 폴더가 없으면 씬 경로를 만들지 못하던 결함을 찾아 고쳤다. NPC 2D 전환: NPC 프리팹·실루엣(256×256, PPU 256, 기준점 아래 중앙)을 만들고 기존 테스트 씬의 캡슐 NPC를 위치·이름·대사를 유지한 채 프리팹으로 바꿔 저장했으며, 쓰지 않게 된 `Placeholder_NPC.mat`을 지웠다. 클리어 깃발 2D 전환: 깃발 프리팹·그림(256×256, PPU 256, 기준점 아래 중앙)을 만들고 테스트 씬의 큐브 깃발을 같은 자리(바닥 높이)·꺼진 상태로 바꿔 입구에 다시 연결했으며, 쓰지 않게 된 `Placeholder_Cleared.mat`을 지웠다. EditMode 103/103 통과. 걷기 손맛: 전투 손맛 코드에서 자세 계산과 먼지·잔상·소리를 공용으로 분리한 뒤 기존 103개가 그대로 통과함을 먼저 확인했고, 미니맵 걷기·NPC 숨쉬기를 더해 EditMode 107/107 통과. 홀드식 달리기: 대시를 2.5칸 튀어 나가는 동작에서 Shift를 누르고 있는 동안 달리기로 바꿨다. EditMode 115/115 통과(달리기 보폭·걷기 전환 시 걸음 박자 유지, Shift 누르고 있기·떼기 입력, 구르기 손맛만 남긴 모션). Play 모드 개발 검증(입력 주입, 0.02초 프레임): 걷기 3.50칸/초, W·D+Shift 6.00칸/초(위로는 `c_move_back`, 옆으로는 `c_dash_right`), Shift를 떼면 3.50칸/초, Shift만 누르면 정지, Space 구르기 정상, 콘솔 오류 없음. 구르기 막힘 판정(2026-10-09): 막힘을 고정 거리(0.01칸) 이하 무시로 판단하던 탓에 약 860fps 이상에서는 벽 앞 구르기가 끝까지 이어졌다. 걷기·구르기·벽 부딪힘이 같은 `OverworldMotion.IsBlocked`를 쓰고, CharacterController가 무시하는 최소 이동량(`minMoveDistance` × 1.5)만 제외하도록 고쳤다. 구르기 계획(`OverworldEvade`)은 구르기 전용으로 정리했다(폐기된 2.5칸 대시 경로 제거). 자동 테스트: 0.001초·0.02초 프레임 모두 벽 앞은 막힘·빈 공간과 벽을 따라 미끄러짐은 막힘 아님·최소 이동 미만은 판단하지 않음, 구르기 거리가 프레임 분할과 무관·쿨다운. 높은 프레임에서의 실제 벽 앞 구르기는 사용자 확인 대기(플레이 확인 목록 O-09). 구르기 감속·회복: EditMode 114/114 통과(신규 1: 시간 절반에 거리 3/4·첫 구간 속도 평균의 약 2배·끝 구간 거의 정지, 프레임을 나눠도 총 1.5칸, 회복 중 쿨다운이 줄지 않고 회복 뒤 이어서 감소, 감속 0은 일정한 속도). Play 모드 개발 검증(입력 주입, 0.02초 프레임): 구르기 18프레임·총 1.500칸, 프레임당 이동이 걷기(0.07칸)의 약 2.4배에서 0.001칸까지 줄어듦, 회복 0.2초(11프레임) 동안 D를 누른 채 Shift·Space·F를 눌러도 이동·동작 없음, 회복 뒤 바로 걷기 재개, 콘솔 오류 없음. 미니맵 화각 30 전환: 미니맵 전용 카메라 설정을 만들어 연결하고 테스트 씬 카메라를 갱신했으며, 화각 75·30 모두 플레이어가 화면 가운데이고 세로 14칸이 화면 높이에 맞는지 자동 테스트로 확인했다(EditMode 108/108). 테스트 씬 카메라로 화각 30·75 화면을 캡처해 비교했다. Play 모드 개발 검증(코드로 이동량·시간을 넣음): 실제 `OverworldTest` 씬에서 3칸 걷기 = 3걸음·먼지 1회, 그림 최고 0.125칸 뜀(전투 0.25의 절반), 멈출 때 납작함 1.11배·먼지, 2초 뒤 먼지 정리·원위치, NPC 숨쉬기 크기 변화, 콘솔 오류 없음을 확인했다. 실제 키보드로 걸어 본 느낌은 확인하지 않았다.
 - 자동 테스트로 확인한 항목: 이동 입력별 스프라이트 방향(W 뒤, S 앞, A/D와 대각선 4종 옆, 데드존), 클리어 기록 저장·다시 읽기·중복 방지·빈 ID 거부·초기화, 형식이 잘못된 저장 파일의 `.corrupt` 보존, 저장 실패 시 클리어로 표시하지 않고 다시 시도 가능, 잠긴 파일·사본 생성 실패 시 원본을 덮어쓰지 않고 저장 거부, 복귀 위치를 돌아갈 씬에서 한 번만 돌려줌, 지켜보는 전투에서 승리하면 결과 팝업이 클리어 기록을 한 번 저장하고 되돌려도 기록 유지, 없는 전투 씬·빈 경로로는 진입하지 않음(진행 정보·팝업 없음), 가장 가까운 상호작용 대상 선택(높이 무시·범위 밖·대사 없는 NPC 제외), 말풍선 줄 넘김·닫힘, 걸음 수·자세가 프레임 분할과 무관함(1프레임 대 97프레임), 멈춤 납작함→숨쉬기·벽 부딪힘은 막힐 때 한 번만, 걷기 손맛 항목별 끄기와 공용 Enabled 끄기, NPC 숨쉬기는 크기만 바꾸고 위치는 그대로, 그림이 카메라와 나란히 서는지, NPC 프리팹의 그림·크기를 바꿔도 막힘 Collider·말 걸기 범위가 그대로인지(루트에는 렌더러 없음, 그림자 있음), 클리어 깃발이 클리어 기록이 있을 때만 켜지고 초기화하면 꺼지는지, 기본 키(W+A 정규화, F, 방향키)와 `Overworld` 맵이 없는 입력 에셋의 기본 배치 대체.
 - 사용자 확인 대기: [플레이 확인 목록](IBIIIS_플레이_확인_목록.md) O-01~O-10.
 - 알려진 제한: 전투 중 미니맵으로 그냥 나가는 메뉴는 없다(승패 후에만 복귀). 걷기는 이동 그림 1장에 뜀·납작함 손맛을 더한 것이며 걷기 프레임 애니메이션은 없다. NPC 그림(실루엣)·클리어 깃발·입구 발판은 임시이며 NPC는 정면 한 장만 쓴다.
