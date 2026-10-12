@@ -13,7 +13,10 @@ namespace IBIIIS.Editor
             if (!AssetDatabase.IsValidFolder(folder)) throw new System.IO.IOException($"폴더 '{folder}'를 만들지 못했습니다. Assets 아래 경로인지 확인하세요.");
         }
         public const string Root = "Assets/IBIIIS";
-        public const string Settings = Root + "/Settings";
+        // 데이터 에셋(설정·바닥·대화 인물·대본)은 ScriptableObjects/ 아래(Docs 개발 및 사용 가이드의 Assets 폴더 구조와 규칙).
+        public const string Data = Root + "/ScriptableObjects";
+        public const string Settings = Data + "/Settings";
+        public const string Scenarios = Data + "/Scenarios";
         public const string PlayerSettings = Settings + "/GlobalPlayerSettings.asset";
         public const string CameraSettings = Settings + "/GlobalCameraSettings.asset";
         public const string InputActions = Settings + "/IBIIISInput.inputactions";
@@ -29,7 +32,7 @@ namespace IBIIIS.Editor
         public const string Player = Root + "/Characters/Player";
         // 적은 개체별 폴더(Enemies/EnemyNNN/)에 프리팹·재질·스프라이트를 함께 둔다.
         public const string Enemies = Root + "/Characters/Enemies";
-        public const string Tiles = Root + "/Tiles";
+        public const string Tiles = Data + "/Tiles";
         public const string Environments = Root + "/Environments";
         public const string Materials = Root + "/Materials";
         public const string PrototypeMaterial = Materials + "/PrototypeUnlit.mat";

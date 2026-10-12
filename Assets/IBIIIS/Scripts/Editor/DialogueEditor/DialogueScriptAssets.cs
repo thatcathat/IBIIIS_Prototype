@@ -12,7 +12,7 @@ namespace IBIIIS.Editor
     public static class DialogueScriptAssets
     {
         /// <summary>새 대본의 기본 저장 폴더(튜토리얼 대본은 Tutorial 폴더에 그대로 둔다).</summary>
-        public const string DefaultFolder = AssetPaths.Root + "/Scenarios";
+        public const string DefaultFolder = AssetPaths.Scenarios;
         private static readonly Regex IdPattern = new Regex("^[a-z0-9_-]+$");
 
         /// <summary>파일 이름으로 대본 ID를 제안한다. 끝의 Script를 떼고 단어·숫자 사이를 _로 나눠 소문자로 바꾼다(Tutorial3Script → tutorial_3, BossIntro → boss_intro).</summary>

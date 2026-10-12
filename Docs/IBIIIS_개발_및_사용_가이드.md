@@ -85,7 +85,7 @@ Unity의 프로젝트 구성 가이드(unity.com/kr/how-to/organizing-your-proje
 - **최상위는 종류, 그 안은 기능**: `Assets/IBIIIS/` 바로 아래는 종류 폴더 — `Scripts`(코드), `Scenes`(씬), `Prefabs`, `ScriptableObjects`(설정·대본·맵 데이터 등 데이터 에셋), `Art`(그림), `Audio`, `VFX`, `UI`, `Materials`, `Resources`. 각 종류 폴더 안은 기능별 하위 폴더로 나눈다(예: `Scripts/Runtime/Battle`, `ScriptableObjects/Scenarios/Tutorial`, `Art/Sprites/Player`). 새 파일은 "무슨 종류인가 → 어느 기능인가" 순서로 자리를 정한다.
 - **예외 1 — 전투 맵**: 맵 데이터(GridMap `.asset`)와 연결 씬(`.unity`)은 항상 한 쌍으로 만들고 고치므로 한 폴더에 둔다.
 - **예외 2 — 최상위 이름**: 위키독스 예시의 `_Project` 역할은 `Assets/IBIIIS/`가 한다(이름은 바꾸지 않음). 에셋 스토어·외부 플러그인을 들이면 `Assets/ThirdParty/<이름>/`처럼 따로 두고, 고친 부분은 문서에 적어 업데이트 때 다시 적용한다.
-- **진행 상황**: 1단계 코드(`Scripts/`) 완료(2026-10-13). 2단계 데이터(`ScriptableObjects/`), 3단계 씬(`Scenes/`), 4단계 그림·프리팹·이펙트·소리(`Art/`·`Prefabs/`·`VFX/`·`Audio/`)는 예정 — 그전까지는 아래 표의 현재 위치를 따른다.
+- **진행 상황**: 1단계 코드(`Scripts/`)·2단계 데이터(`ScriptableObjects/`) 완료(2026-10-13). 3단계 씬(`Scenes/`), 4단계 그림·프리팹·이펙트·소리(`Art/`·`Prefabs/`·`VFX/`·`Audio/`)는 예정 — 그전까지는 아래 표의 현재 위치를 따른다.
 - **코드**: `Scripts/Runtime`(어셈블리 `IBIIIS.Runtime`, 네임스페이스 `IBIIIS`), `Scripts/Editor`(`IBIIIS.Editor`), `Scripts/Tests`(`IBIIIS.Tests`). 하위 폴더는 기능별이며 네임스페이스는 바꾸지 않는다.
   - Runtime: `Core`(격자 판정·맵 데이터·클리어 기록·씬 전환·카메라 정면 규칙), `Battle`(전투 화면·입력·플레이어·적·동반 캐릭터), `Feedback`(손맛·충돌 연출·적 인식 말풍선), `Scenario`(대본·진행기·대화창), `Overworld`(미니맵), `UI`(게임 UI 설정·HUD·결과 팝업·타이틀)
   - Editor: `MapEditor`(맵 에디터·새 맵·미리보기·검증, 화면 파일 `UI/`), `DialogueEditor`(IBIIIS Dialogue Editor), `Inspectors`(Inspector·Drawer), `Setup`(기본 에셋 생성 메뉴와 경로 상수 `AssetPaths`)
@@ -97,17 +97,18 @@ Unity의 프로젝트 구성 가이드(unity.com/kr/how-to/organizing-your-proje
 | 경로 | 내용 |
 |---|---|
 | `Assets/IBIIIS/Scripts/Runtime`, `Editor`, `Tests` | 코드와 asmdef(기능별 하위 폴더, 위 규칙). 맵 에디터 UXML/USS는 `Scripts/Editor/MapEditor/UI` |
-| `Assets/IBIIIS/Settings` | GlobalPlayerSettings, GlobalCameraSettings, IBIIISInput, CollisionFeedback, MotionFeedback, EnemyAlert, OverworldSettings, OverworldInput 등 공용 설정. `Presets/`에 그림 가져오기 프리셋(아래) |
+| `Assets/IBIIIS/ScriptableObjects/Settings` | GlobalPlayerSettings, GlobalCameraSettings, IBIIISInput, CollisionFeedback, MotionFeedback, EnemyAlert, OverworldSettings, OverworldInput 등 공용 설정. `Presets/`에 그림 가져오기 프리셋(아래) |
 | `Assets/IBIIIS/Characters/Player` | PlayerVisual.prefab, OverworldPlayer.prefab, `Sprites/` |
 | `Assets/IBIIIS/Characters/Enemies/<적 ID>/` | 적별 프리팹·재질·스프라이트를 한 폴더에 둔다. 새 적은 폴더 단위로 추가한다 |
 | `Assets/IBIIIS/Characters/Shared` | 공용 GroundShadow·FacingArrow 프리팹 |
 | `Assets/IBIIIS/Effects`, `Audio` | 충돌 연출 이펙트·효과음 |
-| `Assets/IBIIIS/Tiles` | 이동 바닥 종류(TileDefinition) |
+| `Assets/IBIIIS/ScriptableObjects/Tiles` | 이동 바닥 종류(TileDefinition) |
+| `Assets/IBIIIS/ScriptableObjects/Dialogue/Characters` | 대화 인물(DialogueCharacter). 초상화 그림은 아직 `Assets/IBIIIS/Dialogue/Portraits`(4단계에서 `Art/`로) |
 | `Assets/IBIIIS/Environments` | 환경 장식 프리팹 |
 | `Assets/IBIIIS/Materials` | 공용 재질(PrototypeUnlit) |
 | `Assets/IBIIIS/Overworld` | 미니맵 테스트 씬(OverworldTest.unity)과 임시 재질 |
-| `Assets/IBIIIS/Tutorial` | 튜토리얼 전용: `Sprites/`(임시 그림), `Scenarios/`(대본 Tutorial1Script·Tutorial2Script) |
-| `Assets/IBIIIS/Scenarios` | 기능이 정해지지 않은 새 대본(IBIIIS Dialogue Editor의 새 대본 기본 위치, 처음 만들 때 생김) |
+| `Assets/IBIIIS/Tutorial` | 튜토리얼 전용 임시 그림 `Sprites/`(4단계에서 `Art/`로) |
+| `Assets/IBIIIS/ScriptableObjects/Scenarios` | 모든 대본: `Tutorial/`(Tutorial1Script·Tutorial2Script), `NPC/`(미니맵 NPC 대화 DialogueScript). IBIIIS Dialogue Editor의 새 대본 기본 위치 |
 | `Assets/IBIIIS/Maps/<맵 이름>/` | GridMap(.asset)과 연결 씬(.unity) 한 쌍. 샘플과 사용자 맵 모두 여기에 둔다 |
 | `Assets/IBIIIS/Resources/IBIIIS` | 이름으로 로드하는 기본 재질(DefaultGround). 이동 금지 |
 | `Assets/Settings` | URP 렌더 설정(템플릿) |
@@ -117,8 +118,8 @@ Unity의 프로젝트 구성 가이드(unity.com/kr/how-to/organizing-your-proje
 - `새 맵`의 저장 대화상자는 `Maps`에서 열린다. `Maps` 바로 아래에 이름을 지정하면 `Maps/<이름>/` 폴더를 만들어 맵·씬 쌍을 넣는다. Play 중이거나 이름 없는 씬이 열려 있으면 폴더를 만들기 전에 거부하고, 생성이 실패하면 이번에 만든 빈 폴더를 지운다. 다른 폴더를 고르면 그 폴더에 생성한다. `새 바닥`은 `Tiles`, `새 환경 프리팹`은 `Environments`에서 열린다.
 - 2026-10-06 폴더 구조 정리 후 씬·프리팹·에셋·재질의 GUID 참조를 조사해 끊긴 참조가 없음을 확인했다. 삭제된 `Wall.asset`을 가리키던 팔레트 참조 3건(StarterMap·TestMap·TestMap3)은 이 맵들이 사용자에 의해 삭제되어(2026-10-09 작업 트리 기준) 남아 있지 않다. 삭제된 바닥 참조가 다시 생기면 아래 '삭제된 바닥 참조 정리'로 지운다.
 - `Assets/Logs/MapScenePreview.png`(어디서도 참조하지 않는 캡처)는 2026-10-13 프로젝트 정리 때 지웠다(사용자 승인, git 기록에서 되살릴 수 있음).
-- Unity 템플릿 기본 입력 `Assets/InputSystem_Actions.inputactions`도 2026-10-13 지웠다(사용자 결정). 게임은 쓰지 않았고 프로젝트 전역 입력(Project-wide Actions) 등록만 있어 등록을 풀고 지웠다. 게임 입력은 `Settings/IBIIISInput`(전투)·`OverworldInput`(미니맵)이다. Project Settings > Input System Package에 전역 입력이 없다는 안내가 보여도 정상이다. 전투·미니맵 입력은 사용자 확인 대기([플레이 확인 목록](IBIIIS_플레이_확인_목록.md) B-13·O-10).
-- **그림 가져오기 프리셋**: `Settings/Presets/PlayerSpriteImport.preset`(스프라이트, PPU 500, 발밑 기준점, 밉맵 없음)과 `EnemySpriteImport.preset`(같은 설정, PPU 600)을 Project Settings > Preset Manager의 TextureImporter 기본값에 폴더 조건으로 걸었다(`Characters/Player/Sprites/**`, `Characters/Enemies/**`). 이 폴더에 새 PNG를 넣으면 처음 가져올 때 자동으로 적용된다(이미 있는 그림은 바꾸지 않음). 그림마다 다른 값(스프라이트 이름·영역·내부 ID)은 프리셋에서 뺐다. 규격을 바꾸려면 프리셋 에셋을 고친다. `IBIIIS > Create Default Player Visual`의 그림 설정 맞추기는 그대로 남아 있다. 새 그림 자동 적용은 사용자 확인 대기([플레이 확인 목록](IBIIIS_플레이_확인_목록.md) A-02).
+- Unity 템플릿 기본 입력 `Assets/InputSystem_Actions.inputactions`도 2026-10-13 지웠다(사용자 결정). 게임은 쓰지 않았고 프로젝트 전역 입력(Project-wide Actions) 등록만 있어 등록을 풀고 지웠다. 게임 입력은 `ScriptableObjects/Settings/IBIIISInput`(전투)·`OverworldInput`(미니맵)이다. Project Settings > Input System Package에 전역 입력이 없다는 안내가 보여도 정상이다. 전투·미니맵 입력은 사용자 확인 대기([플레이 확인 목록](IBIIIS_플레이_확인_목록.md) B-13·O-10).
+- **그림 가져오기 프리셋**: `ScriptableObjects/Settings/Presets/PlayerSpriteImport.preset`(스프라이트, PPU 500, 발밑 기준점, 밉맵 없음)과 `EnemySpriteImport.preset`(같은 설정, PPU 600)을 Project Settings > Preset Manager의 TextureImporter 기본값에 폴더 조건으로 걸었다(`Characters/Player/Sprites/**`, `Characters/Enemies/**`). 이 폴더에 새 PNG를 넣으면 처음 가져올 때 자동으로 적용된다(이미 있는 그림은 바꾸지 않음). 그림마다 다른 값(스프라이트 이름·영역·내부 ID)은 프리셋에서 뺐다. 규격을 바꾸려면 프리셋 에셋을 고친다. `IBIIIS > Create Default Player Visual`의 그림 설정 맞추기는 그대로 남아 있다. 새 그림 자동 적용은 사용자 확인 대기([플레이 확인 목록](IBIIIS_플레이_확인_목록.md) A-02).
 - **버전 관리**: `.meta`는 모두 커밋하고 직렬화는 Force Text다. 루트의 `.gitattributes`가 텍스트 파일을 LF로(커밋 때 줄바꿈 경고 없음), 씬·프리팹·에셋·`.meta`를 Unity Smart Merge로, 그림·소리·글꼴·문서를 바이너리로 정한다. 새 C# 파일도 LF로 만든다(Project Settings > Editor > Line Endings For New Scripts = Unix). 루트의 `.editorconfig`가 VS Code·Rider 등 편집기도 LF로 저장하게 한다. 작업 폴더의 CRLF 파일 163개를 2026-10-13 LF로 맞췄다(내용 변화 없음). Smart Merge 도구 연결은 PC마다 한 번 git 설정에 해야 한다(이 PC는 2026-10-13 설정함):
 
   ```
@@ -209,7 +210,7 @@ Unity의 프로젝트 구성 가이드(unity.com/kr/how-to/organizing-your-proje
 
 ### 공용 카메라 설정
 
-- `Assets/IBIIIS/Settings/GlobalCameraSettings.asset`을 선택해 Inspector에서 편집한다. Orthographic 끔 = Perspective, Rotation = `(40, 0, 0)`, Field Of View = `50`이 현재 값이다(사용자가 2026-10-07 75에서 50으로 변경). 정면은 좌우 회전 Y=0을 의미하며, X는 바닥을 내려다보는 각도다. 미니맵 카메라는 따로 `OverworldCameraSettings`를 쓴다(아래 미니맵 편집 항목).
+- `Assets/IBIIIS/ScriptableObjects/Settings/GlobalCameraSettings.asset`을 선택해 Inspector에서 편집한다. Orthographic 끔 = Perspective, Rotation = `(40, 0, 0)`, Field Of View = `50`이 현재 값이다(사용자가 2026-10-07 75에서 50으로 변경). 정면은 좌우 회전 Y=0을 의미하며, X는 바닥을 내려다보는 각도다. 미니맵 카메라는 따로 `OverworldCameraSettings`를 쓴다(아래 미니맵 편집 항목).
 - `ProtoTypeMap.unity`와 새로 생성하는 테스트 씬은 이 에셋을 참조한다. 별도로 만든 기존 씬은 Grid Map Player의 Camera Settings에 같은 에셋을 연결하고 Auto Fit Camera를 켜면 함께 적용된다.
 - Perspective에서는 맵 크기·화각·화면 비율에 따라 거리를, Orthographic에서는 Size를 계산한다. 그리드 범위와 플레이어 표시 높이를 포함하며 임의로 매우 크게 만든 외형까지 자동으로 맞추지는 않는다.
 - Auto Fit Camera를 끄면 씬 Camera의 개별 설정을 유지한다. 공용 값은 설정 에셋에, 설정 참조와 개별 카메라 값은 씬에 저장한다.
@@ -223,7 +224,7 @@ Unity의 프로젝트 구성 가이드(unity.com/kr/how-to/organizing-your-proje
 
 ## 공용 플레이어 설정
 
-1. `IBIIIS > Player Settings` 또는 `Assets/IBIIIS/Settings/GlobalPlayerSettings.asset`을 연다. 같은 설정을 사용하는 씬 전체에 적용된다.
+1. `IBIIIS > Player Settings` 또는 `Assets/IBIIIS/ScriptableObjects/Settings/GlobalPlayerSettings.asset`을 연다. 같은 설정을 사용하는 씬 전체에 적용된다.
 2. `Visual Prefab`은 플레이어 외형 슬롯이다. 이동 모션은 위치 보간과 동작별 스프라이트 교체이며, 걷기 애니메이션 클립·Animator 상태 전환은 없다.
 3. `Move Duration`은 한 칸 이동 시간(초), 임시 기본값 0.25, 최소 0.01이다. 매 행동 시작 시 읽으므로 진행 중인 행동은 기존 시간을 유지하고 다음 행동부터 변경된다.
 4. `Show Move Hints`로 표시를 켜고 끈다. `Move Hint Color`는 이동 가능한 상하좌우 칸, `Destination Color`는 이동 중 목적지 색상이다. `Move Hint Material`은 선택 재질이며 표시용 사본을 사용한다. Scene 미리보기에도 시작 위치 기준의 이동 가능 칸이 표시된다. 표시 색상·재질·외형은 Play 재시작 시 반영한다.
@@ -237,7 +238,7 @@ Unity의 프로젝트 구성 가이드(unity.com/kr/how-to/organizing-your-proje
 
 ### 전투 입력(Input Actions)
 
-1. 키 배치는 `Assets/IBIIIS/Settings/IBIIISInput.inputactions`의 액션 맵 `Battle`에서 관리하고 `IBIIIS > Player Settings`의 `Input Actions` 슬롯으로 연결한다. 메뉴 `IBIIIS > Create Default Input Actions`는 파일이 없을 때만 기본 배치를 만들고 설정 슬롯이 비어 있을 때만 연결한다(기존 파일·연결은 덮어쓰지 않음). 파일은 있는데 JSON 오류 등으로 가져오기에 실패했으면 기본 배치로 덮어쓰지 않고 Console에 `[IBIIIS] 입력 파일을 불러오지 못했습니다` 오류를 남긴다. Import 오류를 고친 뒤 다시 실행한다(미니맵 입력 파일도 같다).
+1. 키 배치는 `Assets/IBIIIS/ScriptableObjects/Settings/IBIIISInput.inputactions`의 액션 맵 `Battle`에서 관리하고 `IBIIIS > Player Settings`의 `Input Actions` 슬롯으로 연결한다. 메뉴 `IBIIIS > Create Default Input Actions`는 파일이 없을 때만 기본 배치를 만들고 설정 슬롯이 비어 있을 때만 연결한다(기존 파일·연결은 덮어쓰지 않음). 파일은 있는데 JSON 오류 등으로 가져오기에 실패했으면 기본 배치로 덮어쓰지 않고 Console에 `[IBIIIS] 입력 파일을 불러오지 못했습니다` 오류를 남긴다. Import 오류를 고친 뒤 다시 실행한다(미니맵 입력 파일도 같다).
 2. 에셋을 더블클릭해 열어 액션별 바인딩을 바꾸거나 추가한다. 액션: `MoveUp/Down/Left/Right`, `DashModifier`(누른 채 이동하면 대시), `RollUpLeft/UpRight/DownLeft/DownRight`(Q/E/Z/C), `Wait`, `Undo`, `Restart`, `ToggleRanges`. 모두 Button 타입이며 필수다. 이름을 바꾸거나 지우면 경고를 남기고 기본 배치로 동작한다.
 3. 현재 기본 바인딩은 키보드뿐이다. 게임패드 등은 같은 액션에 바인딩을 추가하면 된다(조합 배치는 미정이라 추가하지 않았다). 실행 시 에셋 사본을 만들어 쓰므로 원본에 실행 상태가 남지 않는다. 화면의 안내 문구는 각 액션의 첫 번째 바인딩을 표시한다. 미니맵 `Move`는 2D Vector Composite(WASD 등)로 연결해야 하며, 키 하나를 직접 연결하면 경고를 한 번 남기고 그 이동 입력을 무시한다.
 4. 코드: `Scripts/Runtime/Battle/BattleInput.cs`(명령 변환·기본 배치), `Scripts/Editor/Setup/InputSetup.cs`(에셋 생성). 입력 처리는 게임 규칙과 분리되어 `GridMapPlayer`가 명령만 받아 실행한다. 템플릿의 `Assets/InputSystem_Actions.inputactions`는 쓰지 않는다.
@@ -261,7 +262,7 @@ Unity의 프로젝트 구성 가이드(unity.com/kr/how-to/organizing-your-proje
 
 전투 HUD, 스테이지 결과 팝업, 미니맵 조작·상호작용 안내를 UI Toolkit으로 그린다(2026-10-11, 이전 IMGUI 디버그 HUD 대체). 표시 전용이며 판정에는 관여하지 않는다.
 
-- **에셋**: `Assets/IBIIIS/Settings/GameUiSettings.asset`이 화면 설정을 모은다. `Panel Settings`(`UI/GamePanelSettings.asset`, 1920×1080 기준, 가로·세로 절반씩 맞춤, 테마 `UI/GameRuntimeTheme.tss`), 화면 구성 `UI/BattleHud.uxml`·`UI/ResultPopup.uxml`·`UI/OverworldHud.uxml`, 회피기 아이콘(`UI/EvasionIcon.png`, 임시 »), `Show Debug Info`(전투 단계·칸 좌표를 HUD 왼쪽 아래에 표시, 기본 끔). 전투 `GlobalPlayerSettings`와 미니맵 `OverworldSettings`의 `Game Ui` 슬롯이 같은 에셋을 가리킨다. 메뉴 `IBIIIS > Create Default Game UI`가 없는 에셋만 만들고 빈 슬롯만 채운다.
+- **에셋**: `Assets/IBIIIS/ScriptableObjects/Settings/GameUiSettings.asset`이 화면 설정을 모은다. `Panel Settings`(`UI/GamePanelSettings.asset`, 1920×1080 기준, 가로·세로 절반씩 맞춤, 테마 `UI/GameRuntimeTheme.tss`), 화면 구성 `UI/BattleHud.uxml`·`UI/ResultPopup.uxml`·`UI/OverworldHud.uxml`, 회피기 아이콘(`UI/EvasionIcon.png`, 임시 »), `Show Debug Info`(전투 단계·칸 좌표를 HUD 왼쪽 아래에 표시, 기본 끔). 전투 `GlobalPlayerSettings`와 미니맵 `OverworldSettings`의 `Game Ui` 슬롯이 같은 에셋을 가리킨다. 메뉴 `IBIIIS > Create Default Game UI`가 없는 에셋만 만들고 빈 슬롯만 채운다.
 - **모양 바꾸기**: 색·크기·여백·글꼴은 `UI/GameUi.uss`, 배치는 UXML(UI Builder로 열 수 있음)에서 바꾼다. 요소 이름(name)은 코드가 찾는 키이므로 유지한다. 이름이 빠지면 Console에 어떤 화면의 어떤 이름이 없는지 경고하고 그 표시만 생략한다.
 - **글꼴**: `UI/Fonts/NotoSansKR-Regular.otf`·`NotoSansKR-Bold.otf`(Noto Sans KR, SIL OFL 1.1, 출처·라이선스는 같은 폴더 README). USS의 `-unity-font-definition`으로 지정한다.
 - **전투 HUD**: 왼쪽 위 스테이지 이름(미니맵에서 들어오면 입구의 Display Name, 아니면 맵 이름)·남은 적(남은/전체)·행동 횟수(되돌리기하면 줄어듦). 오른쪽 위 회피기 아이콘: 쓸 수 있으면 밝게, 쿨타임 중이면 회색에 남은 일반 행동 수(현재 규칙상 1)를 숫자로 표시한다. 왼쪽 아래 조작 안내(현재 키 배치). 오른쪽 아래 버튼 `되돌리기`·`다시 시작`·`범위 표시 켬/끔`은 마우스로 누를 수 있고 키와 같은 기능을 부른다. 행동·연출 중에는 꺼지고, 되돌릴 행동이 없으면 `되돌리기`가 꺼진다.
@@ -275,8 +276,8 @@ Unity의 프로젝트 구성 가이드(unity.com/kr/how-to/organizing-your-proje
 
 하단 대화 상자와 그 뒤 좌우 초상화로 대화를 보여 준다. 튜토리얼 대본 진행의 기반이며, 지금은 미니맵 NPC가 쓴다. 표시 전용이며 판정과 무관하다.
 
-- **인물** `DialogueCharacter`(`Assets > Create > IBIIIS > Dialogue Character`, 기본 `Assets/IBIIIS/Dialogue/Characters/`): `Character Id`(고정 ID), `Display Name`, `Name Color`, `Side`(왼쪽/오른쪽, 플레이어는 왼쪽), 기본 `Portrait`, 표정별 `Expressions`(ID와 초상화). 초상화 임시 규격 제안: 투명 PNG, 상반신, 높이 약 1024px, 기준점 아래 가운데(미정, 그림이 정해지면 확정). 기본 인물 3명(플레이어·어시 파리·마을 사람)은 코드로 그린 임시 실루엣을 쓴다.
-- **대화** `DialogueScript`(`Assets > Create > IBIIIS > Dialogue Script`, 기본 `Assets/IBIIIS/Dialogue/Scripts/`): `Script Id`(고정 ID)와 줄 목록. 줄마다 `Speaker`(비우면 지문 — 이름표 없이 기울어진 회색 글씨), `Expression`(선택, 표정 ID), `Name Override`(선택, 예: `???(어씨파리)`), `Text`.
+- **인물** `DialogueCharacter`(`Assets > Create > IBIIIS > Dialogue Character`, 기본 `Assets/IBIIIS/ScriptableObjects/Dialogue/Characters/`): `Character Id`(고정 ID), `Display Name`, `Name Color`, `Side`(왼쪽/오른쪽, 플레이어는 왼쪽), 기본 `Portrait`, 표정별 `Expressions`(ID와 초상화). 초상화 임시 규격 제안: 투명 PNG, 상반신, 높이 약 1024px, 기준점 아래 가운데(미정, 그림이 정해지면 확정). 기본 인물 3명(플레이어·어시 파리·마을 사람)은 코드로 그린 임시 실루엣을 쓴다.
+- **대화** `DialogueScript`(`Assets > Create > IBIIIS > Dialogue Script`, 기본 `Assets/IBIIIS/ScriptableObjects/Scenarios/NPC/`): `Script Id`(고정 ID)와 줄 목록. 줄마다 `Speaker`(비우면 지문 — 이름표 없이 기울어진 회색 글씨), `Expression`(선택, 표정 ID), `Name Override`(선택, 예: `???(어씨파리)`), `Text`.
 - **진행**: 글자가 초당 `Dialogue Text Speed`(Game UI 설정, 임시 30)자씩 나온다. F·Enter·Space 또는 대화 상자 클릭으로 넘기며, 글자가 나오는 중이면 전체를 바로 보이고 다 나왔으면 다음 줄, 마지막 줄 다음에 닫힌다. 다 나오면 오른쪽 아래 ▼가 깜빡인다. 대화를 연 프레임의 입력과 닫은 프레임의 말 걸기 입력은 무시해 F 한 번에 열리고 바로 넘어가거나 다시 열리지 않는다.
 - **좌우 초상화**: 인물은 처음 말할 때 자기 쪽에 서고 다른 인물이 그쪽에서 말하면 바뀐다. 말하는 쪽은 밝게, 듣는 쪽은 어둡게 조금 내려간다. 지문일 때는 둘 다 어둡다. 초상화가 없는 인물은 이름표만 보인다.
 - **모양**: `Assets/IBIIIS/UI/DialogueBox.uxml`(요소 이름 `portrait-left`·`portrait-right`·`box`·`name`·`text`·`next` 유지)과 `GameUi.uss`의 `dialogue-*`·`portrait` 스타일. Game UI 설정의 `Dialogue Box` 슬롯에 연결된다(`IBIIIS > Create Default Game UI`). 설정이 없으면 화면 아래 임시 IMGUI 상자로 대신한다.
@@ -325,7 +326,7 @@ Unity의 프로젝트 구성 가이드(unity.com/kr/how-to/organizing-your-proje
   - 표시 그려 넣기: 각 장면 트랙 맨 아래 `＋ 여기를 끌어서 감정 표시·자세 추가` 줄을 끌면(또는 누르면 한 세로줄) 그 범위에 감정 표시(?·!·;;) 또는 자세를 만든다. `표시 끝 단계까지 유지`로 만들고 끝 세로줄 뒤에 표시 끝 단계를 둔다. 자세 그림은 아래 칸에서 고른다(고르기 전에는 경고).
   - 여러 개 선택과 단축키: Ctrl(⌘)+클릭으로 더하거나 빼고, Shift+클릭으로 기준 단계부터 범위를 고른다. Ctrl+C 복사, Ctrl+V 붙여넣기(기준 단계 뒤, 에디터를 켜 둔 동안 다른 대본에도), Ctrl+D 복제, Delete 삭제(여러 개면 확인), Esc 선택 해제. 지우는 감정 표시·자세의 표시 끝 단계도 함께 지운다. 글자 입력 중에는 단축키가 그 칸에 간다.
   - 검사: 창 위 `검사` 버튼이 문제 수(오류 빨강·주의 노랑·없음 초록)를 보이고, 누르면 목록을 펼친다. 항목을 누르면 그 단계로 이동해 고른다. 오류: 자세 그림 없음, 감정 표시·켜기·끄기 대상 ID 없음, 적 합류 프리팹에 EnemyDefinition 없음, 입력 대기·자유 진행의 허용 행동 없음, 씬 경로 없음. 주의: 빈 대사, 감정 표시 글자·아이콘 없음, 짝 없는 표시 끝, 표시 끝 단계까지 유지인데 끝이 없음, 0초 기다림.
-  - 새 대본·대본 복제(2026-10-13): 위쪽 막대의 `새 대본` 또는 `대본 복제`를 누르면 막대 아래에 입력 칸이 뜬다. 파일 이름, 대본 ID(파일 이름에서 자동 제안: 끝의 Script를 떼고 단어·숫자 사이를 _로 나눠 소문자 — `Tutorial3Script` → `tutorial_3`, 직접 고치면 그 뒤로는 자동으로 바꾸지 않음), 시작 내용(`빈 대본(지문 한 줄)` 또는 `현재 대본 복제`)을 정하고 `만들기…`를 누르면 Unity 저장 창(기본 폴더 `Assets/IBIIIS/Scenarios/`, 없으면 만듦)이 뜬다. 만든 대본은 바로 열리고 빈 대본은 첫 지문을 바로 입력한다. 복제 기본 이름은 `Tutorial1Script` → `Tutorial1CopyScript`.
+  - 새 대본·대본 복제(2026-10-13): 위쪽 막대의 `새 대본` 또는 `대본 복제`를 누르면 막대 아래에 입력 칸이 뜬다. 파일 이름, 대본 ID(파일 이름에서 자동 제안: 끝의 Script를 떼고 단어·숫자 사이를 _로 나눠 소문자 — `Tutorial3Script` → `tutorial_3`, 직접 고치면 그 뒤로는 자동으로 바꾸지 않음), 시작 내용(`빈 대본(지문 한 줄)` 또는 `현재 대본 복제`)을 정하고 `만들기…`를 누르면 Unity 저장 창(기본 폴더 `Assets/IBIIIS/ScriptableObjects/Scenarios/`, 없으면 만듦)이 뜬다. 만든 대본은 바로 열리고 빈 대본은 첫 지문을 바로 입력한다. 복제 기본 이름은 `Tutorial1Script` → `Tutorial1CopyScript`.
     - 대본 ID가 비었거나, 영어 소문자·숫자·`_`·`-` 외 글자가 있거나, 다른 대본과 겹치면 만들기가 막히고 이유가 보인다. 이미 있는 파일에는 덮어쓰지 않는다. 복제본의 단계 ID는 새로 받고 원본은 바뀌지 않는다.
     - 대본만 만들어서는 게임에 나오지 않는다. 전투 씬의 `ScenarioDirector` `Script` 슬롯에 연결해야 한다(아래 씬에 연결).
     - 규칙 코드: `Scripts/Editor/DialogueEditor/DialogueScriptAssets.cs`(ID 제안·검사·만들기, 자동 테스트 대상).
@@ -401,8 +402,8 @@ Unity의 프로젝트 구성 가이드(unity.com/kr/how-to/organizing-your-proje
 
 1. Unity에서 메뉴 `IBIIIS > Overworld > Create Overworld Test Scene`을 누른다. 이름 없는 씬이 열려 있으면 먼저 저장하라는 안내가 나온다. 현재 열린 씬은 바꾸지 않는다.
 2. 다음을 만든다. 이미 있는 에셋·연결은 덮어쓰지 않는다.
-   - `Assets/IBIIIS/Settings/OverworldSettings.asset`: 이동 속도, 카메라, 입력 설정. 비어 있는 카메라 설정에는 미니맵 전용 `Settings/OverworldCameraSettings.asset`(처음 만들 때 GlobalCameraSettings의 각도를 따르고 화각만 30), 비어 있는 입력에는 아래 입력 에셋을 연결한다.
-   - `Assets/IBIIIS/Settings/OverworldInput.inputactions`: 액션 맵 `Overworld`(Move = WASD·방향키, Interact = F, Dash = Shift(누르고 있으면 달리기), Roll = Space). 이미 있는 파일에 Dash·Roll이 없으면 그 둘만 기본 키로 추가하고 다른 바인딩은 그대로 둔다. 가져오기에 실패한 파일은 덮어쓰지 않는다. 실행 중에도 예전 파일에 없는 Dash·Roll은 경고 없이 기본 키로 채워 쓴다.
+   - `Assets/IBIIIS/ScriptableObjects/Settings/OverworldSettings.asset`: 이동 속도, 카메라, 입력 설정. 비어 있는 카메라 설정에는 미니맵 전용 `ScriptableObjects/Settings/OverworldCameraSettings.asset`(처음 만들 때 GlobalCameraSettings의 각도를 따르고 화각만 30), 비어 있는 입력에는 아래 입력 에셋을 연결한다.
+   - `Assets/IBIIIS/ScriptableObjects/Settings/OverworldInput.inputactions`: 액션 맵 `Overworld`(Move = WASD·방향키, Interact = F, Dash = Shift(누르고 있으면 달리기), Roll = Space). 이미 있는 파일에 Dash·Roll이 없으면 그 둘만 기본 키로 추가하고 다른 바인딩은 그대로 둔다. 가져오기에 실패한 파일은 덮어쓰지 않는다. 실행 중에도 예전 파일에 없는 Dash·Roll은 경고 없이 기본 키로 채워 쓴다.
    - `Assets/IBIIIS/Characters/NPC/NPC.prefab`과 임시 실루엣 `NPC_Placeholder.png`: NPC 기본 프리팹(아래 NPC 추가). 메뉴 `IBIIIS > Overworld > Create NPC Prefab`으로 따로 만들 수도 있다.
    - `Assets/IBIIIS/Overworld/ClearedFlag.prefab`과 임시 그림 `ClearedFlag.png`: 카메라를 바라보는 클리어 깃발 스프라이트.
    - `Assets/IBIIIS/Characters/Player/OverworldPlayer.prefab`: CharacterController + OverworldPlayer, 자식에 GlobalPlayerSettings의 플레이어 외형 프리팹을 중첩한다. 외형 프리팹이 없으면 만들지 않고 안내한다.
@@ -430,7 +431,7 @@ Unity의 프로젝트 구성 가이드(unity.com/kr/how-to/organizing-your-proje
 ### 편집 항목
 
 - **Overworld Settings**(`IBIIIS > Overworld > Overworld Settings`): 이 메뉴는 설정 에셋이 없을 때만 만들고, 그때만 빈 슬롯(카메라·입력·손맛)에 기본 에셋을 연결한다. 이미 있는 에셋을 열 때는 사용자가 비운 슬롯을 다시 채우지 않는다(입력 파일의 빠진 Dash·Roll 보충만 한다). 빈 슬롯 채우기는 `Create Overworld Test Scene`을 실행할 때 한다. 항목: `Move Speed`(칸/초, 임시 3.5), `Camera Settings`(각도·화각, 기본 `OverworldCameraSettings`: 회전 40°·화각 30, 비우면 카메라 현재 값), `Camera View Height`(플레이어 위치에서 화면 세로로 보이는 범위, 칸, 임시 14), `Camera Follow Sharpness`(0이면 지연 없음, 임시 8), `Input Actions`, 달리기·구르기(`Run Speed` 6칸/초, `Run Stride Length` 1.3칸, `Roll Distance` 1.5칸, `Roll Duration` 0.35초, `Roll Ease Out` 1(0이면 일정한 속도), `Roll Recovery` 0.2초, `Evade Cooldown` 0.25초, 모두 임시). 걷기 손맛(아래 항목) 값도 여기에 있다.
-- **미니맵 카메라 화각**(2026-10-07): 화각 75에서는 화면 가장자리 바닥이 늘어나 보이는 왜곡이 커서 미니맵만 화각 30으로 좁혔다(전투는 별도의 GlobalCameraSettings, 현재 50). 카메라 거리는 `Camera View Height`와 화각으로 자동 계산하므로(화각 30이면 약 26칸, 75면 약 9칸) 화각을 바꿔도 화면에 담기는 범위는 같고 왜곡만 줄어든다. 화각은 `Assets/IBIIIS/Settings/OverworldCameraSettings.asset`의 Field Of View에서, 보이는 범위는 `Camera View Height`에서 바꾼다. 이전의 `Camera Distance`(거리 직접 지정)는 이 항목으로 바뀌었고, 기본 14칸은 이전 거리 9·화각 75와 거의 같은 범위다. Orthographic을 켜면 Size가 보이는 범위의 절반으로 맞춰진다. 전투와 같게 하려면 `Camera Settings`에 GlobalCameraSettings를 연결한다.
+- **미니맵 카메라 화각**(2026-10-07): 화각 75에서는 화면 가장자리 바닥이 늘어나 보이는 왜곡이 커서 미니맵만 화각 30으로 좁혔다(전투는 별도의 GlobalCameraSettings, 현재 50). 카메라 거리는 `Camera View Height`와 화각으로 자동 계산하므로(화각 30이면 약 26칸, 75면 약 9칸) 화각을 바꿔도 화면에 담기는 범위는 같고 왜곡만 줄어든다. 화각은 `Assets/IBIIIS/ScriptableObjects/Settings/OverworldCameraSettings.asset`의 Field Of View에서, 보이는 범위는 `Camera View Height`에서 바꾼다. 이전의 `Camera Distance`(거리 직접 지정)는 이 항목으로 바뀌었고, 기본 14칸은 이전 거리 9·화각 75와 거의 같은 범위다. Orthographic을 켜면 Size가 보이는 범위의 절반으로 맞춰진다. 전투와 같게 하려면 `Camera Settings`에 GlobalCameraSettings를 연결한다.
 - **NPC 추가**: `Assets/IBIIIS/Characters/NPC/NPC.prefab`을 씬에 끌어다 놓고, 루트의 `NpcSpeaker`에서 `Display Name`, `Lines`(항목 하나가 말풍선 한 번), `Radius`(상호작용 거리, 칸), `Label Height`(말풍선 높이, 칸)를 정한다. 그림은 자식 `Visual`의 SpriteRenderer 스프라이트를, 크기는 `Visual`의 Scale(현재 1.5)을 바꾼다. 막힘은 루트의 보이지 않는 CapsuleCollider, 말 걸기 범위는 바닥 평면 거리로 판정하므로 그림·크기를 바꿔도 달라지지 않는다. NPC마다 다른 그림을 오래 쓸 거라면 프리팹 변형(Prefab Variant)으로 만든다. 지금은 정면 한 장만 쓰며 돌아보기는 없다.
 - **카메라 바라보기**: 플레이어·적·NPC 그림은 모두 카메라 회전과 같은 회전으로 세워진다(`CameraFacingSprite`). NPC는 Play 중 매 프레임 맞추며, 편집 중 Scene에서는 똑바로 서 있는 상태로 보인다.
 - **스테이지 입구 추가**: 오브젝트에 `StageEntrance`를 붙이고 `Stage Id`(필수, 클리어 기록 키. 정한 뒤 바꾸지 않음), `Display Name`, `Battle Scene`(필수, 맵과 함께 만든 전투 씬), `Cleared Indicator`(선택, 보통 자식으로 둔 `Overworld/ClearedFlag.prefab`을 꺼 둔 채 연결)를 정한다. Inspector가 ID 누락·중복과 빌드 씬 목록 누락(추가 버튼)·목록에 있지만 꺼짐(켜기 버튼)을 알려 준다. 에디터 Play에서는 빌드 씬 목록에 없어도 들어갈 수 있으나 빌드한 게임에서는 `빌드 씬 목록에 추가`가 필요하다. 미니맵 씬도 같다.
@@ -441,7 +442,7 @@ Unity의 프로젝트 구성 가이드(unity.com/kr/how-to/organizing-your-proje
 - 플레이어: 걸은 거리 `Stride Length`(임시 0.9칸)마다 한 걸음으로 세어 걸음마다 낮게 한 번 뛰고 발소리를 낸다. `Dust Every Steps`(임시 3)걸음마다 발밑 먼지가 뒤로 퍼진다. 움직이기 시작할 때 짧게 웅크리고, 멈추면 착지처럼 납작해지며 먼지가 난다. 멈춰 있으면 숨쉬기를 한다. 벽·NPC에 막혀 거의 못 움직이면 그쪽으로 한 번 부딪히고, 계속 밀어도 다시 부딪히지 않는다(손을 뗐다 다시 밀면 다시 부딪힘). 막혀 있을 때는 누른 방향을 바라보는 대기 그림이다.
 - 걸음 주기는 시간이 아니라 걸은 거리로 세므로 프레임 속도·이동 속도가 바뀌어도 발과 이동이 맞는다.
 - NPC: `NPC.prefab`의 `Visual`에 붙은 `BreathingSprite`가 숨쉬기를 한다. NPC마다 시작 시점이 달라 함께 움직이지 않는다. `Amount Scale`(0이면 끔)로 NPC별 크기를 조절한다.
-- 공용 값(뜀 높이·웅크림·늘어남·착지 납작함·먼지 그림·발소리·부딪힘·숨쉬기 크기와 주기)은 전투와 같은 `Assets/IBIIIS/Settings/MotionFeedback.asset`에서 읽는다. 이 에셋의 `Enabled`를 끄면 전투·미니맵·NPC 숨쉬기가 모두 꺼진다.
+- 공용 값(뜀 높이·웅크림·늘어남·착지 납작함·먼지 그림·발소리·부딪힘·숨쉬기 크기와 주기)은 전투와 같은 `Assets/IBIIIS/ScriptableObjects/Settings/MotionFeedback.asset`에서 읽는다. 이 에셋의 `Enabled`를 끄면 전투·미니맵·NPC 숨쉬기가 모두 꺼진다.
 - 미니맵 전용 값(`OverworldSettings`의 걷기 손맛): `Motion Feedback`(공용 에셋 연결), `Stride Length`, `Walk Hop Scale`(전투 1칸 뜀 대비 배율, 임시 0.5, 0이면 걸음 뜀 끔), `Footsteps`(걸음·멈춤 발소리. 구르기 착지 발소리는 이 설정과 무관하게 난다), `Dust Every Steps`(0이면 걸음 먼지 끔), `Stop Squash Scale`(임시 0.6, 0이면 멈춤 반응·먼지 끔), `Breathing`, `Wall Bump`. 값은 Play 시작 시 읽지 않고 매 프레임 읽으므로 Play 중에도 바로 반영된다.
 - 미니맵 플레이어의 바라보는 방향은 `OverworldPlayer`가 직접 관리한다. 자식에 `PlayerVisual`이 없어도 구르기 방향·전투 복귀 방향은 맞고, 먼지·발소리도 그대로 나며 그림 방향과 손맛 자세만 표시하지 않는다(시작 시 경고). 카메라에 Overworld Settings가 없으면 시작 시 경고하고 카메라 현재 각도·화각과 기본 범위를 쓴다.
 - 표시 전용이다. 이동·충돌·말 걸기 범위에 영향을 주지 않는다. 미니맵은 일반 게임 시간(`Time.deltaTime`)으로 움직인다.

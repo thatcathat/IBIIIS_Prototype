@@ -14,7 +14,7 @@ namespace IBIIIS.Editor
     {
         public const string Folder = AssetPaths.Root + "/Tutorial";
         // 튜토리얼 전용 에셋은 종류별 하위 폴더에 둔다(Docs 개발 및 사용 가이드의 폴더 규칙).
-        public const string SpriteFolder = Folder + "/Sprites", ScenarioFolder = Folder + "/Scenarios";
+        public const string SpriteFolder = Folder + "/Sprites", ScenarioFolder = AssetPaths.Scenarios + "/Tutorial";
         public const string FlySprite = SpriteFolder + "/AssiFly.png", ScarecrowSprite = SpriteFolder + "/Scarecrow.png", SwordSprite = SpriteFolder + "/Sword.png";
         // 임시: 땀 아이콘 에셋이 없어 코드로 그린 물방울. 정식 그림이 생기면 대본의 감정 표시 아이콘만 바꾼다.
         public const string SweatSprite = SpriteFolder + "/Sweat.png";

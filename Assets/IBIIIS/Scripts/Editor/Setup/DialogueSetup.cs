@@ -7,7 +7,8 @@ namespace IBIIIS.Editor
     /// 그리고 미니맵 NPC 프리팹의 Dialogue 슬롯이 비어 있으면 확인용 대화를 연결한다. 이미 있는 파일·연결은 덮어쓰지 않는다.</summary>
     public static class DialogueSetup
     {
-        public const string Folder = AssetPaths.Dialogue, PortraitFolder = Folder + "/Portraits", CharacterFolder = Folder + "/Characters", ScriptFolder = Folder + "/Scripts";
+        // 초상화(그림)는 Dialogue/Portraits, 대화 인물은 ScriptableObjects/Dialogue/Characters, NPC 대화는 ScriptableObjects/Scenarios/NPC.
+        public const string Folder = AssetPaths.Dialogue, PortraitFolder = Folder + "/Portraits", CharacterFolder = AssetPaths.Data + "/Dialogue/Characters", ScriptFolder = AssetPaths.Scenarios + "/NPC";
         public const string Player = CharacterFolder + "/Player.asset", AssiFly = CharacterFolder + "/AssiFly.asset", Villager = CharacterFolder + "/Villager.asset";
         public const string SampleScript = ScriptFolder + "/VillagerGreeting.asset";
 

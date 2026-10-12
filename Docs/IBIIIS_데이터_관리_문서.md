@@ -22,10 +22,10 @@
 | 적 체력·행동 주기 | 엑셀의 적 기본정보 시트 | 미구현. 현재 적은 체력이 없고, 플레이어 행동 한 번마다 행동 목록을 수행한다 |
 | 적 행동 목록(조준·전진·회전 순서)·이동 칸·인식·공격 범위 | 엑셀 행동 패턴 시트(기획 문장) | **적 프리팹의 `EnemyDefinition`이 실행 기준**이다. 값을 옮길 때는 프리팹을 직접 수정한다. 기본 3종은 `Characters/Enemies/EnemyNNN/` 프리팹 |
 | 패턴 ID·패턴 전환·타깃·예고 규칙 | 엑셀의 행동 패턴 시트 | 미구현. 패턴 ID 없이 적 프리팹마다 행동 목록 하나를 가진다 |
-| 플레이어 외형·이동 시간·표시·입력·연출 설정 | 게임 시스템 기획서 | `Assets/IBIIIS/Settings/GlobalPlayerSettings.asset`과 연결된 설정 에셋(아래) |
+| 플레이어 외형·이동 시간·표시·입력·연출 설정 | 게임 시스템 기획서 | `Assets/IBIIIS/ScriptableObjects/Settings/GlobalPlayerSettings.asset`과 연결된 설정 에셋(아래) |
 | 이미지·애니메이션·효과음 참조 | 엑셀의 현재 열 구조에 없음 | 플레이어는 `PlayerVisual.prefab`의 슬롯, 적은 프리팹의 `Visual` 자식, 충돌 연출은 `CollisionFeedback.asset`. 절차는 [에셋 제작 가이드](IBIIIS_에셋_제작_가이드.md) |
 | 스테이지 클리어 기록 | 게임 시스템 기획서의 미니맵 항목 | `Application.persistentDataPath/IBIIIS_progress.json`(아래 클리어 기록). 스테이지 ID는 미니맵의 `StageEntrance`에서 정한다 |
-| 대본(튜토리얼 등 전투 씬 대본) | 튜토리얼 문서·기획서 대본 | 대본 에셋 `ScenarioScript`(튜토리얼 대본은 `Assets/IBIIIS/Tutorial/Scenarios/`, Dialogue Editor로 새로 만드는 대본의 기본 위치는 `Assets/IBIIIS/Scenarios/`)이 실행 기준. 편집은 IBIIIS Dialogue Editor·Inspector. **대본 ID**(`Script Id`)는 클리어 기록 등에 연결되는 고정값이라 정한 뒤 바꾸지 않고, 영어 소문자·숫자·`_`·`-`만 쓰며 다른 대본과 겹치지 않게 한다(Dialogue Editor의 새 대본·복제가 검사). 단계 ID는 편집기 전용이며 진행에 쓰지 않는다 |
+| 대본(튜토리얼 등 전투 씬 대본) | 튜토리얼 문서·기획서 대본 | 대본 에셋 `ScenarioScript`(튜토리얼 대본은 `Assets/IBIIIS/ScriptableObjects/Scenarios/Tutorial/`, Dialogue Editor로 새로 만드는 대본의 기본 위치는 `Assets/IBIIIS/ScriptableObjects/Scenarios/`)이 실행 기준. 편집은 IBIIIS Dialogue Editor·Inspector. **대본 ID**(`Script Id`)는 클리어 기록 등에 연결되는 고정값이라 정한 뒤 바꾸지 않고, 영어 소문자·숫자·`_`·`-`만 쓰며 다른 대본과 겹치지 않게 한다(Dialogue Editor의 새 대본·복제가 검사). 단계 ID는 편집기 전용이며 진행에 쓰지 않는다 |
 | 현재 위치·방향·생존·인식·회피기 쿨다운 | 개체별 실행 상태 | `GridSession`과 `EnemyState`에만 저장한다. 공유 설정·프리팹·맵 에셋에 기록하지 않으며 저장·불러오기 기능은 없다 |
 
 ## 맵 실행 데이터
@@ -33,7 +33,7 @@
 맵 에디터의 `새 맵`은 GridMap 에셋과 이를 참조하는 씬을 같은 이름으로 함께 생성한다. 이후 타일·시작 위치·적 배치 수정의 관리 기준은 GridMap 에셋이며 씬에 배치를 복제하지 않는다. 기존 파일이 있으면 번호를 붙이고, 씬 생성 실패 시 새 쌍만 정리한다. 생성 직후 빈 맵은 편집 가능한 상태일 뿐 플레이 준비 완료가 아니다.
 
 - `GridMap` ScriptableObject: 가로·세로, 칸별 이동 영역, 시작 위치, 적 배치(프리팹 참조·칸 좌표·방향), 배경 바닥 재질, 외곽 여유·기본 바닥 색상, 환경 프리팹. 기존 셀 ID와 팔레트는 호환용으로 보존한다. 기본 바닥은 내부 예약 ID `__ibiiis_walkable__`을 사용한다. 종류별 바닥은 TileDefinition의 안정적인 ID를 셀에 저장하고 팔레트 참조로 연결한다. 맵 편집기에서 배치를 수정한다. 예시는 `Assets/IBIIIS/Maps/ProtoTypeMap/ProtoTypeMap.asset`이다.
-- `TileDefinition` ScriptableObject (이동 바닥 종류): 숨겨진 고유 ID, 표시 이름, 편집기/대체 표시 색상, 선택 평면 재질. 이동 가능 여부·옛 프리팹 필드는 호환용으로 숨겨 보존하며 새 바닥은 항상 이동 가능하다. 예시는 `Assets/IBIIIS/Tiles/Floor.asset`, `Floor2.asset`이다. 팔레트가 가리키는 바닥 에셋이 삭제되면 누락 참조가 남아 맵 검증 오류가 되며, 맵 에디터 `칠하기` 탭의 `삭제된 바닥 참조 정리`로 지운다(이전에 남아 있던 Wall 참조 3건은 해당 맵이 삭제되어 없음). ID는 생성 시 발급하며 표시 이름·경로가 바뀌어도 유지한다.
+- `TileDefinition` ScriptableObject (이동 바닥 종류): 숨겨진 고유 ID, 표시 이름, 편집기/대체 표시 색상, 선택 평면 재질. 이동 가능 여부·옛 프리팹 필드는 호환용으로 숨겨 보존하며 새 바닥은 항상 이동 가능하다. 예시는 `Assets/IBIIIS/ScriptableObjects/Tiles/Floor.asset`, `Floor2.asset`이다. 팔레트가 가리키는 바닥 에셋이 삭제되면 누락 참조가 남아 맵 검증 오류가 되며, 맵 에디터 `칠하기` 탭의 `삭제된 바닥 참조 정리`로 지운다(이전에 남아 있던 Wall 참조 3건은 해당 맵이 삭제되어 없음). ID는 생성 시 발급하며 표시 이름·경로가 바뀌어도 유지한다.
 - 칸 데이터의 빈 ID는 빈 공간이며 이동할 수 없다. 존재하지 않는 ID·중복 ID·누락 참조·잘못된 시작 위치는 실행 전에 오류로 보고한다. 일부만 생성하는 방식으로 오류를 숨기지 않는다.
 - 배경 바닥 재질은 맵별 선택 참조다. 비어 있으면 Resources의 `IBIIIS/DefaultGround` 재질을 사용한다. 이동 영역과 환경은 자동 연동하지 않는다. 기본 에셋 생성기는 기존 에셋을 덮어쓰지 않는다.
 - 저장한 맵은 테스트 씬의 `GridMapPlayer.map`에서 참조한다. 실행 시 `GridSession`이 이동 가능 정보·시작 위치·적 규칙을 복사하고 실행 상태를 별도로 관리한다. 실행 중 원본 수정은 다음 시작 시 반영된다.
@@ -48,15 +48,15 @@
 
 | 에셋 | 관리 항목 |
 |---|---|
-| `Assets/IBIIIS/Settings/GlobalPlayerSettings.asset` | 플레이어 외형 프리팹, 한 칸 이동 시간(초), 적 한 칸 이동 시간(초), 이동 가능 칸 표시 여부·색상·재질, 적 범위 표시 시작값, 입력·충돌 연출 설정 연결 |
-| `Assets/IBIIIS/Settings/GlobalCameraSettings.asset` | 카메라 Projection·회전·화각. 맵 에셋에는 카메라 설정을 저장하지 않는다 |
-| `Assets/IBIIIS/Settings/IBIIISInput.inputactions` | 전투 키 배치(`Battle` 액션 맵) |
-| `Assets/IBIIIS/Settings/CollisionFeedback.asset` | 적 충돌 연출의 시간·강도·이펙트·효과음 |
-| `Assets/IBIIIS/Settings/EnemyAlert.asset` | 적 인식 말풍선 높이·대답 지연·표시 시간·튀어나옴·효과음, 공용 대사 연결 |
-| `Assets/IBIIIS/Settings/BattleDialogue.asset` | 전투 말풍선 공용 대사(인식 순간 플레이어 말·적 대답 쌍, 놓칠 때 적 혼잣말, 직전 대사 반복 방지). 적별 대사는 적 프리팹 `EnemyDefinition`의 `Dialogue` 슬롯 |
-| `Assets/IBIIIS/Settings/OverworldSettings.asset` | 미니맵 이동 속도, 카메라 설정 연결·보이는 세로 범위·따라가는 빠르기, 달리기 속도·보폭, 구르기 거리·시간·감속·회복·쿨다운, 걷기 손맛, 미니맵 입력 연결 |
-| `Assets/IBIIIS/Settings/OverworldCameraSettings.asset` | 미니맵 전용 카메라 각도·화각(현재 회전 40°, 화각 30). 전투의 GlobalCameraSettings와 별개 |
-| `Assets/IBIIIS/Settings/OverworldInput.inputactions` | 미니맵 키 배치(`Overworld` 액션 맵: Move, Interact, Dash(누르고 있으면 달리기), Roll) |
+| `Assets/IBIIIS/ScriptableObjects/Settings/GlobalPlayerSettings.asset` | 플레이어 외형 프리팹, 한 칸 이동 시간(초), 적 한 칸 이동 시간(초), 이동 가능 칸 표시 여부·색상·재질, 적 범위 표시 시작값, 입력·충돌 연출 설정 연결 |
+| `Assets/IBIIIS/ScriptableObjects/Settings/GlobalCameraSettings.asset` | 카메라 Projection·회전·화각. 맵 에셋에는 카메라 설정을 저장하지 않는다 |
+| `Assets/IBIIIS/ScriptableObjects/Settings/IBIIISInput.inputactions` | 전투 키 배치(`Battle` 액션 맵) |
+| `Assets/IBIIIS/ScriptableObjects/Settings/CollisionFeedback.asset` | 적 충돌 연출의 시간·강도·이펙트·효과음 |
+| `Assets/IBIIIS/ScriptableObjects/Settings/EnemyAlert.asset` | 적 인식 말풍선 높이·대답 지연·표시 시간·튀어나옴·효과음, 공용 대사 연결 |
+| `Assets/IBIIIS/ScriptableObjects/Settings/BattleDialogue.asset` | 전투 말풍선 공용 대사(인식 순간 플레이어 말·적 대답 쌍, 놓칠 때 적 혼잣말, 직전 대사 반복 방지). 적별 대사는 적 프리팹 `EnemyDefinition`의 `Dialogue` 슬롯 |
+| `Assets/IBIIIS/ScriptableObjects/Settings/OverworldSettings.asset` | 미니맵 이동 속도, 카메라 설정 연결·보이는 세로 범위·따라가는 빠르기, 달리기 속도·보폭, 구르기 거리·시간·감속·회복·쿨다운, 걷기 손맛, 미니맵 입력 연결 |
+| `Assets/IBIIIS/ScriptableObjects/Settings/OverworldCameraSettings.asset` | 미니맵 전용 카메라 각도·화각(현재 회전 40°, 화각 30). 전투의 GlobalCameraSettings와 별개 |
+| `Assets/IBIIIS/ScriptableObjects/Settings/OverworldInput.inputactions` | 미니맵 키 배치(`Overworld` 액션 맵: Move, Interact, Dash(누르고 있으면 달리기), Roll) |
 
 이동 시간은 각 행동 시작 시 개별 세션에 복사하며 실행 상태는 공용 설정에 기록하지 않는다. 입력 에셋은 실행 시 사본을 만들어 쓴다. 편집 절차는 개발 및 사용 가이드를 따른다.
 
