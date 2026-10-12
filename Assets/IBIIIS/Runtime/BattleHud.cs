@@ -14,10 +14,13 @@ namespace IBIIIS
         /// <summary>입력을 받는 중(행동·연출 중이 아님)이면 true. 버튼은 이때만 누를 수 있다.</summary>
         public bool Ready;
         public bool CanUndo, RangesOn;
+        /// <summary>대본 진행 등으로 되돌리기·다시 시작·범위 표시 버튼을 막으면 false(버튼을 숨긴다).</summary>
+        public bool UndoRestartAllowed, RangesAllowed;
         public BattlePhase Phase;
         public Vector2Int Cell;
         public bool Equals(BattleHudState o) => StageName == o.StageName && AliveEnemies == o.AliveEnemies && TotalEnemies == o.TotalEnemies && Actions == o.Actions &&
-            EvasionCooldown == o.EvasionCooldown && Ready == o.Ready && CanUndo == o.CanUndo && RangesOn == o.RangesOn && Phase == o.Phase && Cell == o.Cell;
+            EvasionCooldown == o.EvasionCooldown && Ready == o.Ready && CanUndo == o.CanUndo && RangesOn == o.RangesOn && Phase == o.Phase && Cell == o.Cell &&
+            UndoRestartAllowed == o.UndoRestartAllowed && RangesAllowed == o.RangesAllowed;
         public override bool Equals(object obj) => obj is BattleHudState o && Equals(o);
         public override int GetHashCode() => HashCode.Combine(AliveEnemies, Actions, EvasionCooldown, Ready, CanUndo, RangesOn, Phase, Cell);
     }
@@ -67,9 +70,9 @@ namespace IBIIIS
             if (!hasShown || !shown.Ready) return;
             switch (button)
             {
-                case "undo": if (shown.CanUndo) onUndo?.Invoke(); break;
-                case "restart": onRestart?.Invoke(); break;
-                case "ranges": onToggleRanges?.Invoke(); break;
+                case "undo": if (shown.CanUndo && shown.UndoRestartAllowed) onUndo?.Invoke(); break;
+                case "restart": if (shown.UndoRestartAllowed) onRestart?.Invoke(); break;
+                case "ranges": if (shown.RangesAllowed) onToggleRanges?.Invoke(); break;
             }
         }
         /// <summary>값이 바뀌었을 때만 화면을 고친다.</summary>
@@ -85,6 +88,9 @@ namespace IBIIIS
             if (cooldown != null) { cooldown.text = locked ? s.EvasionCooldown.ToString() : ""; cooldown.style.display = locked ? DisplayStyle.Flex : DisplayStyle.None; }
             undo?.SetEnabled(s.Ready && s.CanUndo);
             restart?.SetEnabled(s.Ready);
+            if (undo != null) undo.style.display = s.UndoRestartAllowed ? DisplayStyle.Flex : DisplayStyle.None;
+            if (restart != null) restart.style.display = s.UndoRestartAllowed ? DisplayStyle.Flex : DisplayStyle.None;
+            if (ranges != null) ranges.style.display = s.RangesAllowed ? DisplayStyle.Flex : DisplayStyle.None;
             if (ranges != null) { ranges.SetEnabled(s.Ready); ranges.text = Labelled(s.RangesOn ? "범위 표시 켬" : "범위 표시 끔", rangesKey); ranges.EnableInClassList("on", s.RangesOn); }
             if (debug != null && showDebug) debug.text = $"{s.Phase} | 칸 ({s.Cell.x}, {s.Cell.y})";
         }

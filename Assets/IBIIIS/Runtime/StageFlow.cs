@@ -66,6 +66,12 @@ namespace IBIIIS
 #endif
         }
         // 에디터에서는 빌드 씬 목록에 없어도 Play 중에 불러올 수 있게 한다.
+        /// <summary>씬을 불러온다(에디터 Play에서는 빌드 목록에 없어도 됨). 없는 씬이면 오류를 남기고 false.</summary>
+        public static bool LoadScene(string scenePath)
+        {
+            if (string.IsNullOrEmpty(scenePath) || !CanLoad(scenePath)) return false;
+            Load(scenePath); return true;
+        }
         private static void Load(string scenePath)
         {
 #if UNITY_EDITOR

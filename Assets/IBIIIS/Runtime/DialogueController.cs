@@ -15,6 +15,13 @@ namespace IBIIIS
         private float time;
         private int openedFrame = -1;
         public DialogueRunner Runner => runner;
+        private string[] keys = Array.Empty<string>();
+        private Action<string> nameDone;
+        private string nameDefault;
+        /// <summary>지금 보이는 키 안내(예: Shift, W).</summary>
+        public IReadOnlyList<string> Keys => keys;
+        /// <summary>이름 입력을 기다리는 중이면 true.</summary>
+        public bool AskingName => nameDone != null;
         public bool IsOpen => runner.IsOpen;
         public bool UsesGameUi => view != null;
 
@@ -26,18 +33,46 @@ namespace IBIIIS
             controller.Open(ui, lines, finished);
             return controller;
         }
-        public void Open(GameUiSettings ui, IEnumerable<DialogueLine> lines, Action finished = null)
+        public void Open(GameUiSettings ui, IEnumerable<DialogueLine> lines, Action finished = null, bool keepCast = false)
         {
-            if (view == null && ui != null)
-            {
-                var document = ui.CreateDocument("Dialogue UI", ui.DialogueBox, transform, 50);
-                if (document != null) view = new DialogueView(document.rootVisualElement, Advance);
-            }
+            EnsureView(ui);
             runner.CharactersPerSecond = ui != null ? ui.DialogueTextSpeed : GameUiSettings.DefaultDialogueTextSpeed;
-            openedFrame = Time.frameCount; time = 0;
-            runner.Start(lines, finished);
-            view?.Show(runner, time);
+            openedFrame = Time.frameCount; time = 0; keys = Array.Empty<string>(); nameDone = null;
+            runner.Start(lines, finished, keepCast);
+            Draw();
         }
+        /// <summary>넘길 수 없는 안내 줄을 띄운다(대본이 입력을 기다릴 때). keys는 화면에 깜빡이는 키 표시(예: "Shift", "W"). 좌우 인물은 유지한다.</summary>
+        public void Prompt(GameUiSettings ui, DialogueLine line, IEnumerable<string> keyCaps)
+        {
+            Open(ui, new[] { line }, null, true);
+            runner.Locked = true; keys = keyCaps != null ? new List<string>(keyCaps).ToArray() : Array.Empty<string>();
+            Draw();
+        }
+        /// <summary>이름 입력 창을 띄운다. 확인(버튼·Enter)하면 입력값으로 done을 부른다. 안내 줄은 prompt.</summary>
+        public void AskName(GameUiSettings ui, DialogueLine prompt, string defaultValue, Action<string> done)
+        {
+            Open(ui, new[] { prompt }, null, true);
+            runner.Locked = true; nameDefault = defaultValue ?? ""; nameDone = done;
+            view?.ShowNameInput(nameDefault);
+            Draw();
+        }
+        /// <summary>이름 입력을 확정한다(확인 버튼·Enter와 같은 경로). 입력을 기다리지 않으면 무시한다.</summary>
+        public void SubmitName(string value)
+        {
+            if (nameDone == null) return;
+            var done = nameDone; nameDone = null; view?.HideNameInput();
+            runner.Locked = false; runner.Close();
+            done(string.IsNullOrEmpty(value) ? nameDefault : value);
+        }
+        /// <summary>대화창을 닫는다(끝 알림은 부르지 않는다).</summary>
+        public void Hide() { nameDone = null; keys = Array.Empty<string>(); view?.HideNameInput(); runner.Start(null); Draw(); }
+        private void EnsureView(GameUiSettings ui)
+        {
+            if (view != null || ui == null) return;
+            var document = ui.CreateDocument("Dialogue UI", ui.DialogueBox, transform, 50);
+            if (document != null) view = new DialogueView(document.rootVisualElement, Advance, SubmitName);
+        }
+        private void Draw() { view?.Show(runner, time, keys); }
         /// <summary>넘기기(키·클릭과 같은 경로). 대화를 연 프레임에는 무시한다.</summary>
         public void Advance() { if (Time.frameCount != openedFrame) runner.Advance(); }
         private void Update()
@@ -46,15 +81,18 @@ namespace IBIIIS
             time += Time.unscaledDeltaTime;
             runner.Tick(Time.unscaledDeltaTime);
             var keyboard = Keyboard.current;
-            if (keyboard != null && (keyboard.fKey.wasPressedThisFrame || keyboard.enterKey.wasPressedThisFrame || keyboard.numpadEnterKey.wasPressedThisFrame || keyboard.spaceKey.wasPressedThisFrame)) Advance();
-            view?.Show(runner, time);
+            // 이름 입력 중에는 글자 입력과 겹치지 않게 넘기기 키를 쓰지 않는다(Enter는 입력 칸이 확정에 쓴다).
+            if (nameDone == null && keyboard != null && (keyboard.fKey.wasPressedThisFrame || keyboard.enterKey.wasPressedThisFrame || keyboard.numpadEnterKey.wasPressedThisFrame || keyboard.spaceKey.wasPressedThisFrame)) Advance();
+            Draw();
         }
         // Game UI 설정이 없을 때만 쓰는 임시 표시.
         private void OnGUI()
         {
-            if (view != null || !runner.IsOpen || Event.current.type != EventType.Repaint) return;
+            if (view != null || !runner.IsOpen) return;
             var text = runner.IsNarration ? runner.ShownText : $"{runner.SpeakerName}\n{runner.ShownText}";
-            GUI.Box(new Rect(40, Screen.height - 170, Screen.width - 80, 140), text, OverworldGui.Body);
+            if (keys.Length > 0) text += "\n[" + string.Join(" + ", keys) + "]";
+            if (Event.current.type == EventType.Repaint) GUI.Box(new Rect(40, Screen.height - 170, Screen.width - 80, 140), text, OverworldGui.Body);
+            if (nameDone != null && GUI.Button(new Rect(Screen.width / 2 - 60, Screen.height - 60, 120, 32), "확인")) SubmitName(nameDefault);
         }
         private void OnDestroy() { runner.Close(); }
     }

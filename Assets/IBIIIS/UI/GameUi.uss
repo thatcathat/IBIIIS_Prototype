@@ -69,6 +69,9 @@
     rotate: 45deg;
 }
 .speech-bubble.player .speech-tail { background-color: rgb(255, 246, 205); }
+/* 대본의 감정 표시(!, ? 등): 말풍선 모양에 큰 붉은 글자 */
+.speech-bubble.emote { padding: 2px 12px; }
+.speech-bubble.emote .speech-text { font-size: 34px; color: rgb(215, 60, 50); }
 
 /* 미연시 대화창: 초상화는 대화 상자 뒤 좌우, 아래를 화면 하단에 맞춘다. 말하는 쪽 .speaking, 듣는 쪽 .listening */
 .dialogue-overlay { position: absolute; left: 0; top: 0; right: 0; bottom: 0; }
@@ -92,6 +95,14 @@
 .dialogue-text { font-size: 26px; white-space: normal; }
 .dialogue-text.narration { -unity-font-style: italic; color: rgb(170, 175, 190); }
 .dialogue-next { position: absolute; right: 24px; bottom: 14px; font-size: 22px; color: rgb(255, 220, 120); }
+.dialogue-keys { flex-direction: row; align-items: center; justify-content: center; margin-top: 12px; font-size: 22px; }
+.key-cap {
+    -unity-font-definition: url("Fonts/NotoSansKR-Bold.otf"); font-size: 22px;
+    border-width: 2px; border-bottom-width: 5px; border-color: rgb(240, 240, 245); border-radius: 8px;
+    padding: 2px 14px; margin: 0 6px;
+}
+.name-input { flex-direction: row; align-items: center; justify-content: center; margin-top: 10px; }
+.name-field { width: 260px; font-size: 24px; }
 
 /* 결과 팝업 */
 .popup-overlay { position: absolute; left: 0; top: 0; right: 0; bottom: 0; background-color: rgba(0, 0, 0, 0.45); align-items: center; justify-content: center; }

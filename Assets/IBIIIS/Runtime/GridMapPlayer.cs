@@ -124,6 +124,7 @@ namespace IBIIIS
             generated = null; player = null; playerView = null; lastAction = PlayerAction.Wait; lastDirection = Vector2Int.zero; session = null; moveHints = null; enemyViews.Clear();
             if (input != null) { input.Dispose(); input = null; }
             hud = null; restartRequested = false; // HUD 오브젝트는 generated 아래에 있어 함께 지워진다
+            guideMarks.Clear(); guideMaterial = null; // 안내 칸도 generated 아래(재질은 materials 목록이 지운다)
             actionHistory.Clear(); rangeRoot = null; attackMarks.Clear(); recognitionMarks.Clear(); attackMaterial = recognitionMaterial = null;
             foreach (var material in materials) if (material != null) Release(material);
             materials.Clear();
@@ -429,6 +430,54 @@ namespace IBIIIS
             if (session != null && session.Phase == BattlePhase.Waiting && !IsPresenting && action != PlayerAction.Wait) motion?.Bump(direction);
             return false;
         }
+        /// <summary>대본 진행(튜토리얼 등)이 전투 입력을 제한할 때 쓰는 판정. 행동·방향을 받아 허용하면 true. null이면 제한 없음.
+        /// 키보드 입력과 TryPlayerCommand가 이 판정을 거친다(테스트·연출용 TryBeginAction은 거치지 않는다).</summary>
+        public Func<PlayerAction, Vector2Int, bool> CommandFilter { get; set; }
+        /// <summary>false면 되돌리기·다시 시작(키·버튼)을 막고 HUD 버튼을 숨긴다.</summary>
+        public bool AllowUndoRestart { get; set; } = true;
+        /// <summary>false면 범위 표시 전환(키·버튼)을 막고 HUD 버튼을 숨긴다.</summary>
+        public bool AllowRangeToggle { get; set; } = true;
+        /// <summary>제한 판정에 막힌 행동(대본이 경고를 띄우는 데 쓴다).</summary>
+        public event Action<PlayerAction, Vector2Int> CommandRejected;
+        /// <summary>플레이어 명령 하나를 실행한다(키 입력과 같은 경로). 제한에 막히면 false, 갈 수 없는 방향이면 부딪힘 반응 후 false.</summary>
+        public bool TryPlayerCommand(PlayerAction action, Vector2Int direction)
+        {
+            if (CommandFilter != null && !CommandFilter(action, direction)) { CommandRejected?.Invoke(action, direction); return false; }
+            return action == PlayerAction.Wait ? TryBeginAction(action, direction) : TryActionOrBump(action, direction);
+        }
+        /// <summary>화면 좌표가 가리키는 칸(맵 바닥 평면 기준). 맵 밖이거나 카메라가 없으면 false.</summary>
+        public bool TryGetCell(Vector2 screenPoint, out Vector2Int cell)
+        {
+            cell = default;
+            if (viewCamera == null || map == null) return false;
+            var ray = viewCamera.ScreenPointToRay(screenPoint);
+            var plane = new Plane(transform.up, transform.position);
+            if (!plane.Raycast(ray, out float distance)) return false;
+            var local = transform.InverseTransformPoint(ray.GetPoint(distance));
+            cell = new Vector2Int(Mathf.RoundToInt(local.x / cellSize), Mathf.RoundToInt(local.z / cellSize));
+            return map.Contains(cell);
+        }
+        /// <summary>플레이어 외형 기준점(발밑). 전투가 없으면 null. 말풍선·감정 표시 위치용.</summary>
+        public Transform PlayerAnchor => player;
+        public float CellSize => cellSize;
+        private readonly List<Transform> guideMarks = new List<Transform>();
+        private Material guideMaterial;
+        /// <summary>점멸하는 안내 칸(노란 테두리)을 표시한다. 빈 목록이면 지운다. 표시 전용.</summary>
+        public void SetGuideCells(IEnumerable<Vector2Int> cells)
+        {
+            foreach (var mark in guideMarks) if (mark != null) Release(mark.gameObject);
+            guideMarks.Clear();
+            if (cells == null || generated == null) return;
+            if (guideMaterial == null) guideMaterial = OverlayMaterial(new Color(1f, .78f, .1f));
+            foreach (var cell in cells)
+            {
+                var mark = Outline("Guide Mark", generated, .94f, .07f, .44f, guideMaterial);
+                mark.localPosition = LocalPosition(cell) + Vector3.up * .03f; guideMarks.Add(mark);
+            }
+        }
+        public int GuideCellCount => guideMarks.Count;
+        // 안내 칸은 0.5초마다 켜졌다 꺼진다(실시간 기준, 게임 시간 정지와 무관).
+        private void BlinkGuides() { bool on = Mathf.Repeat(Time.unscaledTime, 1f) < .5f; foreach (var mark in guideMarks) if (mark != null) mark.gameObject.SetActive(on); }
         /// <summary>전투를 처음 상태로 다시 만든다(R 키·다시 시작 버튼).</summary>
         public void Restart() { ClearGenerated(); Build(); }
         private void Update()
@@ -437,6 +486,7 @@ namespace IBIIIS
             float dt = Time.unscaledDeltaTime;
             if (session.IsBusy || IsPresenting) { AdvanceMovement(dt); UpdateMotion(dt); RefreshHud(); return; }
             UpdateMotion(dt);
+            BlinkGuides();
             if (restartRequested) { Restart(); return; }
             if (input != null) ReadCommand();
             RefreshHud();
@@ -446,13 +496,13 @@ namespace IBIIIS
             var command = input.Read();
             switch (command.Kind)
             {
-                case BattleCommandKind.Restart: Restart(); break;
-                case BattleCommandKind.ToggleRanges: ToggleEnemyRanges(); break;
-                case BattleCommandKind.Undo: TryUndo(); break;
-                case BattleCommandKind.Wait: TryBeginAction(PlayerAction.Wait, Vector2Int.zero); break;
-                case BattleCommandKind.Roll: TryActionOrBump(PlayerAction.Roll, command.Direction); break;
-                case BattleCommandKind.Move: TryActionOrBump(PlayerAction.Move, command.Direction); break;
-                case BattleCommandKind.Dash: TryActionOrBump(PlayerAction.Dash, command.Direction); break;
+                case BattleCommandKind.Restart: if (AllowUndoRestart) Restart(); break;
+                case BattleCommandKind.ToggleRanges: if (AllowRangeToggle) ToggleEnemyRanges(); break;
+                case BattleCommandKind.Undo: if (AllowUndoRestart) TryUndo(); break;
+                case BattleCommandKind.Wait: TryPlayerCommand(PlayerAction.Wait, Vector2Int.zero); break;
+                case BattleCommandKind.Roll: TryPlayerCommand(PlayerAction.Roll, command.Direction); break;
+                case BattleCommandKind.Move: TryPlayerCommand(PlayerAction.Move, command.Direction); break;
+                case BattleCommandKind.Dash: TryPlayerCommand(PlayerAction.Dash, command.Direction); break;
             }
         }
         // Game UI 설정이 없을 때만 쓰는 임시 표시(IMGUI). 정식 HUD가 있으면 그리지 않는다.
@@ -490,6 +540,7 @@ namespace IBIIIS
                 AliveEnemies = session.AliveCount, TotalEnemies = session.Enemies.Count, Actions = session.UndoCount,
                 EvasionCooldown = session.EvasionCooldownTurns, Ready = !session.IsBusy && !IsPresenting, CanUndo = session.CanUndo,
                 RangesOn = showRanges, Phase = session.Phase, Cell = session.Position,
+                UndoRestartAllowed = AllowUndoRestart, RangesAllowed = AllowRangeToggle,
             };
         }
         public BattleHud Hud => hud;

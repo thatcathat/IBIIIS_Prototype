@@ -27,7 +27,7 @@ namespace IBIIIS.Tests
             return tree.CloneTree();
         }
         private static BattleHudState Ready(int cooldown = 0, bool canUndo = true) => new BattleHudState
-        { StageName = "1-1", AliveEnemies = 2, TotalEnemies = 3, Actions = 4, EvasionCooldown = cooldown, Ready = true, CanUndo = canUndo, RangesOn = true };
+        { StageName = "1-1", AliveEnemies = 2, TotalEnemies = 3, Actions = 4, EvasionCooldown = cooldown, Ready = true, CanUndo = canUndo, RangesOn = true, UndoRestartAllowed = true, RangesAllowed = true };
 
         [Test] public void HudShowsCountsAndGraysEvasionWithTurnsLeft()
         {
@@ -56,6 +56,10 @@ namespace IBIIIS.Tests
             hud.Press("undo"); hud.Press("restart"); hud.Press("ranges");
             Assert.AreEqual(0, undo); Assert.AreEqual(1, restart); Assert.AreEqual(1, ranges); Assert.IsFalse(root.Q<Button>("restart").enabledSelf, "행동 중에는 누를 수 없음");
             hud.Refresh(Ready()); hud.Press("undo"); Assert.AreEqual(1, undo);
+            var scripted = Ready(); scripted.UndoRestartAllowed = false; scripted.RangesAllowed = false; hud.Refresh(scripted);
+            hud.Press("undo"); hud.Press("restart"); hud.Press("ranges");
+            Assert.AreEqual(1, undo); Assert.AreEqual(1, restart); Assert.AreEqual(1, ranges, "대본이 막으면 버튼도 무시");
+            Assert.AreEqual(DisplayStyle.None, root.Q<Button>("undo").style.display.value, "막힌 버튼은 숨김");
         }
         [Test] public void MissingElementsAreSkippedWithAWarning()
         {

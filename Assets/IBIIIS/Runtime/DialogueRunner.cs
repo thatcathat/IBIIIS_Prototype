@@ -28,14 +28,18 @@ namespace IBIIIS
         public DialogueCharacter Right { get; private set; }
         public string LeftExpression { get; private set; }
         public string RightExpression { get; private set; }
+        /// <summary>true면 넘기기로 다음 줄에 가지 않는다(글자만 다 보임). 대본이 입력을 기다리는 안내 줄에 쓴다.</summary>
+        public bool Locked { get; set; }
         /// <summary>지금 말하는 쪽. 지문이면 null.</summary>
         public DialogueSide? ActiveSide => IsOpen && !IsNarration ? Current.speaker.Side : (DialogueSide?)null;
 
-        /// <summary>대화를 시작한다. 이미 열려 있으면 이전 대화를 끝내지 않고 바꾼다(끝 알림은 새 대화 것만).</summary>
-        public void Start(IEnumerable<DialogueLine> script, Action finished = null)
+        /// <summary>대화를 시작한다. 이미 열려 있으면 이전 대화를 끝내지 않고 바꾼다(끝 알림은 새 대화 것만).
+        /// keepCast면 좌우에 서 있던 인물을 그대로 두고 이어 간다(대본이 한 줄씩 이어 보여 줄 때).</summary>
+        public void Start(IEnumerable<DialogueLine> script, Action finished = null, bool keepCast = false)
         {
             lines.Clear(); if (script != null) lines.AddRange(script);
-            onFinished = finished; Left = Right = null; LeftExpression = RightExpression = null;
+            onFinished = finished; Locked = false;
+            if (!keepCast) { Left = Right = null; LeftExpression = RightExpression = null; }
             IsOpen = lines.Count > 0; Index = -1;
             if (IsOpen) Show(0); else finished?.Invoke();
         }
@@ -52,6 +56,7 @@ namespace IBIIIS
         {
             if (!IsOpen) return;
             if (!LineComplete) { Visible = Text.Length; return; }
+            if (Locked) return;
             if (Index + 1 < lines.Count) { Show(Index + 1); return; }
             Close();
         }

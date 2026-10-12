@@ -1,0 +1,237 @@
+using System;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.InputSystem;
+using UnityEngine.UIElements;
+
+namespace IBIIIS
+{
+    /// <summary>전투 씬에서 대본(TutorialScript)을 위에서부터 실행한다. 대사는 미연시 대화창으로 보이고,
+    /// 입력 대기 단계에서는 허용한 행동만 전투에 통과시키며(나머지는 무시) 안내 칸을 점멸·키를 표시한다.
+    /// 대본이 도는 동안 되돌리기·다시 시작·범위 표시는 막는다. 판정은 바꾸지 않고 입력만 걸러 낸다.</summary>
+    public sealed class TutorialDirector : MonoBehaviour
+    {
+        /// <summary>대본에서 ID로 부르는 등장 오브젝트(켜고 끄기·감정 표시 대상).</summary>
+        [Serializable]
+        public struct Actor
+        {
+            [Tooltip("대본의 Target에 적는 ID. \"player\"는 플레이어로 예약되어 있습니다.")] public string id;
+            public GameObject target;
+            [Tooltip("감정 표시를 띄울 높이(칸, 발밑 기준 화면 위쪽).")] public float height;
+        }
+        private sealed class Emote { public Transform Target; public float Height, Left; public bool UntilLine; public string Text; public VisualElement View; }
+
+        [SerializeField, Tooltip("필수. 대본을 진행할 전투(Grid Map Player).")] private GridMapPlayer battle;
+        [SerializeField, Tooltip("필수. 실행할 대본.")] private TutorialScript script;
+        [SerializeField, Tooltip("등장 오브젝트. 대본의 Target ID로 찾습니다.")] private Actor[] actors = Array.Empty<Actor>();
+        [SerializeField, Min(0), Tooltip("플레이어 감정 표시 높이(칸). 임시 1.6.")] private float playerEmoteHeight = 1.6f;
+        [SerializeField, Tooltip("체크하면 전투가 준비되는 대로 대본을 시작합니다.")] private bool playOnStart = true;
+        private int index = -1;
+        private bool waitingFirstMove, clicked;
+        private int baselineActions;
+        private float timer;
+        private DialogueController dialogue;
+        private readonly List<Emote> emotes = new List<Emote>();
+        public bool IsRunning { get; private set; }
+        public bool Finished { get; private set; }
+        public int StepIndex => index;
+        public TutorialStep Current => IsRunning && index >= 0 && index < script.Steps.Length ? script.Steps[index] : default;
+        /// <summary>이름 입력 단계에서 받은 값(대사는 바꾸지 않는다).</summary>
+        public string EnteredName { get; private set; }
+        /// <summary>칸 누르기 단계에서 정답 칸을 누른 순간(연출용, 예: 칼이 날아가는 연출).</summary>
+        public event Action<TutorialStep> CellClicked;
+        public DialogueController Dialogue => dialogue;
+        public IReadOnlyList<string> ActiveEmotes { get { var list = new List<string>(); foreach (var e in emotes) list.Add(e.Text); return list; } }
+        private GameUiSettings Ui => battle != null && battle.SharedPlayerSettings != null ? battle.SharedPlayerSettings.GameUi : null;
+        public void Configure(GridMapPlayer value, TutorialScript tutorial, Actor[] cast = null) { battle = value; script = tutorial; actors = cast ?? Array.Empty<Actor>(); }
+
+        private void Update()
+        {
+            if (!IsRunning && !Finished && playOnStart && battle != null && battle.Session != null && script != null) Begin();
+            Tick(Time.unscaledDeltaTime);
+            if (IsRunning && Current.type == TutorialStepType.WaitClickCell && !clicked)
+            {
+                var mouse = Mouse.current;
+                if (mouse != null && mouse.leftButton.wasPressedThisFrame && battle.TryGetCell(mouse.position.ReadValue(), out var cell)) ClickCell(cell);
+            }
+        }
+        private void LateUpdate() => RenderEmotes();
+
+        /// <summary>대본을 처음부터 시작한다.</summary>
+        public void Begin()
+        {
+            if (battle == null || script == null) { Debug.LogError($"[IBIIIS] {name}: 대본 진행기에 전투(Battle) 또는 대본(Script)이 연결되지 않았습니다.", this); return; }
+            IsRunning = true; Finished = false; index = -1;
+            battle.AllowUndoRestart = false; battle.AllowRangeToggle = false;
+            Next();
+        }
+        /// <summary>시간을 진행하고 현재 단계의 끝 조건을 확인한다(매 프레임, 테스트에서는 직접 호출).</summary>
+        public void Tick(float seconds)
+        {
+            TickEmotes(seconds);
+            if (!IsRunning) return;
+            var step = Current; var session = battle.Session;
+            bool ready = session != null && !session.IsBusy && !battle.IsPresenting;
+            int acted = session != null ? session.UndoCount - baselineActions : 0;
+            switch (step.type)
+            {
+                case TutorialStepType.WaitAction:
+                    if (acted > 0 && ready) Next();
+                    break;
+                case TutorialStepType.WaitFreeMove:
+                    if (waitingFirstMove && acted > 0) { waitingFirstMove = false; timer = 0; }
+                    if (!waitingFirstMove) timer += seconds;
+                    if (!waitingFirstMove && timer >= step.seconds && ready) Next();
+                    break;
+                case TutorialStepType.WaitReachCell:
+                    if (ready && session.Position == step.cell) Next();
+                    break;
+                case TutorialStepType.WaitClickCell:
+                    if (clicked) { timer += seconds; if (timer >= step.seconds) Next(); }
+                    break;
+                case TutorialStepType.Wait:
+                    timer += seconds; if (timer >= step.seconds) Next();
+                    break;
+            }
+        }
+        /// <summary>칸을 눌렀다(마우스 왼쪽 버튼과 같은 경로). 칸 누르기 단계의 정답 칸이면 연출을 시작한다.</summary>
+        public void ClickCell(Vector2Int cell)
+        {
+            if (!IsRunning || clicked || Current.type != TutorialStepType.WaitClickCell || cell != Current.cell) return;
+            clicked = true; timer = 0; battle.SetGuideCells(null);
+            CellClicked?.Invoke(Current);
+        }
+
+        private void Next()
+        {
+            EndStep();
+            index++;
+            if (index >= script.Steps.Length) { Finish(); return; }
+            StartStep(script.Steps[index]);
+        }
+        private void EndStep()
+        {
+            battle.SetGuideCells(null); battle.CommandFilter = DenyAll;
+            clicked = false; waitingFirstMove = false; timer = 0;
+        }
+        private static bool DenyAll(PlayerAction action, Vector2Int direction) => false;
+        private void StartStep(TutorialStep step)
+        {
+            baselineActions = battle.Session != null ? battle.Session.UndoCount : 0;
+            switch (step.type)
+            {
+                case TutorialStepType.Line:
+                    // 대본은 한 줄씩 대화창을 다시 여므로, 좌우에 선 인물이 매 줄 사라지지 않게 이어 붙인다.
+                    EnsureDialogue().Open(Ui, new[] { step.line }, OnLineDone, true);
+                    break;
+                case TutorialStepType.Emote:
+                    AddEmote(step); Next();
+                    break;
+                case TutorialStepType.WaitAction:
+                    Prompt(step);
+                    battle.CommandFilter = step.Allows;
+                    if (step.direction != Vector2Int.zero && battle.Session != null)
+                        battle.SetGuideCells(new[] { battle.Session.Position + step.direction * ((step.actions & TutorialActions.Dash) != 0 ? 2 : 1) });
+                    break;
+                case TutorialStepType.WaitFreeMove:
+                    Prompt(step); battle.CommandFilter = step.Allows; waitingFirstMove = true;
+                    break;
+                case TutorialStepType.WaitReachCell:
+                    Prompt(step); battle.CommandFilter = step.Allows; battle.SetGuideCells(new[] { step.cell });
+                    break;
+                case TutorialStepType.WaitClickCell:
+                    Prompt(step); battle.SetGuideCells(new[] { step.cell });
+                    break;
+                case TutorialStepType.NameInput:
+                    EnsureDialogue().AskName(Ui, step.line, step.text, value => { EnteredName = value; Next(); });
+                    break;
+                case TutorialStepType.SetActive:
+                    var actor = FindActor(step.target);
+                    if (actor.target != null) actor.target.SetActive(step.active);
+                    else Debug.LogWarning($"[IBIIIS] {name}: 대본의 켜고 끄기 대상 '{step.target}'을 Actors에서 찾지 못했습니다.", this);
+                    Next();
+                    break;
+                case TutorialStepType.Wait:
+                    break;
+                case TutorialStepType.LoadScene:
+                    IsRunning = false; Finished = true; Restore();
+                    if (!StageFlow.LoadScene(step.scenePath)) Debug.LogError($"[IBIIIS] {name}: 대본의 다음 씬 '{step.scenePath}'을 불러오지 못했습니다.", this);
+                    break;
+            }
+        }
+        private void OnLineDone()
+        {
+            // 다 본 대사와 함께 "다음 대사까지" 감정 표시를 지운다.
+            emotes.RemoveAll(e => { if (e.UntilLine) { e.View?.RemoveFromHierarchy(); return true; } return false; });
+            Next();
+        }
+        private void Prompt(TutorialStep step)
+        {
+            if (string.IsNullOrEmpty(step.line.text) && step.KeyCaps.Length == 0) { EnsureDialogue().Hide(); return; }
+            EnsureDialogue().Prompt(Ui, step.line, step.KeyCaps);
+        }
+        private DialogueController EnsureDialogue()
+        {
+            if (dialogue == null) dialogue = DialogueController.Play(Ui, null);
+            return dialogue;
+        }
+        private void Finish()
+        {
+            IsRunning = false; Finished = true;
+            EnsureDialogue().Hide();
+            Restore();
+        }
+        private void Restore() { battle.CommandFilter = null; battle.SetGuideCells(null); battle.AllowUndoRestart = true; battle.AllowRangeToggle = true; }
+        private Actor FindActor(string id)
+        {
+            foreach (var actor in actors) if (actor.id == id) return actor;
+            return default;
+        }
+
+        private void AddEmote(TutorialStep step)
+        {
+            Transform target; float height;
+            if (step.target == "player") { target = battle.PlayerAnchor; height = playerEmoteHeight; }
+            else { var actor = FindActor(step.target); target = actor.target != null ? actor.target.transform : null; height = actor.height > 0 ? actor.height : playerEmoteHeight; }
+            if (target == null) { Debug.LogWarning($"[IBIIIS] {name}: 감정 표시 대상 '{step.target}'을 찾지 못했습니다.", this); return; }
+            emotes.RemoveAll(e => { if (e.Target == target) { e.View?.RemoveFromHierarchy(); return true; } return false; });
+            emotes.Add(new Emote { Target = target, Height = height, Text = step.text, Left = step.seconds, UntilLine = step.seconds <= 0 });
+        }
+        private void TickEmotes(float seconds)
+        {
+            for (int i = emotes.Count - 1; i >= 0; i--)
+            {
+                var e = emotes[i];
+                if (e.UntilLine) continue;
+                e.Left -= seconds;
+                if (e.Left <= 0 || e.Target == null) { e.View?.RemoveFromHierarchy(); emotes.RemoveAt(i); }
+            }
+        }
+        // 감정 표시는 전투 HUD의 말풍선 층에 말풍선 화면 구성(emote 클래스)으로 그린다. 화면이 없으면 그리지 않는다.
+        private void RenderEmotes()
+        {
+            var layer = battle != null && battle.Hud != null ? battle.Hud.Root.Q("bubbles") : null;
+            var ui = Ui; var camera = battle != null ? battle.ViewCamera : null;
+            if (layer == null || layer.panel == null || ui == null || ui.SpeechBubble == null || camera == null) return;
+            foreach (var e in emotes)
+            {
+                if (e.Target == null) continue;
+                if (e.View == null)
+                {
+                    e.View = ui.SpeechBubble.Instantiate().Q("bubble");
+                    if (e.View == null) continue;
+                    e.View.AddToClassList("emote"); e.View.pickingMode = PickingMode.Ignore;
+                    var label = e.View.Q<Label>("text"); if (label != null) label.text = e.Text;
+                    layer.Add(e.View);
+                }
+                var world = e.Target.position + camera.transform.up * e.Height * battle.CellSize;
+                bool visible = camera.WorldToScreenPoint(world).z > 0;
+                e.View.style.display = visible ? DisplayStyle.Flex : DisplayStyle.None;
+                if (!visible) continue;
+                var point = RuntimePanelUtils.CameraTransformWorldToPanel(layer.panel, world, camera);
+                e.View.style.left = point.x; e.View.style.top = point.y;
+            }
+        }
+        private void OnDisable() { foreach (var e in emotes) e.View?.RemoveFromHierarchy(); emotes.Clear(); }
+    }
+}
