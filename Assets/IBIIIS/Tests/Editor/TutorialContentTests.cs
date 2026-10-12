@@ -26,17 +26,17 @@ namespace IBIIIS.Tests
             EditorSceneManager.ClosePreviewScene(scene);
             ProgressStore.UseFile(null); if (File.Exists(savePath)) File.Delete(savePath);
         }
-        private (GridMapPlayer battle, TutorialDirector director, GameObject fly, GameObject scarecrow) Build(string mapPath, string scriptPath)
+        private (GridMapPlayer battle, ScenarioDirector director, GameObject fly, GameObject scarecrow) Build(string mapPath, string scriptPath)
         {
             var go = new GameObject("Battle"); SceneManager.MoveGameObjectToScene(go, scene);
             var battle = go.AddComponent<GridMapPlayer>(); battle.Configure(AssetDatabase.LoadAssetAtPath<GridMap>(mapPath), null, null); battle.Build();
             var fly = new GameObject("Fly"); SceneManager.MoveGameObjectToScene(fly, scene); fly.SetActive(false);
             var scarecrow = new GameObject("Scarecrow"); SceneManager.MoveGameObjectToScene(scarecrow, scene); scarecrow.SetActive(false);
-            var director = go.AddComponent<TutorialDirector>();
-            director.Configure(battle, AssetDatabase.LoadAssetAtPath<TutorialScript>(scriptPath), new[]
+            var director = go.AddComponent<ScenarioDirector>();
+            director.Configure(battle, AssetDatabase.LoadAssetAtPath<ScenarioScript>(scriptPath), new[]
             {
-                new TutorialDirector.Actor { id = "fly", target = fly, height = .75f },
-                new TutorialDirector.Actor { id = "scarecrow", target = scarecrow, height = 1.6f, blocksCell = true, cell = new Vector2Int(7, 2) },
+                new ScenarioDirector.Actor { id = "fly", target = fly, height = .75f },
+                new ScenarioDirector.Actor { id = "scarecrow", target = scarecrow, height = 1.6f, blocksCell = true, cell = new Vector2Int(7, 2) },
             });
             return (battle, director, fly, scarecrow);
         }
@@ -46,7 +46,7 @@ namespace IBIIIS.Tests
             Assert.IsTrue(battle.TryPlayerCommand(action, direction), $"대본이 허용한 행동 {action} {direction}"); Finish(battle);
         }
         // 대본 단계마다 플레이어가 할 법한 입력을 넣어 끝까지 진행한다. 진행한 단계 종류를 돌려준다.
-        private static void Play(GridMapPlayer battle, TutorialDirector director, System.Action<int> onStep = null)
+        private static void Play(GridMapPlayer battle, ScenarioDirector director, System.Action<int> onStep = null)
         {
             director.Begin();
             for (int guard = 0; guard < 400 && director.IsRunning; guard++)
@@ -55,21 +55,21 @@ namespace IBIIIS.Tests
                 onStep?.Invoke(director.StepIndex);
                 switch (step.type)
                 {
-                    case TutorialStepType.Line: director.Dialogue.Runner.Advance(); director.Dialogue.Runner.Advance(); break;
-                    case TutorialStepType.NameInput: director.Dialogue.SubmitName("아무거나"); break;
-                    case TutorialStepType.WaitAction:
-                        Do(battle, (step.actions & TutorialActions.Dash) != 0 ? PlayerAction.Dash : PlayerAction.Move, step.direction); break;
-                    case TutorialStepType.WaitFreeMove: Do(battle, PlayerAction.Move, Vector2Int.right); director.Tick(step.seconds + .01f); break;
-                    case TutorialStepType.WaitAllDirections:
+                    case ScenarioStepType.Line: director.Dialogue.Runner.Advance(); director.Dialogue.Runner.Advance(); break;
+                    case ScenarioStepType.NameInput: director.Dialogue.SubmitName("아무거나"); break;
+                    case ScenarioStepType.WaitAction:
+                        Do(battle, (step.actions & ScenarioActions.Dash) != 0 ? PlayerAction.Dash : PlayerAction.Move, step.direction); break;
+                    case ScenarioStepType.WaitFreeMove: Do(battle, PlayerAction.Move, Vector2Int.right); director.Tick(step.seconds + .01f); break;
+                    case ScenarioStepType.WaitAllDirections:
                         foreach (var d in new[] { Vector2Int.up, Vector2Int.down, Vector2Int.left, Vector2Int.right }) Do(battle, PlayerAction.Move, d);
                         break;
-                    case TutorialStepType.WaitReachCell:
+                    case ScenarioStepType.WaitReachCell:
                         var at = battle.Session.Position;
                         var dir = at.x != step.cell.x ? new Vector2Int(System.Math.Sign(step.cell.x - at.x), 0) : new Vector2Int(0, System.Math.Sign(step.cell.y - at.y));
                         Do(battle, PlayerAction.Move, dir); break;
-                    case TutorialStepType.WaitClickCell: director.ClickCell(step.cell); director.Tick(step.seconds + .01f); break;
-                    case TutorialStepType.FreePlay: Do(battle, PlayerAction.Wait, Vector2Int.zero); break;
-                    case TutorialStepType.Wait: director.Tick(step.seconds + .01f); break;
+                    case ScenarioStepType.WaitClickCell: director.ClickCell(step.cell); director.Tick(step.seconds + .01f); break;
+                    case ScenarioStepType.FreePlay: Do(battle, PlayerAction.Wait, Vector2Int.zero); break;
+                    case ScenarioStepType.Wait: director.Tick(step.seconds + .01f); break;
                 }
                 director.Tick(0);
             }
@@ -98,23 +98,23 @@ namespace IBIIIS.Tests
             Assert.IsTrue(ProgressStore.IsCleared(TutorialSetup.ClearId), "튜토리얼 클리어 기록");
             Assert.AreEqual(AssetPaths.OverworldScene, director.LoadedScene, "미니맵으로 돌아감");
         }
-        // IBIIIS Dialogue Editor의 자세·감정 표시 범위(TutorialTimeline)가 실제 진행에서 보이는 것과 단계마다 같은지 두 대본으로 확인한다.
+        // IBIIIS Dialogue Editor의 자세·감정 표시 범위(ScenarioTimeline)가 실제 진행에서 보이는 것과 단계마다 같은지 두 대본으로 확인한다.
         [TestCase(TutorialSetup.Stage1Map, TutorialSetup.Stage1Script)]
         [TestCase(TutorialSetup.Stage2Map, TutorialSetup.Stage2Script)]
         public void TimelineSpansMatchWhatTheDirectorShows(string mapPath, string scriptPath)
         {
             var (battle, director, _, _) = Build(mapPath, scriptPath);
-            var steps = AssetDatabase.LoadAssetAtPath<TutorialScript>(scriptPath).Steps;
+            var steps = AssetDatabase.LoadAssetAtPath<ScenarioScript>(scriptPath).Steps;
             int checkedSteps = 0, coveredSteps = 0;
             Play(battle, director, index =>
             {
-                Assert.IsFalse(TutorialTimeline.IsInstant(steps[index].type), $"{index}번: 바로 넘어가는 단계에서는 멈추지 않음(같은 세로줄 묶음 규칙)");
+                Assert.IsFalse(ScenarioTimeline.IsInstant(steps[index].type), $"{index}번: 바로 넘어가는 단계에서는 멈추지 않음(같은 세로줄 묶음 규칙)");
                 Sprite expectedPose = null; var expectedEmotes = new System.Collections.Generic.List<string>();
                 for (int i = 0; i < index; i++)
                 {
-                    var span = TutorialTimeline.SpanOf(steps, i);
-                    if (span == null || span.Value.EndKind == TutorialSpanEnd.Seconds || !span.Value.Covers(index)) continue;
-                    if (steps[i].type == TutorialStepType.Pose) expectedPose = steps[i].sprite; else expectedEmotes.Add(steps[i].text);
+                    var span = ScenarioTimeline.SpanOf(steps, i);
+                    if (span == null || span.Value.EndKind == ScenarioSpanEnd.Seconds || !span.Value.Covers(index)) continue;
+                    if (steps[i].type == ScenarioStepType.Pose) expectedPose = steps[i].sprite; else expectedEmotes.Add(steps[i].text);
                 }
                 Assert.AreSame(expectedPose, battle.PoseSprite, $"{index}번 단계의 자세");
                 CollectionAssert.AreEquivalent(expectedEmotes, director.ActiveEmotes, $"{index}번 단계의 감정 표시");
@@ -124,13 +124,13 @@ namespace IBIIIS.Tests
         }
         [Test] public void ScenesSplitAtInputWaitsAndSceneChanges()
         {
-            var steps = AssetDatabase.LoadAssetAtPath<TutorialScript>(TutorialSetup.Stage2Script).Steps;
-            var scenes = TutorialTimeline.Scenes(steps);
+            var steps = AssetDatabase.LoadAssetAtPath<ScenarioScript>(TutorialSetup.Stage2Script).Steps;
+            var scenes = ScenarioTimeline.Scenes(steps);
             Assert.AreEqual(0, scenes[0].start); Assert.AreEqual(steps.Length - 1, scenes[scenes.Count - 1].end);
             for (int n = 0; n < scenes.Count; n++)
             {
                 if (n > 0) Assert.AreEqual(scenes[n - 1].end + 1, scenes[n].start, "장면이 빈틈없이 이어짐");
-                for (int i = scenes[n].start; i < scenes[n].end; i++) Assert.IsFalse(TutorialTimeline.EndsScene(steps[i].type), "장면 중간에 끊는 단계 없음");
+                for (int i = scenes[n].start; i < scenes[n].end; i++) Assert.IsFalse(ScenarioTimeline.EndsScene(steps[i].type), "장면 중간에 끊는 단계 없음");
             }
             Assert.GreaterOrEqual(scenes.Count, 4, "A 입력·대시 입력·자유 진행·씬 전환으로 나뉨");
         }
@@ -149,8 +149,8 @@ namespace IBIIIS.Tests
                 var stage = EditorSceneManager.OpenScene(path, OpenSceneMode.Additive);
                 try
                 {
-                    TutorialDirector director = null;
-                    foreach (var root in stage.GetRootGameObjects()) if (director == null) director = root.GetComponentInChildren<TutorialDirector>(true);
+                    ScenarioDirector director = null;
+                    foreach (var root in stage.GetRootGameObjects()) if (director == null) director = root.GetComponentInChildren<ScenarioDirector>(true);
                     Assert.IsNotNull(director, path);
                     var so = new SerializedObject(director);
                     Assert.IsNotNull(so.FindProperty("battle").objectReferenceValue, path); Assert.IsNotNull(so.FindProperty("script").objectReferenceValue, path);

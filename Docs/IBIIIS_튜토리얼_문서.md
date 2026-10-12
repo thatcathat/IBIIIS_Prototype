@@ -34,10 +34,10 @@
 
 ## 구현 위치
 
-- 대본: `Assets/IBIIIS/Tutorial/Tutorial1Script.asset`, `Tutorial2Script.asset`(TutorialScript, Inspector에서 편집).
-- 맵·씬: `Assets/IBIIIS/Maps/Tutorial1/`, `Tutorial2/`(각 맵·씬. 씬의 Grid Map Player에 TutorialDirector, AssiFly·Scarecrow 오브젝트가 Actors로 연결).
+- 대본: `Assets/IBIIIS/Tutorial/Tutorial1Script.asset`, `Tutorial2Script.asset`(ScenarioScript, Inspector에서 편집).
+- 맵·씬: `Assets/IBIIIS/Maps/Tutorial1/`, `Tutorial2/`(각 맵·씬. 씬의 Grid Map Player에 ScenarioDirector, AssiFly·Scarecrow 오브젝트가 Actors로 연결).
 - 임시 그림: `Assets/IBIIIS/Tutorial/AssiFly.png`·`Scarecrow.png`·`Sword.png`(코드로 그린 그림), 대화 인물 허수아비·Enemy_00·Enemy_01(`Assets/IBIIIS/Dialogue/Characters/`, 임시 실루엣 초상화).
-- 메뉴 `IBIIIS > Reset Tutorial Scripts`는 두 대본을 코드의 기본 대본으로 덮어쓴다(확인 창, Inspector 수정 내용 사라짐). 2026-10-13 피드백 반영 때 이 방법으로 두 대본을 다시 만들었다.
+- 메뉴 `IBIIIS > Reset Scenario Scripts`는 두 대본을 코드의 기본 대본으로 덮어쓴다(확인 창, Inspector 수정 내용 사라짐). 2026-10-13 피드백 반영 때 이 방법으로 두 대본을 다시 만들었다.
 - 메뉴 `IBIIIS > Create Tutorial Content`가 위 에셋·씬과 타이틀을 없을 때만 만들고 빌드 씬 목록에 없는 씬만 추가한다(타이틀은 맨 앞). 이미 있는 대본·씬은 덮어쓰지 않으므로, 생성 뒤 고친 내용은 보존된다.
 
 ## 확인 상태

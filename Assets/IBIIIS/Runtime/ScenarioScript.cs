@@ -4,7 +4,7 @@ using UnityEngine;
 namespace IBIIIS
 {
     /// <summary>대본 단계 종류. 프리팹·에셋에 정수로 저장되므로 기존 값을 바꾸거나 재사용하지 말고, 새 종류는 맨 끝에 새 값으로 추가한다.</summary>
-    public enum TutorialStepType
+    public enum ScenarioStepType
     {
         /// <summary>대사·지문 한 줄. 넘기면 다음 단계.</summary>
         Line = 0,
@@ -40,25 +40,25 @@ namespace IBIIIS
         EndDisplay = 15,
     }
     /// <summary>표시 끝 단계가 끝낼 표시 종류.</summary>
-    public enum TutorialDisplay { Emote = 0, Pose = 1 }
+    public enum ScenarioDisplay { Emote = 0, Pose = 1 }
     /// <summary>자세 연출의 움직임. 표시 전용. 값은 에셋에 정수로 저장되므로 끝에만 추가한다.</summary>
     public enum PoseMotion { None = 0, Hop = 1, Shake = 2, Sigh = 3, Proud = 4 }
     /// <summary>대본에서 허용할 플레이어 행동(여러 개 선택 가능).</summary>
     [Flags]
-    public enum TutorialActions { None = 0, Move = 1, Wait = 2, Dash = 4, Roll = 8 }
+    public enum ScenarioActions { None = 0, Move = 1, Wait = 2, Dash = 4, Roll = 8 }
     /// <summary>대본 한 단계. 종류(Type)에 따라 쓰는 칸만 의미가 있다(Inspector는 쓰는 칸만 보여 준다).</summary>
     [Serializable]
-    public struct TutorialStep
+    public struct ScenarioStep
     {
         [HideInInspector, Tooltip("단계 고유 ID(자동). 편집기에서 선택·복사·연결에 쓴다. 비거나 겹치면 대본이 새로 채운다.")] public string id;
-        public TutorialStepType type;
+        public ScenarioStepType type;
         [Tooltip("Line: 보여 줄 대사. 입력 대기·이름 입력: 그동안 보일 안내 줄(인물을 비우면 지문). 자유 진행: 위험한 이동을 막을 때 보일 경고 대사.")] public DialogueLine line;
-        [Tooltip("입력 대기에서 허용할 행동.")] public TutorialActions actions;
+        [Tooltip("입력 대기에서 허용할 행동.")] public ScenarioActions actions;
         [Tooltip("허용할 방향 또는 합류하는 적의 방향(위=(0,1), 왼쪽=(-1,0)). 입력 대기에서 (0,0)이면 모든 방향.")] public Vector2Int direction;
         [Tooltip("도착하거나 누를 칸(열, 행). 맵 좌표 기준(0,0 = 왼쪽 아래).")] public Vector2Int cell;
         [Tooltip("초. 자유 이동: 처음 움직인 뒤 기다릴 시간. 칸 누르기: 누른 뒤 연출 시간. 기다리기: 기다릴 시간. 감정 표시: 보이는 시간(0이면 다음 대사가 끝날 때까지).")] public float seconds;
         [Tooltip("화면에 깜빡일 키 표시. 공백으로 나눔(예: \"Shift W\" → Shift + W).")] public string keys;
-        [Tooltip("감정 표시·켜고 끄기 대상: \"player\" 또는 진행기(TutorialDirector) Actors의 ID.")] public string target;
+        [Tooltip("감정 표시·켜고 끄기 대상: \"player\" 또는 진행기(ScenarioDirector) Actors의 ID.")] public string target;
         [Tooltip("감정 표시 글자(예: !, ?) 또는 이름 입력 기본값.")] public string text;
         [Tooltip("켜고 끄기: 켤지(체크) 끌지.")] public bool active;
         [Tooltip("넘어갈 씬 경로(Assets/...unity).")] public string scenePath;
@@ -68,24 +68,24 @@ namespace IBIIIS
         [Tooltip("자세: 자세가 끝나 기본 그림으로 돌아올 때 주는 움직임. None이면 움직임 없이 바로 돌아옵니다.")] public PoseMotion endMotion;
         [Tooltip("자세: 체크하면 시간·대사와 관계없이 플레이어가 다음 행동을 시작할 때까지 유지합니다.")] public bool untilAction;
         [Tooltip("감정 표시·자세: 체크하면 시간·대사와 관계없이 뒤에 오는 '표시 끝' 단계까지 유지합니다(다른 끝 조건보다 우선). IBIIIS Dialogue Editor에서 막대 끝을 끌면 자동으로 켜집니다.")] public bool untilEnd;
-        [Tooltip("표시 끝: 끝낼 표시 종류(감정 표시는 대상 ID도 맞아야 함).")] public TutorialDisplay display;
+        [Tooltip("표시 끝: 끝낼 표시 종류(감정 표시는 대상 ID도 맞아야 함).")] public ScenarioDisplay display;
         public string[] KeyCaps => string.IsNullOrWhiteSpace(keys) ? Array.Empty<string>() : keys.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
         /// <summary>이 행동이 허용되는지(입력 대기 단계).</summary>
         public bool Allows(PlayerAction action, Vector2Int dir)
         {
-            var flag = action == PlayerAction.Move ? TutorialActions.Move : action == PlayerAction.Wait ? TutorialActions.Wait : action == PlayerAction.Dash ? TutorialActions.Dash : TutorialActions.Roll;
+            var flag = action == PlayerAction.Move ? ScenarioActions.Move : action == PlayerAction.Wait ? ScenarioActions.Wait : action == PlayerAction.Dash ? ScenarioActions.Dash : ScenarioActions.Roll;
             return (actions & flag) != 0 && (direction == Vector2Int.zero || direction == dir);
         }
     }
-    /// <summary>튜토리얼 등 대본(단계 목록). 전투 씬의 TutorialDirector가 위에서부터 실행한다. 대사·입력 제한·조건·연출을 Inspector에서 편집한다.</summary>
-    [CreateAssetMenu(menuName = "IBIIIS/Tutorial Script")]
-    public sealed class TutorialScript : ScriptableObject
+    /// <summary>튜토리얼 등 대본(단계 목록). 전투 씬의 ScenarioDirector가 위에서부터 실행한다. 대사·입력 제한·조건·연출을 Inspector에서 편집한다.</summary>
+    [CreateAssetMenu(menuName = "IBIIIS/Scenario Script")]
+    public sealed class ScenarioScript : ScriptableObject
     {
         [SerializeField, Tooltip("이 대본의 고정 ID. 기록 등이 이 값으로 연결되므로 정한 뒤 바꾸지 않습니다.")] private string scriptId = "tutorial";
-        [SerializeField] private TutorialStep[] steps = Array.Empty<TutorialStep>();
+        [SerializeField] private ScenarioStep[] steps = Array.Empty<ScenarioStep>();
         public string Id => scriptId;
-        public TutorialStep[] Steps => steps ?? Array.Empty<TutorialStep>();
-        public void Set(string id, TutorialStep[] value) { scriptId = id; steps = value ?? Array.Empty<TutorialStep>(); EnsureStepIds(); }
+        public ScenarioStep[] Steps => steps ?? Array.Empty<ScenarioStep>();
+        public void Set(string id, ScenarioStep[] value) { scriptId = id; steps = value ?? Array.Empty<ScenarioStep>(); EnsureStepIds(); }
         /// <summary>비었거나 앞 단계와 겹치는 단계 ID를 새로 채운다(복사·추가된 단계). 바뀌었으면 true. 진행에는 쓰지 않고 편집기만 쓴다.</summary>
         public bool EnsureStepIds()
         {

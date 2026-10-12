@@ -8,10 +8,10 @@ using UnityEngine.UIElements;
 
 namespace IBIIIS.Editor
 {
-    /// <summary>IBIIIS Dialogue Editor: 대본(TutorialScript)의 단계 하나하나를 노드로 왼쪽→오른쪽으로 잇고, 장면마다 줄을 바꿔 묶어 보여 주는 창.
+    /// <summary>IBIIIS Dialogue Editor: 대본(ScenarioScript)의 단계 하나하나를 노드로 왼쪽→오른쪽으로 잇고, 장면마다 줄을 바꿔 묶어 보여 주는 창.
     /// 같은 순간에 일어나는 단계(바로 넘어가는 감정 표시·자세·등장 등과 뒤따르는 대사·입력)는 같은 세로줄에 쌓고, 노드 줄 아래 트랙에
     /// 자세·감정 표시가 보이는 범위를 가로 막대로 표시한다. 노드·막대를 끌어 옮기고, 대사는 노드에서 바로 고치며, 우클릭으로 단계를 추가한다.
-    /// 데이터는 대본 에셋 그대로이며, 범위 계산은 진행기와 같은 TutorialTimeline, 편집 규칙은 DialogueScriptEdits를 쓴다.</summary>
+    /// 데이터는 대본 에셋 그대로이며, 범위 계산은 진행기와 같은 ScenarioTimeline, 편집 규칙은 DialogueScriptEdits를 쓴다.</summary>
     public sealed class DialogueEditorWindow : EditorWindow
     {
         private const float LineNodeWidth = 220, SmallNodeWidth = 130, Gap = 18, TrackRow = 22, DragThreshold = 5;
@@ -19,7 +19,7 @@ namespace IBIIIS.Editor
         private static readonly Color InputColor = new Color(.95f, .65f, .25f), WorldColor = new Color(.45f, .8f, .45f), FlowColor = new Color(.6f, .6f, .65f);
         private static readonly Color SelectedBorder = new Color(.45f, .7f, 1f), Highlight = new Color(.95f, .8f, .3f, .3f);
 
-        [SerializeField] private TutorialScript script;
+        [SerializeField] private ScenarioScript script;
         // 선택한 단계의 고유 ID(마지막이 기준 단계). 단계를 넣거나 빼도 선택이 따라간다.
         [SerializeField] private List<string> selection = new List<string>();
         private SerializedObject serialized;
@@ -37,7 +37,7 @@ namespace IBIIIS.Editor
         // 단계 번호 → 그 단계를 보여 주는 요소(노드·막대·경고). 검사 목록에서 이동할 때 쓴다.
         private readonly Dictionary<int, VisualElement> stepElements = new Dictionary<int, VisualElement>();
         // 복사한 단계(에디터를 켜 둔 동안 대본끼리도 붙여 넣을 수 있음).
-        private static List<TutorialStep> clipboard;
+        private static List<ScenarioStep> clipboard;
 
         // ── 끌기 상태 ──
         private enum DragKind { None, SpanStart, SpanEnd, SpanBody, Column, Instant, Draw }
@@ -51,8 +51,8 @@ namespace IBIIIS.Editor
         private VisualElement dropMarker, popup;
 
         [MenuItem("IBIIIS/Dialogue Editor")]
-        public static void Open() => Open(Selection.activeObject as TutorialScript);
-        public static DialogueEditorWindow Open(TutorialScript target)
+        public static void Open() => Open(Selection.activeObject as ScenarioScript);
+        public static DialogueEditorWindow Open(ScenarioScript target)
         {
             var window = GetWindow<DialogueEditorWindow>();
             window.titleContent = new GUIContent("IBIIIS Dialogue Editor");
@@ -65,12 +65,12 @@ namespace IBIIIS.Editor
         private static bool OpenAsset(int instanceId, int line)
         {
             // 더블클릭한 에셋은 그 순간 선택되어 있으므로 선택으로 판단한다(인스턴스 ID 변환 API는 Unity 6에서 구식).
-            if (!(Selection.activeObject is TutorialScript target)) return false;
+            if (!(Selection.activeObject is ScenarioScript target)) return false;
             Open(target); return true;
         }
 
-        private void OnEnable() { Undo.undoRedoPerformed += OnUndoRedo; EditorApplication.hierarchyChanged += RefreshConnection; EditorApplication.playModeStateChanged += OnPlayMode; }
-        private void OnDisable() { Undo.undoRedoPerformed -= OnUndoRedo; EditorApplication.hierarchyChanged -= RefreshConnection; EditorApplication.playModeStateChanged -= OnPlayMode; }
+        private void OnEnable() { Undo.undoRedoPerformed += OnUndoRedo; EditorApplication.hierarchyChanged += RefreshConnection; EditorApplication.projectChanged += RefreshConnection; EditorApplication.playModeStateChanged += OnPlayMode; }
+        private void OnDisable() { Undo.undoRedoPerformed -= OnUndoRedo; EditorApplication.hierarchyChanged -= RefreshConnection; EditorApplication.projectChanged -= RefreshConnection; EditorApplication.playModeStateChanged -= OnPlayMode; }
         private void OnPlayMode(PlayModeStateChange _) => RefreshConnection();
         private void OnUndoRedo() { RefreshConnection(); if (serialized != null && serialized.targetObject != null) { serialized.Update(); RebuildAll(); Save(); } }
         // Dialogue Editor에서 고친 내용은 바로 파일에 저장한다(Ctrl+S를 잊어도 남게). 에셋이 아닌 대본(테스트용 임시)은 저장하지 않는다.
@@ -81,8 +81,8 @@ namespace IBIIIS.Editor
             var root = rootVisualElement;
             root.focusable = true;
             var toolbar = new VisualElement { style = { flexDirection = FlexDirection.Row, paddingLeft = 6, paddingRight = 6, paddingTop = 4, paddingBottom = 4, alignItems = Align.Center, flexWrap = Wrap.Wrap } };
-            scriptField = new ObjectField("대본") { objectType = typeof(TutorialScript), allowSceneObjects = false, style = { flexGrow = 1, maxWidth = 380 } };
-            scriptField.RegisterValueChangedCallback(e => SetScript(e.newValue as TutorialScript));
+            scriptField = new ObjectField("대본") { objectType = typeof(ScenarioScript), allowSceneObjects = false, style = { flexGrow = 1, maxWidth = 380 } };
+            scriptField.RegisterValueChangedCallback(e => SetScript(e.newValue as ScenarioScript));
             toolbar.Add(scriptField);
             toolbar.Add(new Button(() => ShowCreateForm(false)) { text = "새 대본" });
             toolbar.Add(duplicateButton = new Button(() => ShowCreateForm(true)) { text = "대본 복제" });
@@ -105,7 +105,7 @@ namespace IBIIIS.Editor
             root.RegisterCallback<KeyDownEvent>(e => { if (e.keyCode == KeyCode.Escape && !Typing(e.target)) { ClosePopup(); selection.Clear(); RebuildAll(); e.StopPropagation(); } });
             // 표시 추가 창 밖을 누르면 닫는다.
             root.RegisterCallback<PointerDownEvent>(e => { if (popup != null && !(e.target is VisualElement v && (v == popup || popup.Contains(v)))) ClosePopup(); }, TrickleDown.TrickleDown);
-            if (script == null) script = Selection.activeObject as TutorialScript;
+            if (script == null) script = Selection.activeObject as ScenarioScript;
             SetScript(script);
         }
         private static bool HandlesCommand(string name) => name == "Copy" || name == "Paste" || name == "Duplicate" || name == "Delete" || name == "SoftDelete";
@@ -122,7 +122,7 @@ namespace IBIIIS.Editor
                 default: DeleteSelected(); break;
             }
         }
-        public void SetScript(TutorialScript value)
+        public void SetScript(ScenarioScript value)
         {
             if (value != script) selection.Clear();
             script = value;
@@ -175,7 +175,7 @@ namespace IBIIIS.Editor
             RebuildAll();
         }
         /// <summary>새 단계 목록을 대본에 쓰고(되돌리기 가능·바로 저장) 지정한 단계를 고른다. edited가 null이면 다시 그리기만 한다.</summary>
-        private void Commit(TutorialStep[] edited, string undoName, params int[] select)
+        private void Commit(ScenarioStep[] edited, string undoName, params int[] select)
         {
             if (edited == null || script == null) { RebuildGraph(); return; }
             serialized?.ApplyModifiedProperties();
@@ -194,25 +194,25 @@ namespace IBIIIS.Editor
             var scroll = graph.scrollOffset;
             graph.Clear(); columns.Clear(); stepElements.Clear();
             RefreshIssues();
-            if (script == null) { graph.Add(new Label("대본(Tutorial Script)을 고르세요. Project 창에서 대본 에셋을 더블클릭해도 열립니다.") { style = { marginLeft = 10, marginTop = 10 } }); return; }
+            if (script == null) { graph.Add(new Label("대본(Scenario Script)을 고르세요. Project 창에서 대본 에셋을 더블클릭해도 열립니다.") { style = { marginLeft = 10, marginTop = 10 } }); return; }
             var steps = script.Steps;
             if (steps.Length == 0) { graph.Add(new Button(() => Commit(new[] { NewLine(null) }, "대본 단계 추가", 0)) { text = "첫 대사 추가", style = { marginLeft = 10, marginTop = 10, alignSelf = Align.FlexStart } }); return; }
-            var spans = new Dictionary<int, TutorialSpan>(); var lanes = AssignLanes(steps, spans);
+            var spans = new Dictionary<int, ScenarioSpan>(); var lanes = AssignLanes(steps, spans);
             int primary = Primary;
-            var selectedSpan = primary >= 0 && spans.TryGetValue(primary, out var s) ? s : (TutorialSpan?)null;
+            var selectedSpan = primary >= 0 && spans.TryGetValue(primary, out var s) ? s : (ScenarioSpan?)null;
             var column = new VisualElement { style = { paddingLeft = 8, paddingTop = 8, paddingBottom = 8, alignItems = Align.FlexStart } };
-            var scenes = TutorialTimeline.Scenes(steps);
+            var scenes = ScenarioTimeline.Scenes(steps);
             for (int n = 0; n < scenes.Count; n++) column.Add(Scene(n, scenes[n], steps, spans, lanes, selectedSpan));
             graph.Add(column);
             graph.schedule.Execute(() => graph.scrollOffset = scroll);
         }
         // 범위 막대마다 겹치지 않는 트랙 줄(레인)을 정한다.
-        private static Dictionary<int, int> AssignLanes(TutorialStep[] steps, Dictionary<int, TutorialSpan> spans)
+        private static Dictionary<int, int> AssignLanes(ScenarioStep[] steps, Dictionary<int, ScenarioSpan> spans)
         {
             var lanes = new Dictionary<int, int>(); var laneEnds = new List<int>();
             for (int i = 0; i < steps.Length; i++)
             {
-                var span = TutorialTimeline.SpanOf(steps, i); if (span == null) continue;
+                var span = ScenarioTimeline.SpanOf(steps, i); if (span == null) continue;
                 spans[i] = span.Value;
                 int lane = laneEnds.FindIndex(end => end < i);
                 if (lane < 0) { lane = laneEnds.Count; laneEnds.Add(0); }
@@ -221,25 +221,25 @@ namespace IBIIIS.Editor
             return lanes;
         }
         // 노드 대신 트랙 막대로 보이는 단계.
-        private static bool IsTrackStep(TutorialStepType type) => type == TutorialStepType.Emote || type == TutorialStepType.Pose || type == TutorialStepType.EndDisplay;
-        private static float NodeWidth(TutorialStep step) => step.type == TutorialStepType.Line ? LineNodeWidth : SmallNodeWidth;
-        private VisualElement Scene(int number, (int start, int end) scene, TutorialStep[] steps, Dictionary<int, TutorialSpan> spans, Dictionary<int, int> lanes, TutorialSpan? selectedSpan)
+        private static bool IsTrackStep(ScenarioStepType type) => type == ScenarioStepType.Emote || type == ScenarioStepType.Pose || type == ScenarioStepType.EndDisplay;
+        private static float NodeWidth(ScenarioStep step) => step.type == ScenarioStepType.Line ? LineNodeWidth : SmallNodeWidth;
+        private VisualElement Scene(int number, (int start, int end) scene, ScenarioStep[] steps, Dictionary<int, ScenarioSpan> spans, Dictionary<int, int> lanes, ScenarioSpan? selectedSpan)
         {
             var group = new VisualElement { style = { marginBottom = 12, paddingLeft = 8, paddingRight = 8, paddingTop = 4, paddingBottom = 8, backgroundColor = new Color(1, 1, 1, .03f), borderTopLeftRadius = 8, borderTopRightRadius = 8, borderBottomLeftRadius = 8, borderBottomRightRadius = 8 } };
             SetBorder(group, new Color(.4f, .42f, .48f), 1);
             var last = steps[scene.end];
-            group.Add(new Label($"장면 {number + 1}   ·   {(TutorialTimeline.EndsScene(last.type) ? Summary(last) : "끝")}") { style = { unityFontStyleAndWeight = FontStyle.Bold, color = new Color(.8f, .82f, .88f), marginBottom = 4 } });
+            group.Add(new Label($"장면 {number + 1}   ·   {(ScenarioTimeline.EndsScene(last.type) ? Summary(last) : "끝")}") { style = { unityFontStyleAndWeight = FontStyle.Bold, color = new Color(.8f, .82f, .88f), marginBottom = 4 } });
             // 세로줄 = 같은 순간. 감정 표시·자세·표시 끝은 노드 없이 아래 트랙 막대로만 보인다(막대 시작 = 그 단계의 세로줄).
             // 위 줄에는 막대가 없는 바로 넘어가는 단계(켜기·끄기·적 합류·클리어 기록)를 실행 순서대로 쌓아 아래에 붙이고,
             // 아래 줄에는 그 순간의 기다리는 단계(대사·입력 등)를 위에 붙여 나란히 둔다. 두 줄은 같은 폭·간격을 써서 세로줄이 맞는다.
             var top = new VisualElement { style = { flexDirection = FlexDirection.Row, alignItems = Align.FlexEnd } };
             var bottom = new VisualElement { style = { flexDirection = FlexDirection.Row, alignItems = Align.Stretch } };
             var columnOf = new Dictionary<int, int>(); var left = new List<float>(); var width = new List<float>(); float x = 0;
-            var moments = TutorialTimeline.Moments(steps, scene.start, scene.end);
+            var moments = ScenarioTimeline.Moments(steps, scene.start, scene.end);
             for (int m = 0; m < moments.Count; m++)
             {
                 var (from, to) = moments[m];
-                bool hasMain = !TutorialTimeline.IsInstant(steps[to].type);
+                bool hasMain = !ScenarioTimeline.IsInstant(steps[to].type);
                 float w = hasMain ? NodeWidth(steps[to]) : SmallNodeWidth;
                 int columnIndex = columns.Count;
                 if (m > 0)
@@ -276,7 +276,7 @@ namespace IBIIIS.Editor
             for (int k = 0; k < missing.Count; k++)
             {
                 int i = missing[k], column = columnOf[i];
-                var warning = new Label($"⚠ {i}번 {TypeName(steps[i].type)}: {(steps[i].type == TutorialStepType.EndDisplay ? "끝낼 표시가 없음" : "그림이 없어 건너뜀")}") { style = { position = Position.Absolute, left = left[column], top = (laneTop + 1 + k) * TrackRow, minWidth = width[column], height = TrackRow - 4, backgroundColor = new Color(.75f, .2f, .2f, IsSelected(i) ? 1 : .85f), color = Color.white, fontSize = 10, paddingLeft = 6, paddingRight = 6, unityTextAlign = TextAnchor.MiddleLeft, whiteSpace = WhiteSpace.NoWrap, borderTopLeftRadius = 4, borderTopRightRadius = 4, borderBottomLeftRadius = 4, borderBottomRightRadius = 4 } };
+                var warning = new Label($"⚠ {i}번 {TypeName(steps[i].type)}: {(steps[i].type == ScenarioStepType.EndDisplay ? "끝낼 표시가 없음" : "그림이 없어 건너뜀")}") { style = { position = Position.Absolute, left = left[column], top = (laneTop + 1 + k) * TrackRow, minWidth = width[column], height = TrackRow - 4, backgroundColor = new Color(.75f, .2f, .2f, IsSelected(i) ? 1 : .85f), color = Color.white, fontSize = 10, paddingLeft = 6, paddingRight = 6, unityTextAlign = TextAnchor.MiddleLeft, whiteSpace = WhiteSpace.NoWrap, borderTopLeftRadius = 4, borderTopRightRadius = 4, borderBottomLeftRadius = 4, borderBottomRightRadius = 4 } };
                 Draggable(warning, DragKind.Instant, i, ColumnStart(scene, columnOf, i));
                 track.Add(warning); stepElements[i] = warning;
             }
@@ -299,7 +299,7 @@ namespace IBIIIS.Editor
         }
         private int ColumnStart((int start, int end) scene, Dictionary<int, int> columnOf, int index) => columns.Count - (columnOf.Values.Max() + 1) + columnOf[index];
         // 바로 넘어가는 단계: 한 줄짜리 작은 노드(왼쪽 색 띠 = 종류). 끌어서 다른 세로줄로 옮긴다.
-        private VisualElement InstantNode(int index, TutorialStep step, Dictionary<int, TutorialSpan> spans, TutorialSpan? selectedSpan, int column)
+        private VisualElement InstantNode(int index, ScenarioStep step, Dictionary<int, ScenarioSpan> spans, ScenarioSpan? selectedSpan, int column)
         {
             var color = CategoryColor(step.type);
             bool chosen = IsSelected(index);
@@ -314,9 +314,9 @@ namespace IBIIIS.Editor
             return node;
         }
         // 기다리는 단계 노드. 끌면 그 세로줄 전체(위에 쌓인 단계 포함)를 옮기고, 대사는 더블클릭해 바로 고친다.
-        private VisualElement Node(int index, TutorialStep step, Dictionary<int, TutorialSpan> spans, TutorialSpan? selectedSpan, int column)
+        private VisualElement Node(int index, ScenarioStep step, Dictionary<int, ScenarioSpan> spans, ScenarioSpan? selectedSpan, int column)
         {
-            bool line = step.type == TutorialStepType.Line;
+            bool line = step.type == ScenarioStepType.Line;
             var color = line ? new Color(.55f, .57f, .62f) : CategoryColor(step.type);
             var node = new VisualElement { style = { width = NodeWidth(step), flexShrink = 0, backgroundColor = new Color(.19f, .2f, .23f), paddingLeft = 6, paddingRight = 6, paddingTop = 3, paddingBottom = 5, borderTopLeftRadius = 5, borderTopRightRadius = 5, borderBottomLeftRadius = 5, borderBottomRightRadius = 5 } };
             bool chosen = IsSelected(index);
@@ -349,12 +349,12 @@ namespace IBIIIS.Editor
             if (name == null || string.IsNullOrEmpty(line.text)) { text.style.unityFontStyleAndWeight = FontStyle.Italic; text.style.color = new Color(.75f, .75f, .78f); }
             node.Add(text); node.tooltip = line.text + "\n더블클릭: 바로 고치기 · 끌기: 세로줄 옮기기";
         }
-        private VisualElement Bar(int owner, TutorialStep step, TutorialSpan span, float x, float width, int lane, bool continuesBefore, bool continuesAfter)
+        private VisualElement Bar(int owner, ScenarioStep step, ScenarioSpan span, float x, float width, int lane, bool continuesBefore, bool continuesAfter)
         {
-            var color = step.type == TutorialStepType.Pose ? PoseColor : EmoteColor;
+            var color = step.type == ScenarioStepType.Pose ? PoseColor : EmoteColor;
             bool chosen = IsSelected(owner);
-            string name = step.type == TutorialStepType.Pose ? $"자세 {(step.sprite != null ? step.sprite.name : "")}" : $"{step.target} {(step.sprite != null ? step.sprite.name : step.text)}";
-            string label = (continuesBefore ? "« " : "▶ ") + name + (span.EndKind == TutorialSpanEnd.Seconds ? $" ⏱{step.seconds:0.##}초" : "") + (continuesAfter ? "  »" : "  ■");
+            string name = step.type == ScenarioStepType.Pose ? $"자세 {(step.sprite != null ? step.sprite.name : "")}" : $"{step.target} {(step.sprite != null ? step.sprite.name : step.text)}";
+            string label = (continuesBefore ? "« " : "▶ ") + name + (span.EndKind == ScenarioSpanEnd.Seconds ? $" ⏱{step.seconds:0.##}초" : "") + (continuesAfter ? "  »" : "  ■");
             var bar = new Label(label)
             {
                 tooltip = $"{Summary(step)}\n{span.Start}번부터 {span.End}번까지 — {EndText(span)}\n가운데를 끌면 통째로, 양 끝을 끌면 시작·끝만 옮김",
@@ -431,7 +431,7 @@ namespace IBIIIS.Editor
             var edited = EditFor(dragKind, point, out int owner);
             var steps = edited ?? script.Steps; if (edited == null) owner = dragIndex;
             var after = DialogueScriptEdits.Columns(steps);
-            var span = TutorialTimeline.SpanOf(steps, owner);
+            var span = ScenarioTimeline.SpanOf(steps, owner);
             if (after.Count != columns.Count) return edited == null ? "(바뀌지 않음)" : "놓으면 옮김";
             if (span == null)
             {
@@ -443,7 +443,7 @@ namespace IBIIIS.Editor
             return $"놓으면  시작: {Describe(steps, after[a])}\n          끝: {Describe(steps, after[b])} {EndWord(span.Value.EndKind)}" + (edited == null ? "\n(바뀌지 않음)" : "");
         }
         // kind를 따로 받는다: 손을 뗄 때는 끌기 상태를 먼저 지운 뒤 계산하기 때문.
-        private TutorialStep[] EditFor(DragKind kind, Vector2 point, out int owner)
+        private ScenarioStep[] EditFor(DragKind kind, Vector2 point, out int owner)
         {
             owner = dragIndex;
             int target = ColumnAt(point);
@@ -550,11 +550,11 @@ namespace IBIIIS.Editor
             popup = new VisualElement { style = { position = Position.Absolute, backgroundColor = new Color(.16f, .17f, .2f), paddingLeft = 6, paddingRight = 6, paddingTop = 6, paddingBottom = 6, borderTopLeftRadius = 6, borderTopRightRadius = 6, borderBottomLeftRadius = 6, borderBottomRightRadius = 6 } };
             SetBorder(popup, new Color(.45f, .47f, .55f), 1);
             popup.Add(new Label($"{columns[from].To}번 ~ {columns[to].To}번에 추가") { style = { unityFontStyleAndWeight = FontStyle.Bold, marginBottom = 4 } });
-            void Add(string label, TutorialStep display) => popup.Add(new Button(() => { ClosePopup(); Commit(DialogueScriptEdits.AddSpan(script.Steps, from, to, display, out int owner), "표시 추가", owner); }) { text = label });
-            Add("감정 표시  ?", new TutorialStep { type = TutorialStepType.Emote, target = "player", text = "?" });
-            Add("감정 표시  !", new TutorialStep { type = TutorialStepType.Emote, target = "player", text = "!" });
-            Add("감정 표시  ;;", new TutorialStep { type = TutorialStepType.Emote, target = "player", text = ";;" });
-            Add("자세 (그림은 아래 칸에서 고름)", new TutorialStep { type = TutorialStepType.Pose });
+            void Add(string label, ScenarioStep display) => popup.Add(new Button(() => { ClosePopup(); Commit(DialogueScriptEdits.AddSpan(script.Steps, from, to, display, out int owner), "표시 추가", owner); }) { text = label });
+            Add("감정 표시  ?", new ScenarioStep { type = ScenarioStepType.Emote, target = "player", text = "?" });
+            Add("감정 표시  !", new ScenarioStep { type = ScenarioStepType.Emote, target = "player", text = "!" });
+            Add("감정 표시  ;;", new ScenarioStep { type = ScenarioStepType.Emote, target = "player", text = ";;" });
+            Add("자세 (그림은 아래 칸에서 고름)", new ScenarioStep { type = ScenarioStepType.Pose });
             popup.Add(new Button(ClosePopup) { text = "취소" });
             var local = rootVisualElement.WorldToLocal(point);
             popup.style.left = local.x; popup.style.top = local.y;
@@ -566,11 +566,11 @@ namespace IBIIIS.Editor
         private void ColumnMenu(ContextualMenuPopulateEvent e, int column)
         {
             if (script == null) return;
-            e.menu.AppendAction("이 세로줄에 추가/감정 표시", _ => AddInColumn(column, new TutorialStep { type = TutorialStepType.Emote, target = "player", text = "!" }));
-            e.menu.AppendAction("이 세로줄에 추가/자세", _ => AddInColumn(column, new TutorialStep { type = TutorialStepType.Pose }));
-            e.menu.AppendAction("이 세로줄에 추가/등장·숨김", _ => AddInColumn(column, new TutorialStep { type = TutorialStepType.SetActive, active = true }));
-            e.menu.AppendAction("이 세로줄에 추가/적 합류", _ => AddInColumn(column, new TutorialStep { type = TutorialStepType.SpawnEnemy, direction = Vector2Int.down }));
-            e.menu.AppendAction("이 세로줄에 추가/클리어 기록", _ => AddInColumn(column, new TutorialStep { type = TutorialStepType.RecordClear }));
+            e.menu.AppendAction("이 세로줄에 추가/감정 표시", _ => AddInColumn(column, new ScenarioStep { type = ScenarioStepType.Emote, target = "player", text = "!" }));
+            e.menu.AppendAction("이 세로줄에 추가/자세", _ => AddInColumn(column, new ScenarioStep { type = ScenarioStepType.Pose }));
+            e.menu.AppendAction("이 세로줄에 추가/등장·숨김", _ => AddInColumn(column, new ScenarioStep { type = ScenarioStepType.SetActive, active = true }));
+            e.menu.AppendAction("이 세로줄에 추가/적 합류", _ => AddInColumn(column, new ScenarioStep { type = ScenarioStepType.SpawnEnemy, direction = Vector2Int.down }));
+            e.menu.AppendAction("이 세로줄에 추가/클리어 기록", _ => AddInColumn(column, new ScenarioStep { type = ScenarioStepType.RecordClear }));
             foreach (var (label, make) in WaitingSteps(column))
             {
                 e.menu.AppendAction("앞에 새 세로줄/" + label, _ => AddColumn(column - 1, make()));
@@ -580,39 +580,39 @@ namespace IBIIIS.Editor
             e.menu.AppendAction("이 세로줄 삭제", _ => DeleteColumn(column));
             e.StopPropagation();
         }
-        private IEnumerable<(string, System.Func<TutorialStep>)> WaitingSteps(int column)
+        private IEnumerable<(string, System.Func<ScenarioStep>)> WaitingSteps(int column)
         {
             var columnsNow = DialogueScriptEdits.Columns(script.Steps);
             var speaker = LastSpeaker(column >= 0 && column < columnsNow.Count ? columnsNow[column].to : script.Steps.Length - 1);
             yield return ("대사", () => NewLine(speaker));
             yield return ("지문", () => NewLine(null));
-            yield return ("입력 대기", () => new TutorialStep { type = TutorialStepType.WaitAction, actions = TutorialActions.Move });
-            yield return ("네 방향 누르기", () => new TutorialStep { type = TutorialStepType.WaitAllDirections, keys = "W A S D" });
-            yield return ("칸까지 이동", () => new TutorialStep { type = TutorialStepType.WaitReachCell, actions = TutorialActions.Move });
-            yield return ("칸 클릭", () => new TutorialStep { type = TutorialStepType.WaitClickCell, keys = "좌클릭" });
-            yield return ("이름 입력", () => new TutorialStep { type = TutorialStepType.NameInput });
-            yield return ("자유 진행", () => new TutorialStep { type = TutorialStepType.FreePlay, actions = TutorialActions.Move | TutorialActions.Wait | TutorialActions.Dash });
-            yield return ("기다림", () => new TutorialStep { type = TutorialStepType.Wait, seconds = 1 });
-            yield return ("씬 전환", () => new TutorialStep { type = TutorialStepType.LoadScene });
+            yield return ("입력 대기", () => new ScenarioStep { type = ScenarioStepType.WaitAction, actions = ScenarioActions.Move });
+            yield return ("네 방향 누르기", () => new ScenarioStep { type = ScenarioStepType.WaitAllDirections, keys = "W A S D" });
+            yield return ("칸까지 이동", () => new ScenarioStep { type = ScenarioStepType.WaitReachCell, actions = ScenarioActions.Move });
+            yield return ("칸 클릭", () => new ScenarioStep { type = ScenarioStepType.WaitClickCell, keys = "좌클릭" });
+            yield return ("이름 입력", () => new ScenarioStep { type = ScenarioStepType.NameInput });
+            yield return ("자유 진행", () => new ScenarioStep { type = ScenarioStepType.FreePlay, actions = ScenarioActions.Move | ScenarioActions.Wait | ScenarioActions.Dash });
+            yield return ("기다림", () => new ScenarioStep { type = ScenarioStepType.Wait, seconds = 1 });
+            yield return ("씬 전환", () => new ScenarioStep { type = ScenarioStepType.LoadScene });
         }
-        private static TutorialStep NewLine(DialogueCharacter speaker) => new TutorialStep { type = TutorialStepType.Line, line = new DialogueLine { speaker = speaker, text = "" } };
+        private static ScenarioStep NewLine(DialogueCharacter speaker) => new ScenarioStep { type = ScenarioStepType.Line, line = new DialogueLine { speaker = speaker, text = "" } };
         // 넣을 자리 앞에서 마지막으로 말한 인물(새 대사의 기본 화자).
         private DialogueCharacter LastSpeaker(int before)
         {
             var steps = script.Steps;
-            for (int i = Mathf.Min(before, steps.Length - 1); i >= 0; i--) if (steps[i].type == TutorialStepType.Line && steps[i].line.speaker != null) return steps[i].line.speaker;
+            for (int i = Mathf.Min(before, steps.Length - 1); i >= 0; i--) if (steps[i].type == ScenarioStepType.Line && steps[i].line.speaker != null) return steps[i].line.speaker;
             return null;
         }
-        private void AddInColumn(int column, TutorialStep step) => Commit(DialogueScriptEdits.InsertInColumn(script.Steps, column, step, out int at), "단계 추가", at);
-        private void AddColumn(int after, TutorialStep step)
+        private void AddInColumn(int column, ScenarioStep step) => Commit(DialogueScriptEdits.InsertInColumn(script.Steps, column, step, out int at), "단계 추가", at);
+        private void AddColumn(int after, ScenarioStep step)
         {
             Commit(DialogueScriptEdits.InsertAfterColumn(script.Steps, after, step, out int at), "단계 추가", at);
-            if (step.type == TutorialStepType.Line) graph.schedule.Execute(() => BeginInlineEdit(at)); // 새 대사는 바로 입력
+            if (step.type == ScenarioStepType.Line) graph.schedule.Execute(() => BeginInlineEdit(at)); // 새 대사는 바로 입력
         }
         private void DeleteColumn(int column)
         {
             var c = DialogueScriptEdits.Columns(script.Steps)[column];
-            var indices = Enumerable.Range(c.from, c.to - c.from + 1).Where(i => script.Steps[i].type != TutorialStepType.EndDisplay).ToList();
+            var indices = Enumerable.Range(c.from, c.to - c.from + 1).Where(i => script.Steps[i].type != ScenarioStepType.EndDisplay).ToList();
             if (!EditorUtility.DisplayDialog("세로줄 삭제", $"{c.from}번 ~ {c.to}번 단계 {indices.Count}개를 지웁니다(표시 끝 단계는 앞 표시의 끝이라 남김).", "삭제", "취소")) return;
             Commit(DialogueScriptEdits.Delete(script.Steps, indices), "세로줄 삭제", Mathf.Min(c.from, script.Steps.Length - indices.Count - 1));
         }
@@ -643,6 +643,7 @@ namespace IBIIIS.Editor
             idField.RegisterValueChangedCallback(_ => { idEdited = true; Check(); });
             create.clicked += () =>
             {
+                AssetPaths.EnsureFolder(DialogueScriptAssets.DefaultFolder); // 저장 창이 기본 폴더에서 열리게
                 string path = EditorUtility.SaveFilePanelInProject(duplicate ? "대본 복제 저장" : "새 대본 저장", nameField.value.Trim(), "asset", "대본 파일을 저장할 위치를 고르세요.", DialogueScriptAssets.DefaultFolder);
                 if (string.IsNullOrEmpty(path)) return;
                 bool blank = start.index != 1 || !copyable;
@@ -667,47 +668,53 @@ namespace IBIIIS.Editor
         private static string CopyName(string name) => name.EndsWith("Script") && name.Length > 6 ? name.Substring(0, name.Length - 6) + "CopyScript" : name + "Copy";
 
         // ── 씬에 연결 ──
-        // 열린 씬의 대본 진행기(TutorialDirector)에 지금 대본을 꽂는다. 하나면 확인 후 연결, 여럿이면 목록에서 고르고, 없으면 안내한다.
-        // Ctrl+Z로 되돌릴 수 있고 씬은 변경 표시만 한다(저장은 Ctrl+S). Play 중에는 막는다(실행 중 값만 바뀌므로).
+        // 프로젝트의 모든 씬에서 대본 진행기(ScenarioDirector)를 찾아 목록으로 보여 주고, 고른 진행기에 지금 대본을 꽂는다.
+        // 열린 씬: 그 자리에서 연결(Ctrl+Z 가능, 씬 저장은 사용자). 닫힌 씬: 확인 후 씬 파일을 잠깐 열어 연결·저장하고 닫는다(되돌리기 없음).
+        // Play 중과 파일로 저장되지 않은 대본은 막는다.
         private void ConnectToScene()
         {
             if (script == null) return;
-            var directors = DialogueScriptScenes.DirectorsInOpenScenes();
-            if (directors.Count == 0)
+            var entries = DialogueScriptScenes.DirectorsInProject();
+            if (entries.Count == 0)
             {
-                EditorUtility.DisplayDialog("씬에 연결", "열린 씬에 대본 진행기(TutorialDirector)가 없습니다.\n전투 씬을 열고 Grid Map Player 오브젝트에 TutorialDirector를 추가한 뒤 다시 누르세요.", "확인");
+                EditorUtility.DisplayDialog("씬에 연결", "프로젝트의 어느 씬에도 대본 진행기(ScenarioDirector)가 없습니다.\n전투 씬의 Grid Map Player 오브젝트에 ScenarioDirector를 추가한 뒤 다시 누르세요.", "확인");
                 return;
             }
-            if (directors.Count == 1) { ConnectTo(directors[0]); return; }
             var menu = new GenericMenu();
-            foreach (var director in directors)
+            foreach (var entry in entries)
             {
-                var current = DialogueScriptScenes.ScriptOf(director);
-                var item = new GUIContent($"{DialogueScriptScenes.Describe(director).Replace("/", "∕")}  (지금: {(current != null ? current.name : "없음")})");
-                if (current == script) menu.AddDisabledItem(item, true); else menu.AddItem(item, false, () => ConnectTo(director));
+                var current = entry.Script;
+                string where = entry.Open ? "열린 씬" : "닫힌 씬";
+                string label = $"{where}/{entry.SceneName.Replace("/", "∕")}  ·  {entry.ObjectName.Replace("/", "∕")}  (지금: {(current != null ? current.name : "없음")})";
+                if (current == script) menu.AddDisabledItem(new GUIContent(label), true);
+                else menu.AddItem(new GUIContent(label), false, () => ConnectTo(entry));
             }
             menu.DropDown(connectButton.worldBound);
         }
-        private void ConnectTo(TutorialDirector director)
+        private void ConnectTo(DialogueScriptScenes.Entry entry)
         {
-            var current = DialogueScriptScenes.ScriptOf(director);
-            if (current == script) { ShowNotification(new GUIContent("이미 이 대본이 연결되어 있습니다.")); return; }
-            if (current != null && !EditorUtility.DisplayDialog("씬에 연결", $"{DialogueScriptScenes.Describe(director)}의 대본을 '{current.name}'에서 '{script.name}'(으)로 바꿉니다.\nCtrl+Z로 되돌릴 수 있고, 씬은 직접 저장해야 합니다.", "바꾸기", "취소")) return;
-            if (!DialogueScriptScenes.Connect(director, script)) return;
-            EditorGUIUtility.PingObject(director);
-            ShowNotification(new GUIContent($"{director.gameObject.scene.name} 씬에 연결했습니다. 씬을 저장하세요(Ctrl+S)."));
+            var current = entry.Script;
+            string target = $"{entry.SceneName} / {entry.ObjectName}";
+            if (!entry.Open)
+            {
+                if (!EditorUtility.DisplayDialog("닫힌 씬에 연결", $"{entry.ScenePath} 씬 파일을 잠깐 열어 {entry.ObjectName}의 대본을 '{(current != null ? current.name : "없음")}'에서 '{script.name}'(으)로 바꾸고 저장한 뒤 닫습니다.\nCtrl+Z로 되돌릴 수 없습니다(되돌리려면 다시 연결하세요).", "연결하고 저장", "취소")) return;
+            }
+            else if (current != null && !EditorUtility.DisplayDialog("씬에 연결", $"{target}의 대본을 '{current.name}'에서 '{script.name}'(으)로 바꿉니다.\nCtrl+Z로 되돌릴 수 있고, 씬은 직접 저장해야 합니다.", "바꾸기", "취소")) return;
+            if (!DialogueScriptScenes.Connect(entry, script, out string problem)) { EditorUtility.DisplayDialog("씬에 연결", problem, "확인"); return; }
+            if (entry.Open) { EditorGUIUtility.PingObject(entry.Director); ShowNotification(new GUIContent($"{entry.SceneName} 씬에 연결했습니다. 씬을 저장하세요(Ctrl+S).")); }
+            else { EditorGUIUtility.PingObject(AssetDatabase.LoadAssetAtPath<SceneAsset>(entry.ScenePath)); ShowNotification(new GUIContent($"{entry.SceneName} 씬 파일에 연결하고 저장했습니다.")); }
             RefreshConnection();
         }
-        // 지금 대본이 열린 씬의 어느 진행기에 연결되어 있는지 막대에 적는다.
+        // 지금 대본이 연결된 씬(열린 씬·닫힌 씬 모두)을 막대에 적는다.
         private void RefreshConnection()
         {
             if (connectButton == null || connectionLabel == null) return;
             bool playing = EditorApplication.isPlayingOrWillChangePlaymode;
             connectButton.SetEnabled(script != null && EditorUtility.IsPersistent(script) && !playing);
-            connectButton.tooltip = playing ? "Play 중에는 연결할 수 없습니다." : "열린 씬의 대본 진행기(TutorialDirector)에 이 대본을 연결합니다.";
+            connectButton.tooltip = playing ? "Play 중에는 연결할 수 없습니다." : "프로젝트 씬의 대본 진행기(ScenarioDirector)를 골라 이 대본을 연결합니다.";
             if (script == null) { connectionLabel.text = ""; return; }
-            var linked = DialogueScriptScenes.DirectorsInOpenScenes().FindAll(d => DialogueScriptScenes.ScriptOf(d) == script);
-            connectionLabel.text = linked.Count == 0 ? "열린 씬에 연결 없음" : "연결: " + string.Join(", ", linked.ConvertAll(d => d.gameObject.scene.name));
+            var linked = DialogueScriptScenes.DirectorsInProject().FindAll(entry => entry.Script == script);
+            connectionLabel.text = linked.Count == 0 ? "연결된 씬 없음" : "연결: " + string.Join(", ", linked.ConvertAll(entry => entry.SceneName + (entry.Open ? "" : "(닫힘)")));
         }
 
         // ── 대사 바로 고치기 ──
@@ -724,7 +731,7 @@ namespace IBIIIS.Editor
             void Commit2()
             {
                 int i = IndexOfId(id); if (i < 0) return;
-                var edited = (TutorialStep[])script.Steps.Clone();
+                var edited = (ScenarioStep[])script.Steps.Clone();
                 edited[i].line.speaker = who.index <= 0 ? null : characters[who.index - 1];
                 edited[i].line.text = text.value;
                 Commit(edited, "대사 고치기", i);
@@ -783,100 +790,100 @@ namespace IBIIIS.Editor
         }
 
         // ── 표시 문구 ──
-        private static string TypeName(TutorialStepType type)
+        private static string TypeName(ScenarioStepType type)
         {
             switch (type)
             {
-                case TutorialStepType.Emote: return "감정 표시";
-                case TutorialStepType.Pose: return "자세";
-                case TutorialStepType.WaitAction: return "입력 대기";
-                case TutorialStepType.WaitFreeMove: return "자유 이동";
-                case TutorialStepType.WaitReachCell: return "칸까지 이동";
-                case TutorialStepType.WaitClickCell: return "칸 클릭";
-                case TutorialStepType.WaitAllDirections: return "네 방향";
-                case TutorialStepType.NameInput: return "이름 입력";
-                case TutorialStepType.SetActive: return "켜기·끄기";
-                case TutorialStepType.Wait: return "기다림";
-                case TutorialStepType.LoadScene: return "씬 전환";
-                case TutorialStepType.SpawnEnemy: return "적 합류";
-                case TutorialStepType.FreePlay: return "자유 진행";
-                case TutorialStepType.RecordClear: return "클리어 기록";
-                case TutorialStepType.EndDisplay: return "표시 끝";
+                case ScenarioStepType.Emote: return "감정 표시";
+                case ScenarioStepType.Pose: return "자세";
+                case ScenarioStepType.WaitAction: return "입력 대기";
+                case ScenarioStepType.WaitFreeMove: return "자유 이동";
+                case ScenarioStepType.WaitReachCell: return "칸까지 이동";
+                case ScenarioStepType.WaitClickCell: return "칸 클릭";
+                case ScenarioStepType.WaitAllDirections: return "네 방향";
+                case ScenarioStepType.NameInput: return "이름 입력";
+                case ScenarioStepType.SetActive: return "켜기·끄기";
+                case ScenarioStepType.Wait: return "기다림";
+                case ScenarioStepType.LoadScene: return "씬 전환";
+                case ScenarioStepType.SpawnEnemy: return "적 합류";
+                case ScenarioStepType.FreePlay: return "자유 진행";
+                case ScenarioStepType.RecordClear: return "클리어 기록";
+                case ScenarioStepType.EndDisplay: return "표시 끝";
                 default: return type.ToString();
             }
         }
         // 작은 노드 본문: 종류 이름은 머리에 있으므로 요약에서 종류 이름을 뺀 내용.
-        private static string Detail(TutorialStep step)
+        private static string Detail(ScenarioStep step)
         {
             string summary = Summary(step), name = TypeName(step.type);
             if (summary.StartsWith(name)) summary = summary.Substring(name.Length).TrimStart(' ', ':', '·');
             return string.IsNullOrEmpty(summary) ? name : summary;
         }
-        private static Color CategoryColor(TutorialStepType type)
+        private static Color CategoryColor(ScenarioStepType type)
         {
             switch (type)
             {
-                case TutorialStepType.Pose: return PoseColor;
-                case TutorialStepType.Emote: return EmoteColor;
-                case TutorialStepType.SetActive: case TutorialStepType.SpawnEnemy: return WorldColor;
-                case TutorialStepType.Wait: case TutorialStepType.LoadScene: case TutorialStepType.RecordClear: return FlowColor;
+                case ScenarioStepType.Pose: return PoseColor;
+                case ScenarioStepType.Emote: return EmoteColor;
+                case ScenarioStepType.SetActive: case ScenarioStepType.SpawnEnemy: return WorldColor;
+                case ScenarioStepType.Wait: case ScenarioStepType.LoadScene: case ScenarioStepType.RecordClear: return FlowColor;
                 default: return InputColor;
             }
         }
-        private static string EndText(TutorialSpan span)
+        private static string EndText(ScenarioSpan span)
         {
             switch (span.EndKind)
             {
-                case TutorialSpanEnd.LineDone: return $"{span.End}번 대사를 넘길 때까지";
-                case TutorialSpanEnd.NextAction: return $"{span.End}번 입력에서 행동할 때까지";
-                case TutorialSpanEnd.Replaced: return $"{span.End}번 단계가 끝나고 다음 표시로 바뀔 때까지";
-                case TutorialSpanEnd.EndStep: return $"{span.End}번 단계가 끝날 때까지(표시 끝 {span.Marker}번)";
-                case TutorialSpanEnd.Seconds: return "정한 시간 동안";
+                case ScenarioSpanEnd.LineDone: return $"{span.End}번 대사를 넘길 때까지";
+                case ScenarioSpanEnd.NextAction: return $"{span.End}번 입력에서 행동할 때까지";
+                case ScenarioSpanEnd.Replaced: return $"{span.End}번 단계가 끝나고 다음 표시로 바뀔 때까지";
+                case ScenarioSpanEnd.EndStep: return $"{span.End}번 단계가 끝날 때까지(표시 끝 {span.Marker}번)";
+                case ScenarioSpanEnd.Seconds: return "정한 시간 동안";
                 default: return "대본 끝까지";
             }
         }
         // 세로줄 하나를 짧게: 대사면 앞부분, 아니면 요약.
-        private static string Describe(TutorialStep[] steps, (int from, int to, bool hasMain) column)
+        private static string Describe(ScenarioStep[] steps, (int from, int to, bool hasMain) column)
         {
             if (!column.hasMain) return $"{column.to}번 단계";
             var main = steps[column.to];
-            if (main.type != TutorialStepType.Line) return $"{column.to}번 {Summary(main)}";
+            if (main.type != ScenarioStepType.Line) return $"{column.to}번 {Summary(main)}";
             string text = main.line.text ?? ""; if (text.Length > 18) text = text.Substring(0, 18) + "…";
             return $"{column.to}번 \"{text}\"";
         }
-        private static string EndWord(TutorialSpanEnd kind)
+        private static string EndWord(ScenarioSpanEnd kind)
         {
             switch (kind)
             {
-                case TutorialSpanEnd.NextAction: return "(여기서 행동할 때)";
-                case TutorialSpanEnd.Seconds: return "(정한 시간 동안)";
-                case TutorialSpanEnd.ScriptEnd: return "(대본 끝까지)";
-                case TutorialSpanEnd.Replaced: return "(다음 표시로 바뀔 때)";
+                case ScenarioSpanEnd.NextAction: return "(여기서 행동할 때)";
+                case ScenarioSpanEnd.Seconds: return "(정한 시간 동안)";
+                case ScenarioSpanEnd.ScriptEnd: return "(대본 끝까지)";
+                case ScenarioSpanEnd.Replaced: return "(다음 표시로 바뀔 때)";
                 default: return "(이 단계가 끝날 때)";
             }
         }
         /// <summary>단계 한 줄 요약(노드 화면·편집 칸 제목).</summary>
-        public static string Summary(TutorialStep step)
+        public static string Summary(ScenarioStep step)
         {
             string keys = step.KeyCaps.Length > 0 ? $" [{string.Join(" + ", step.KeyCaps)}]" : "";
             switch (step.type)
             {
-                case TutorialStepType.Line: return "대사";
-                case TutorialStepType.Emote: return $"감정 표시 {(step.sprite != null ? step.sprite.name : step.text)} → {step.target}" + (step.seconds > 0 && !step.untilEnd ? $" {step.seconds:0.##}초" : "");
-                case TutorialStepType.Pose: return $"자세 {(step.sprite != null ? step.sprite.name : "(그림 없음)")} · {step.motion}" + (step.endMotion != PoseMotion.None ? $" / 돌아올 때 {step.endMotion}" : "") + (!step.untilAction && !step.untilEnd && step.seconds > 0 ? $" {step.seconds:0.##}초" : "");
-                case TutorialStepType.WaitAction: return $"입력 대기: {step.actions}" + (step.direction != Vector2Int.zero ? $" {Direction(step.direction)}" : "") + keys;
-                case TutorialStepType.WaitFreeMove: return $"자유 이동 {step.seconds:0.##}초" + keys;
-                case TutorialStepType.WaitReachCell: return $"칸 {step.cell}까지 이동" + keys;
-                case TutorialStepType.WaitClickCell: return $"칸 {step.cell} 클릭" + keys;
-                case TutorialStepType.WaitAllDirections: return "네 방향 모두 누르기" + keys;
-                case TutorialStepType.NameInput: return $"이름 입력 (기본값 {step.text})";
-                case TutorialStepType.SetActive: return $"{step.target} {(step.active ? "등장" : "숨김")}";
-                case TutorialStepType.Wait: return $"{step.seconds:0.##}초 기다림";
-                case TutorialStepType.LoadScene: return $"씬 전환 → {System.IO.Path.GetFileNameWithoutExtension(step.scenePath)}";
-                case TutorialStepType.SpawnEnemy: return $"적 합류 {(step.prefab != null ? step.prefab.name : "(프리팹 없음)")} {step.cell} {Direction(step.direction)}";
-                case TutorialStepType.FreePlay: return $"자유 진행: {step.actions}";
-                case TutorialStepType.RecordClear: return $"클리어 기록 {step.text}";
-                case TutorialStepType.EndDisplay: return $"표시 끝 {(step.display == TutorialDisplay.Pose ? "자세" : $"감정 표시 → {step.target}")}";
+                case ScenarioStepType.Line: return "대사";
+                case ScenarioStepType.Emote: return $"감정 표시 {(step.sprite != null ? step.sprite.name : step.text)} → {step.target}" + (step.seconds > 0 && !step.untilEnd ? $" {step.seconds:0.##}초" : "");
+                case ScenarioStepType.Pose: return $"자세 {(step.sprite != null ? step.sprite.name : "(그림 없음)")} · {step.motion}" + (step.endMotion != PoseMotion.None ? $" / 돌아올 때 {step.endMotion}" : "") + (!step.untilAction && !step.untilEnd && step.seconds > 0 ? $" {step.seconds:0.##}초" : "");
+                case ScenarioStepType.WaitAction: return $"입력 대기: {step.actions}" + (step.direction != Vector2Int.zero ? $" {Direction(step.direction)}" : "") + keys;
+                case ScenarioStepType.WaitFreeMove: return $"자유 이동 {step.seconds:0.##}초" + keys;
+                case ScenarioStepType.WaitReachCell: return $"칸 {step.cell}까지 이동" + keys;
+                case ScenarioStepType.WaitClickCell: return $"칸 {step.cell} 클릭" + keys;
+                case ScenarioStepType.WaitAllDirections: return "네 방향 모두 누르기" + keys;
+                case ScenarioStepType.NameInput: return $"이름 입력 (기본값 {step.text})";
+                case ScenarioStepType.SetActive: return $"{step.target} {(step.active ? "등장" : "숨김")}";
+                case ScenarioStepType.Wait: return $"{step.seconds:0.##}초 기다림";
+                case ScenarioStepType.LoadScene: return $"씬 전환 → {System.IO.Path.GetFileNameWithoutExtension(step.scenePath)}";
+                case ScenarioStepType.SpawnEnemy: return $"적 합류 {(step.prefab != null ? step.prefab.name : "(프리팹 없음)")} {step.cell} {Direction(step.direction)}";
+                case ScenarioStepType.FreePlay: return $"자유 진행: {step.actions}";
+                case ScenarioStepType.RecordClear: return $"클리어 기록 {step.text}";
+                case ScenarioStepType.EndDisplay: return $"표시 끝 {(step.display == ScenarioDisplay.Pose ? "자세" : $"감정 표시 → {step.target}")}";
                 default: return step.type.ToString();
             }
         }
@@ -922,8 +929,8 @@ namespace IBIIIS.Editor
             top.Add(new Button(DeleteSelected) { text = "삭제" });
             top.Add(new Button(() => { Selection.activeObject = script; EditorGUIUtility.PingObject(script); }) { text = "Inspector에서 보기" });
             detail.Add(top);
-            var span = TutorialTimeline.SpanOf(script.Steps, index);
-            if (span != null) detail.Add(new Label($"보이는 범위: {span.Value.Start}번 ~ {span.Value.End}번 ({EndText(span.Value)})") { style = { color = step.type == TutorialStepType.Pose ? PoseColor : EmoteColor, whiteSpace = WhiteSpace.Normal, marginBottom = 6 } });
+            var span = ScenarioTimeline.SpanOf(script.Steps, index);
+            if (span != null) detail.Add(new Label($"보이는 범위: {span.Value.Start}번 ~ {span.Value.End}번 ({EndText(span.Value)})") { style = { color = step.type == ScenarioStepType.Pose ? PoseColor : EmoteColor, whiteSpace = WhiteSpace.Normal, marginBottom = 6 } });
             var field = new PropertyField(steps.GetArrayElementAtIndex(index), "단계");
             field.Bind(serialized);
             detail.Add(field);
@@ -934,17 +941,17 @@ namespace IBIIIS.Editor
         {
             int target = index + delta; var steps = script.Steps;
             if (target < 0 || target >= steps.Length) return;
-            var edited = (TutorialStep[])steps.Clone(); (edited[index], edited[target]) = (edited[target], edited[index]);
+            var edited = (ScenarioStep[])steps.Clone(); (edited[index], edited[target]) = (edited[target], edited[index]);
             Commit(edited, "단계 순서 바꾸기", target);
         }
     }
     /// <summary>대본 Inspector 위에 IBIIIS Dialogue Editor 열기 버튼을 둔다. 아래는 기본 Inspector 그대로.</summary>
-    [CustomEditor(typeof(TutorialScript))]
-    public sealed class TutorialScriptEditor : UnityEditor.Editor
+    [CustomEditor(typeof(ScenarioScript))]
+    public sealed class ScenarioScriptEditor : UnityEditor.Editor
     {
         public override void OnInspectorGUI()
         {
-            if (GUILayout.Button("IBIIIS Dialogue Editor로 열기", GUILayout.Height(26))) DialogueEditorWindow.Open((TutorialScript)target);
+            if (GUILayout.Button("IBIIIS Dialogue Editor로 열기", GUILayout.Height(26))) DialogueEditorWindow.Open((ScenarioScript)target);
             EditorGUILayout.Space(4);
             DrawDefaultInspector();
         }

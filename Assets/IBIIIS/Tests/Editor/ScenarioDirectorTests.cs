@@ -5,14 +5,14 @@ using UnityEngine.SceneManagement;
 
 namespace IBIIIS.Tests
 {
-    public sealed class TutorialTests
+    public sealed class ScenarioDirectorTests
     {
         private Scene scene;
         private GridMap map;
-        private TutorialScript script;
+        private ScenarioScript script;
         private DialogueCharacter fly;
         private GridMapPlayer battle;
-        private TutorialDirector director;
+        private ScenarioDirector director;
         private GameObject scarecrow;
         [SetUp] public void Setup()
         {
@@ -21,25 +21,25 @@ namespace IBIIIS.Tests
             for (int y = 0; y < 5; y++) for (int x = 0; x < 9; x++) map.SetWalkable(new Vector2Int(x, y), true);
             map.SetStart(new Vector2Int(1, 2));
             fly = ScriptableObject.CreateInstance<DialogueCharacter>(); fly.Set("fly", "어시 파리", DialogueSide.Right, null, Color.green);
-            script = ScriptableObject.CreateInstance<TutorialScript>();
+            script = ScriptableObject.CreateInstance<ScenarioScript>();
             script.Set("test", new[]
             {
-                new TutorialStep { type = TutorialStepType.Line, line = DialogueLine.Narrate("주인공이 접속한다.") },
-                new TutorialStep { type = TutorialStepType.Emote, target = "player", text = "?" },
-                new TutorialStep { type = TutorialStepType.Line, line = DialogueLine.Say(fly, "안녕!") },
-                new TutorialStep { type = TutorialStepType.NameInput, line = DialogueLine.Narrate("이름을 붙여주세요"), text = "파리" },
-                new TutorialStep { type = TutorialStepType.WaitAction, line = DialogueLine.Narrate("A키로 왼쪽"), actions = TutorialActions.Move, direction = Vector2Int.left, keys = "A" },
-                new TutorialStep { type = TutorialStepType.WaitFreeMove, actions = TutorialActions.Move, seconds = 3, keys = "W A S D" },
-                new TutorialStep { type = TutorialStepType.WaitReachCell, actions = TutorialActions.Move, cell = new Vector2Int(3, 2) },
-                new TutorialStep { type = TutorialStepType.SetActive, target = "scarecrow", active = true },
-                new TutorialStep { type = TutorialStepType.WaitClickCell, cell = new Vector2Int(4, 2), seconds = 1 },
-                new TutorialStep { type = TutorialStepType.Line, line = DialogueLine.Say(fly, "끝!") },
+                new ScenarioStep { type = ScenarioStepType.Line, line = DialogueLine.Narrate("주인공이 접속한다.") },
+                new ScenarioStep { type = ScenarioStepType.Emote, target = "player", text = "?" },
+                new ScenarioStep { type = ScenarioStepType.Line, line = DialogueLine.Say(fly, "안녕!") },
+                new ScenarioStep { type = ScenarioStepType.NameInput, line = DialogueLine.Narrate("이름을 붙여주세요"), text = "파리" },
+                new ScenarioStep { type = ScenarioStepType.WaitAction, line = DialogueLine.Narrate("A키로 왼쪽"), actions = ScenarioActions.Move, direction = Vector2Int.left, keys = "A" },
+                new ScenarioStep { type = ScenarioStepType.WaitFreeMove, actions = ScenarioActions.Move, seconds = 3, keys = "W A S D" },
+                new ScenarioStep { type = ScenarioStepType.WaitReachCell, actions = ScenarioActions.Move, cell = new Vector2Int(3, 2) },
+                new ScenarioStep { type = ScenarioStepType.SetActive, target = "scarecrow", active = true },
+                new ScenarioStep { type = ScenarioStepType.WaitClickCell, cell = new Vector2Int(4, 2), seconds = 1 },
+                new ScenarioStep { type = ScenarioStepType.Line, line = DialogueLine.Say(fly, "끝!") },
             });
             var go = new GameObject("Battle"); SceneManager.MoveGameObjectToScene(go, scene);
             battle = go.AddComponent<GridMapPlayer>(); battle.Configure(map, null, null); battle.Build();
             scarecrow = new GameObject("Scarecrow"); SceneManager.MoveGameObjectToScene(scarecrow, scene); scarecrow.SetActive(false);
-            director = go.AddComponent<TutorialDirector>();
-            director.Configure(battle, script, new[] { new TutorialDirector.Actor { id = "scarecrow", target = scarecrow, height = 1.5f } });
+            director = go.AddComponent<ScenarioDirector>();
+            director.Configure(battle, script, new[] { new ScenarioDirector.Actor { id = "scarecrow", target = scarecrow, height = 1.5f } });
         }
         [TearDown] public void Cleanup()
         {
@@ -75,10 +75,10 @@ namespace IBIIIS.Tests
         {
             script.Set("block", new[]
             {
-                new TutorialStep { type = TutorialStepType.SetActive, target = "scarecrow", active = true },
-                new TutorialStep { type = TutorialStepType.FreePlay, actions = TutorialActions.Move | TutorialActions.Wait },
+                new ScenarioStep { type = ScenarioStepType.SetActive, target = "scarecrow", active = true },
+                new ScenarioStep { type = ScenarioStepType.FreePlay, actions = ScenarioActions.Move | ScenarioActions.Wait },
             });
-            director.Configure(battle, script, new[] { new TutorialDirector.Actor { id = "scarecrow", target = scarecrow, blocksCell = true, cell = new Vector2Int(2, 2) } });
+            director.Configure(battle, script, new[] { new ScenarioDirector.Actor { id = "scarecrow", target = scarecrow, blocksCell = true, cell = new Vector2Int(2, 2) } });
             director.Begin();
             Assert.IsTrue(scarecrow.activeSelf); Assert.IsTrue(battle.Session.IsBlocked(new Vector2Int(2, 2)));
             Assert.AreEqual(battle.CellWorldPosition(new Vector2Int(2, 2)), scarecrow.transform.position, "그 칸으로 옮김");
@@ -94,8 +94,8 @@ namespace IBIIIS.Tests
             {
                 script.Set("throw", new[]
                 {
-                    new TutorialStep { type = TutorialStepType.WaitClickCell, cell = new Vector2Int(4, 2), seconds = 1, sprite = sprite },
-                    new TutorialStep { type = TutorialStepType.Line, line = DialogueLine.Narrate("...") },
+                    new ScenarioStep { type = ScenarioStepType.WaitClickCell, cell = new Vector2Int(4, 2), seconds = 1, sprite = sprite },
+                    new ScenarioStep { type = ScenarioStepType.Line, line = DialogueLine.Narrate("...") },
                 });
                 director.Begin(); director.ClickCell(new Vector2Int(4, 2));
                 Assert.AreEqual(1, director.ThrownCount, "그림이 날아감");
@@ -108,7 +108,7 @@ namespace IBIIIS.Tests
             // 기획서 2단계(7x7, 행 0이 맨 위)를 맵 좌표(행 0이 맨 아래)로 옮긴다: 맵 행 = 6 - 기획서 행, 아래는 (0,-1).
             var prefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>(Enemy003);
             var evade = ScriptableObject.CreateInstance<GridMap>(); evade.Resize(7, 7);
-            var steps = ScriptableObject.CreateInstance<TutorialScript>();
+            var steps = ScriptableObject.CreateInstance<ScenarioScript>();
             try
             {
                 for (int y = 0; y < 7; y++) for (int x = 0; x < 7; x++) evade.SetWalkable(new Vector2Int(x, y), true);
@@ -116,15 +116,15 @@ namespace IBIIIS.Tests
                 evade.PlaceEnemy(new Vector2Int(1, 5), prefab, Vector2Int.down); evade.PlaceEnemy(new Vector2Int(4, 1), prefab, Vector2Int.down);
                 var go = new GameObject("Evade Battle"); SceneManager.MoveGameObjectToScene(go, scene);
                 var fight = go.AddComponent<GridMapPlayer>(); fight.Configure(evade, null, null); fight.Build();
-                var run = go.AddComponent<TutorialDirector>();
+                var run = go.AddComponent<ScenarioDirector>();
                 steps.Set("evade", new[]
                 {
-                    new TutorialStep { type = TutorialStepType.WaitAction, actions = TutorialActions.Move, direction = Vector2Int.left, keys = "A" },
-                    new TutorialStep { type = TutorialStepType.SpawnEnemy, prefab = prefab, cell = new Vector2Int(6, 2), direction = Vector2Int.left },
-                    new TutorialStep { type = TutorialStepType.SpawnEnemy, prefab = prefab, cell = new Vector2Int(0, 1), direction = Vector2Int.right },
-                    new TutorialStep { type = TutorialStepType.WaitAction, actions = TutorialActions.Dash, direction = Vector2Int.up, keys = "Shift W" },
-                    new TutorialStep { type = TutorialStepType.FreePlay, actions = TutorialActions.Move | TutorialActions.Wait | TutorialActions.Dash, line = DialogueLine.Say(fly, "거기로 가면 위험해!") },
-                    new TutorialStep { type = TutorialStepType.Line, line = DialogueLine.Say(fly, "끝") },
+                    new ScenarioStep { type = ScenarioStepType.WaitAction, actions = ScenarioActions.Move, direction = Vector2Int.left, keys = "A" },
+                    new ScenarioStep { type = ScenarioStepType.SpawnEnemy, prefab = prefab, cell = new Vector2Int(6, 2), direction = Vector2Int.left },
+                    new ScenarioStep { type = ScenarioStepType.SpawnEnemy, prefab = prefab, cell = new Vector2Int(0, 1), direction = Vector2Int.right },
+                    new ScenarioStep { type = ScenarioStepType.WaitAction, actions = ScenarioActions.Dash, direction = Vector2Int.up, keys = "Shift W" },
+                    new ScenarioStep { type = ScenarioStepType.FreePlay, actions = ScenarioActions.Move | ScenarioActions.Wait | ScenarioActions.Dash, line = DialogueLine.Say(fly, "거기로 가면 위험해!") },
+                    new ScenarioStep { type = ScenarioStepType.Line, line = DialogueLine.Say(fly, "끝") },
                 });
                 run.Configure(fight, steps); run.Begin();
                 Assert.IsFalse(fight.TryPlayerCommand(PlayerAction.Move, Vector2Int.up), "대본 입력 외에는 무시");
@@ -158,16 +158,16 @@ namespace IBIIIS.Tests
         [Test] public void AllDirectionsMustBeTriedAndPoseAndIconEmotesShow()
         {
             var pose = Sprite.Create(Texture2D.whiteTexture, new Rect(0, 0, 4, 4), new Vector2(.5f, 0));
-            var steps = ScriptableObject.CreateInstance<TutorialScript>();
+            var steps = ScriptableObject.CreateInstance<ScenarioScript>();
             try
             {
                 steps.Set("dirs", new[]
                 {
-                    new TutorialStep { type = TutorialStepType.Emote, target = "player", text = ";;", sprite = pose },
-                    new TutorialStep { type = TutorialStepType.Pose, sprite = pose, motion = PoseMotion.Hop, endMotion = PoseMotion.Sigh },
-                    new TutorialStep { type = TutorialStepType.Line, line = DialogueLine.Say(fly, "놀랐지?") },
-                    new TutorialStep { type = TutorialStepType.WaitAllDirections, keys = "W A S D" },
-                    new TutorialStep { type = TutorialStepType.Line, line = DialogueLine.Say(fly, "끝") },
+                    new ScenarioStep { type = ScenarioStepType.Emote, target = "player", text = ";;", sprite = pose },
+                    new ScenarioStep { type = ScenarioStepType.Pose, sprite = pose, motion = PoseMotion.Hop, endMotion = PoseMotion.Sigh },
+                    new ScenarioStep { type = ScenarioStepType.Line, line = DialogueLine.Say(fly, "놀랐지?") },
+                    new ScenarioStep { type = ScenarioStepType.WaitAllDirections, keys = "W A S D" },
+                    new ScenarioStep { type = ScenarioStepType.Line, line = DialogueLine.Say(fly, "끝") },
                 });
                 director.Configure(battle, steps); director.Begin();
                 Assert.AreEqual(2, director.StepIndex, "감정 표시·자세는 기다리지 않음");
@@ -189,15 +189,15 @@ namespace IBIIIS.Tests
         [Test] public void PoseCanHoldUntilTheNextPlayerAction()
         {
             var pose = Sprite.Create(Texture2D.whiteTexture, new Rect(0, 0, 4, 4), new Vector2(.5f, 0));
-            var steps = ScriptableObject.CreateInstance<TutorialScript>();
+            var steps = ScriptableObject.CreateInstance<ScenarioScript>();
             try
             {
                 steps.Set("hold", new[]
                 {
-                    new TutorialStep { type = TutorialStepType.Pose, sprite = pose, motion = PoseMotion.Shake, untilAction = true },
-                    new TutorialStep { type = TutorialStepType.Line, line = DialogueLine.Say(fly, "피해!") },
-                    new TutorialStep { type = TutorialStepType.WaitAction, actions = TutorialActions.Move, direction = Vector2Int.left, keys = "A" },
-                    new TutorialStep { type = TutorialStepType.Line, line = DialogueLine.Say(fly, "끝") },
+                    new ScenarioStep { type = ScenarioStepType.Pose, sprite = pose, motion = PoseMotion.Shake, untilAction = true },
+                    new ScenarioStep { type = ScenarioStepType.Line, line = DialogueLine.Say(fly, "피해!") },
+                    new ScenarioStep { type = ScenarioStepType.WaitAction, actions = ScenarioActions.Move, direction = Vector2Int.left, keys = "A" },
+                    new ScenarioStep { type = ScenarioStepType.Line, line = DialogueLine.Say(fly, "끝") },
                 });
                 director.Configure(battle, steps); director.Begin();
                 Assert.IsFalse(battle.DangerIdleEnabled, "대본 중에는 위험 그림을 대본이 정함");
@@ -212,23 +212,23 @@ namespace IBIIIS.Tests
         [Test] public void EndDisplayStepEndsHeldEmoteAndPoseAndMatchesTheTimeline()
         {
             var pose = Sprite.Create(Texture2D.whiteTexture, new Rect(0, 0, 4, 4), new Vector2(.5f, 0));
-            var steps = ScriptableObject.CreateInstance<TutorialScript>();
+            var steps = ScriptableObject.CreateInstance<ScenarioScript>();
             try
             {
                 var list = new[]
                 {
-                    new TutorialStep { type = TutorialStepType.Emote, target = "player", text = "!", untilEnd = true },
-                    new TutorialStep { type = TutorialStepType.Pose, sprite = pose, untilEnd = true },
-                    new TutorialStep { type = TutorialStepType.Line, line = DialogueLine.Say(fly, "하나") },
-                    new TutorialStep { type = TutorialStepType.Line, line = DialogueLine.Say(fly, "둘") },
-                    new TutorialStep { type = TutorialStepType.EndDisplay, display = TutorialDisplay.Emote, target = "player" },
-                    new TutorialStep { type = TutorialStepType.Line, line = DialogueLine.Say(fly, "셋") },
-                    new TutorialStep { type = TutorialStepType.EndDisplay, display = TutorialDisplay.Pose },
-                    new TutorialStep { type = TutorialStepType.Line, line = DialogueLine.Say(fly, "넷") },
+                    new ScenarioStep { type = ScenarioStepType.Emote, target = "player", text = "!", untilEnd = true },
+                    new ScenarioStep { type = ScenarioStepType.Pose, sprite = pose, untilEnd = true },
+                    new ScenarioStep { type = ScenarioStepType.Line, line = DialogueLine.Say(fly, "하나") },
+                    new ScenarioStep { type = ScenarioStepType.Line, line = DialogueLine.Say(fly, "둘") },
+                    new ScenarioStep { type = ScenarioStepType.EndDisplay, display = ScenarioDisplay.Emote, target = "player" },
+                    new ScenarioStep { type = ScenarioStepType.Line, line = DialogueLine.Say(fly, "셋") },
+                    new ScenarioStep { type = ScenarioStepType.EndDisplay, display = ScenarioDisplay.Pose },
+                    new ScenarioStep { type = ScenarioStepType.Line, line = DialogueLine.Say(fly, "넷") },
                 };
                 steps.Set("end", list);
-                var emote = TutorialTimeline.SpanOf(list, 0).Value; var held = TutorialTimeline.SpanOf(list, 1).Value;
-                Assert.AreEqual((3, 4, TutorialSpanEnd.EndStep), (emote.End, emote.Marker, emote.EndKind), "감정 표시는 4번 표시 끝 앞의 3번 대사까지");
+                var emote = ScenarioTimeline.SpanOf(list, 0).Value; var held = ScenarioTimeline.SpanOf(list, 1).Value;
+                Assert.AreEqual((3, 4, ScenarioSpanEnd.EndStep), (emote.End, emote.Marker, emote.EndKind), "감정 표시는 4번 표시 끝 앞의 3번 대사까지");
                 Assert.AreEqual((5, 6), (held.End, held.Marker), "자세는 6번 표시 끝 앞의 5번 대사까지");
                 director.Configure(battle, steps); director.Begin();
                 foreach (int line in new[] { 2, 3, 5, 7 })

@@ -6,10 +6,10 @@ using UnityEngine.UIElements;
 
 namespace IBIIIS
 {
-    /// <summary>전투 씬에서 대본(TutorialScript)을 위에서부터 실행한다. 대사는 미연시 대화창으로 보이고,
+    /// <summary>전투 씬에서 대본(ScenarioScript)을 위에서부터 실행한다. 대사는 미연시 대화창으로 보이고,
     /// 입력 대기 단계에서는 허용한 행동만 전투에 통과시키며(나머지는 무시) 안내 칸을 점멸·키를 표시한다.
     /// 대본이 도는 동안 되돌리기·다시 시작·범위 표시는 막는다. 판정은 바꾸지 않고 입력만 걸러 낸다.</summary>
-    public sealed class TutorialDirector : MonoBehaviour
+    public sealed class ScenarioDirector : MonoBehaviour
     {
         /// <summary>대본에서 ID로 부르는 등장 오브젝트(켜고 끄기·감정 표시 대상).</summary>
         [Serializable]
@@ -25,7 +25,7 @@ namespace IBIIIS
         private sealed class Emote { public Transform Target; public float Height, Left; public bool UntilLine, UntilEnd; public string Text; public Sprite Icon; public VisualElement View; }
 
         [SerializeField, Tooltip("필수. 대본을 진행할 전투(Grid Map Player).")] private GridMapPlayer battle;
-        [SerializeField, Tooltip("필수. 실행할 대본.")] private TutorialScript script;
+        [SerializeField, Tooltip("필수. 실행할 대본.")] private ScenarioScript script;
         [SerializeField, Tooltip("등장 오브젝트. 대본의 Target ID로 찾습니다.")] private Actor[] actors = Array.Empty<Actor>();
         [SerializeField, Min(0), Tooltip("플레이어 감정 표시 높이(칸). 임시 1.6.")] private float playerEmoteHeight = 1.6f;
         [SerializeField, Tooltip("체크하면 전투가 준비되는 대로 대본을 시작합니다.")] private bool playOnStart = true;
@@ -53,21 +53,21 @@ namespace IBIIIS
         public string LoadedScene { get; private set; }
         public bool Finished { get; private set; }
         public int StepIndex => index;
-        public TutorialStep Current => IsRunning && index >= 0 && index < script.Steps.Length ? script.Steps[index] : default;
+        public ScenarioStep Current => IsRunning && index >= 0 && index < script.Steps.Length ? script.Steps[index] : default;
         /// <summary>이름 입력 단계에서 받은 값(대사는 바꾸지 않는다).</summary>
         public string EnteredName { get; private set; }
         /// <summary>칸 누르기 단계에서 정답 칸을 누른 순간(연출용, 예: 칼이 날아가는 연출).</summary>
-        public event Action<TutorialStep> CellClicked;
+        public event Action<ScenarioStep> CellClicked;
         public DialogueController Dialogue => dialogue;
         public IReadOnlyList<string> ActiveEmotes { get { var list = new List<string>(); foreach (var e in emotes) list.Add(e.Text); return list; } }
         private GameUiSettings Ui => battle != null && battle.SharedPlayerSettings != null ? battle.SharedPlayerSettings.GameUi : null;
-        public void Configure(GridMapPlayer value, TutorialScript tutorial, Actor[] cast = null) { battle = value; script = tutorial; actors = cast ?? Array.Empty<Actor>(); }
+        public void Configure(GridMapPlayer value, ScenarioScript tutorial, Actor[] cast = null) { battle = value; script = tutorial; actors = cast ?? Array.Empty<Actor>(); }
 
         private void Update()
         {
             if (!IsRunning && !Finished && playOnStart && battle != null && battle.Session != null && script != null) Begin();
             Tick(Time.unscaledDeltaTime);
-            if (IsRunning && Current.type == TutorialStepType.WaitClickCell && !clicked)
+            if (IsRunning && Current.type == ScenarioStepType.WaitClickCell && !clicked)
             {
                 var mouse = Mouse.current;
                 if (mouse != null && mouse.leftButton.wasPressedThisFrame && battle.TryGetCell(mouse.position.ReadValue(), out var cell)) ClickCell(cell);
@@ -95,27 +95,27 @@ namespace IBIIIS
             int acted = session != null ? session.UndoCount - baselineActions : 0;
             switch (step.type)
             {
-                case TutorialStepType.WaitAction:
+                case ScenarioStepType.WaitAction:
                     if (acted > 0 && ready) Next();
                     break;
-                case TutorialStepType.WaitFreeMove:
+                case ScenarioStepType.WaitFreeMove:
                     if (waitingFirstMove && acted > 0) { waitingFirstMove = false; timer = 0; }
                     if (!waitingFirstMove) timer += seconds;
                     if (!waitingFirstMove && timer >= step.seconds && ready) Next();
                     break;
-                case TutorialStepType.WaitReachCell:
+                case ScenarioStepType.WaitReachCell:
                     if (ready && session.Position == step.cell) Next();
                     break;
-                case TutorialStepType.WaitClickCell:
+                case ScenarioStepType.WaitClickCell:
                     if (clicked) { timer += seconds; if (timer >= step.seconds) Next(); }
                     break;
-                case TutorialStepType.Wait:
+                case ScenarioStepType.Wait:
                     timer += seconds; if (timer >= step.seconds) Next();
                     break;
-                case TutorialStepType.FreePlay:
+                case ScenarioStepType.FreePlay:
                     if (!warningOpen && ready && session.Phase == BattlePhase.Won) Next();
                     break;
-                case TutorialStepType.WaitAllDirections:
+                case ScenarioStepType.WaitAllDirections:
                     if (triedDirections.Count >= Cardinal.Length && ready) Next();
                     break;
             }
@@ -145,7 +145,7 @@ namespace IBIIIS
             if (triedDirections.Add(direction)) ShowRemainingKeys(Current);
             return true;
         }
-        private void ShowRemainingKeys(TutorialStep step)
+        private void ShowRemainingKeys(ScenarioStep step)
         {
             var caps = step.KeyCaps; var remaining = new List<string>();
             for (int i = 0; i < Cardinal.Length; i++) if (!triedDirections.Contains(Cardinal[i])) remaining.Add(caps.Length == Cardinal.Length ? caps[i] : Cardinal[i].ToString());
@@ -156,7 +156,7 @@ namespace IBIIIS
         /// <summary>칸을 눌렀다(마우스 왼쪽 버튼과 같은 경로). 칸 누르기 단계의 정답 칸이면 연출을 시작한다.</summary>
         public void ClickCell(Vector2Int cell)
         {
-            if (!IsRunning || clicked || Current.type != TutorialStepType.WaitClickCell || cell != Current.cell) return;
+            if (!IsRunning || clicked || Current.type != ScenarioStepType.WaitClickCell || cell != Current.cell) return;
             clicked = true; timer = 0; battle.SetGuideCells(null);
             if (Current.sprite != null) Throw(Current.sprite, Current.seconds);
             CellClicked?.Invoke(Current);
@@ -175,37 +175,37 @@ namespace IBIIIS
             clicked = false; warningOpen = false; triedDirections.Clear(); waitingFirstMove = false; timer = 0;
         }
         private static bool DenyAll(PlayerAction action, Vector2Int direction) => false;
-        private void StartStep(TutorialStep step)
+        private void StartStep(ScenarioStep step)
         {
             baselineActions = battle.Session != null ? battle.Session.UndoCount : 0;
             switch (step.type)
             {
-                case TutorialStepType.Line:
+                case ScenarioStepType.Line:
                     // 대본은 한 줄씩 대화창을 다시 여므로, 좌우에 선 인물이 매 줄 사라지지 않게 이어 붙인다.
                     EnsureDialogue().Open(Ui, new[] { step.line }, OnLineDone, true);
                     break;
-                case TutorialStepType.Emote:
+                case ScenarioStepType.Emote:
                     AddEmote(step); Next();
                     break;
-                case TutorialStepType.WaitAction:
+                case ScenarioStepType.WaitAction:
                     Prompt(step);
                     battle.CommandFilter = Guard(step.Allows);
                     if (step.direction != Vector2Int.zero && battle.Session != null)
-                        battle.SetGuideCells(new[] { battle.Session.Position + step.direction * ((step.actions & TutorialActions.Dash) != 0 ? 2 : 1) });
+                        battle.SetGuideCells(new[] { battle.Session.Position + step.direction * ((step.actions & ScenarioActions.Dash) != 0 ? 2 : 1) });
                     break;
-                case TutorialStepType.WaitFreeMove:
+                case ScenarioStepType.WaitFreeMove:
                     Prompt(step); battle.CommandFilter = Guard(step.Allows); waitingFirstMove = true;
                     break;
-                case TutorialStepType.WaitReachCell:
+                case ScenarioStepType.WaitReachCell:
                     Prompt(step); battle.CommandFilter = Guard(step.Allows); battle.SetGuideCells(new[] { step.cell });
                     break;
-                case TutorialStepType.WaitClickCell:
+                case ScenarioStepType.WaitClickCell:
                     Prompt(step); battle.SetGuideCells(new[] { step.cell });
                     break;
-                case TutorialStepType.NameInput:
+                case ScenarioStepType.NameInput:
                     EnsureDialogue().AskName(Ui, step.line, step.text, value => { EnteredName = value; Next(); });
                     break;
-                case TutorialStepType.SetActive:
+                case ScenarioStepType.SetActive:
                     var actor = FindActor(step.target);
                     if (actor.target != null)
                     {
@@ -219,26 +219,26 @@ namespace IBIIIS
                     else Debug.LogWarning($"[IBIIIS] {name}: 대본의 켜고 끄기 대상 '{step.target}'을 Actors에서 찾지 못했습니다.", this);
                     Next();
                     break;
-                case TutorialStepType.SpawnEnemy:
+                case ScenarioStepType.SpawnEnemy:
                     if (!battle.SpawnEnemy(step.prefab, step.cell, step.direction))
                         Debug.LogWarning($"[IBIIIS] {name}: 대본의 적 합류({(step.prefab != null ? step.prefab.name : "프리팹 없음")}, {step.cell})에 실패했습니다(빈 이동 칸·상하좌우 방향·유효한 적 프리팹 필요).", this);
                     Next();
                     break;
-                case TutorialStepType.FreePlay:
+                case ScenarioStepType.FreePlay:
                     EnsureDialogue().Hide();
                     battle.CommandFilter = Guard(AllowSafe);
                     break;
-                case TutorialStepType.WaitAllDirections:
+                case ScenarioStepType.WaitAllDirections:
                     ShowRemainingKeys(step); battle.CommandFilter = Guard(AllowDirection);
                     break;
-                case TutorialStepType.Pose:
+                case ScenarioStepType.Pose:
                     if (step.sprite == null) Debug.LogWarning($"[IBIIIS] {name}: 대본의 자세 단계에 그림이 없습니다.", this);
                     else if (step.untilEnd) { battle.PlayPose(step.sprite, step.motion, 0, step.endMotion); poseUntilLine = false; } // 표시 끝 단계가 끝낸다
                     else { battle.PlayPose(step.sprite, step.motion, step.untilAction ? 0 : step.seconds, step.endMotion, step.untilAction); poseUntilLine = !step.untilAction && step.seconds <= 0; }
                     Next();
                     break;
-                case TutorialStepType.EndDisplay:
-                    if (step.display == TutorialDisplay.Pose) { poseUntilLine = false; battle.EndPose(); }
+                case ScenarioStepType.EndDisplay:
+                    if (step.display == ScenarioDisplay.Pose) { poseUntilLine = false; battle.EndPose(); }
                     else
                     {
                         var ended = EmoteTarget(step.target);
@@ -246,14 +246,14 @@ namespace IBIIIS
                     }
                     Next();
                     break;
-                case TutorialStepType.Wait:
+                case ScenarioStepType.Wait:
                     break;
-                case TutorialStepType.LoadScene:
+                case ScenarioStepType.LoadScene:
                     IsRunning = false; Finished = true; LoadedScene = step.scenePath;
                     // 씬 전환은 Play 중에만 한다(에디터 테스트에서는 기록만).
                     if (Application.isPlaying && !StageFlow.LoadScene(step.scenePath)) { Debug.LogError($"[IBIIIS] {name}: 대본의 다음 씬 '{step.scenePath}'을 불러오지 못했습니다.", this); Restore(); }
                     break;
-                case TutorialStepType.RecordClear:
+                case ScenarioStepType.RecordClear:
                     try { ProgressStore.MarkCleared(step.text); }
                     catch (Exception e) { Debug.LogException(e); }
                     Next();
@@ -268,7 +268,7 @@ namespace IBIIIS
             emotes.RemoveAll(e => { if (e.UntilLine) { e.View?.RemoveFromHierarchy(); return true; } return false; });
             Next();
         }
-        private void Prompt(TutorialStep step)
+        private void Prompt(ScenarioStep step)
         {
             if (string.IsNullOrEmpty(step.line.text) && step.KeyCaps.Length == 0) { EnsureDialogue().Hide(); return; }
             EnsureDialogue().Prompt(Ui, step.line, step.KeyCaps);
@@ -296,7 +296,7 @@ namespace IBIIIS
             if (id == "player") return battle.PlayerAnchor;
             var actor = FindActor(id); return actor.target != null ? actor.target.transform : null;
         }
-        private void AddEmote(TutorialStep step)
+        private void AddEmote(ScenarioStep step)
         {
             Transform target; float height;
             if (step.target == "player") { target = battle.PlayerAnchor; height = playerEmoteHeight; }

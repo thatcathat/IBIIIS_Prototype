@@ -6,14 +6,14 @@ using UnityEngine;
 namespace IBIIIS.Tests
 {
     /// <summary>IBIIIS Dialogue Editor의 편집 규칙(DialogueScriptEdits)과 단계 ID.</summary>
-    public sealed class TutorialGraphEditTests
+    public sealed class DialogueEditorEditTests
     {
-        private static TutorialStep Line(string text) => new TutorialStep { type = TutorialStepType.Line, line = DialogueLine.Narrate(text) };
-        private static TutorialStep Emote(string mark = "?") => new TutorialStep { type = TutorialStepType.Emote, target = "player", text = mark };
-        private static TutorialStep Show() => new TutorialStep { type = TutorialStepType.SetActive, target = "fly", active = true };
+        private static ScenarioStep Line(string text) => new ScenarioStep { type = ScenarioStepType.Line, line = DialogueLine.Narrate(text) };
+        private static ScenarioStep Emote(string mark = "?") => new ScenarioStep { type = ScenarioStepType.Emote, target = "player", text = mark };
+        private static ScenarioStep Show() => new ScenarioStep { type = ScenarioStepType.SetActive, target = "fly", active = true };
         // 세로줄: 0=[?, 가] 1=[나] 2=[다] 3=[라]
-        private static TutorialStep[] Sample() => new[] { Emote(), Line("가"), Line("나"), Line("다"), Line("라") };
-        private static string Texts(TutorialStep[] steps) => string.Concat(steps.Select(s => s.type == TutorialStepType.Line ? s.line.text : s.type == TutorialStepType.Emote ? s.text : s.type == TutorialStepType.EndDisplay ? "끝" : s.type == TutorialStepType.SetActive ? "@" : "#"));
+        private static ScenarioStep[] Sample() => new[] { Emote(), Line("가"), Line("나"), Line("다"), Line("라") };
+        private static string Texts(ScenarioStep[] steps) => string.Concat(steps.Select(s => s.type == ScenarioStepType.Line ? s.line.text : s.type == ScenarioStepType.Emote ? s.text : s.type == ScenarioStepType.EndDisplay ? "끝" : s.type == ScenarioStepType.SetActive ? "@" : "#"));
 
         [Test] public void DraggingTheEndCreatesThenMovesAnEndStep()
         {
@@ -22,8 +22,8 @@ namespace IBIIIS.Tests
             var edited = DialogueScriptEdits.MoveDisplayEdge(steps, 0, false, 2, out int owner);
             Assert.AreEqual("?가나다끝라", Texts(edited), "끝을 세로줄 2(다)에 놓으면 다 뒤에 표시 끝 단계");
             Assert.IsTrue(edited[owner].untilEnd);
-            var span = TutorialTimeline.SpanOf(edited, owner).Value;
-            Assert.AreEqual((3, 4, TutorialSpanEnd.EndStep), (span.End, span.Marker, span.EndKind));
+            var span = ScenarioTimeline.SpanOf(edited, owner).Value;
+            Assert.AreEqual((3, 4, ScenarioSpanEnd.EndStep), (span.End, span.Marker, span.EndKind));
             var again = DialogueScriptEdits.MoveDisplayEdge(edited, owner, false, 1, out owner);
             Assert.AreEqual("?가나끝다라", Texts(again), "다시 끌면 표시 끝 단계를 옮김(새로 만들지 않음)");
             var before = DialogueScriptEdits.MoveDisplayEdge(again, owner, false, 0, out owner);
@@ -43,7 +43,7 @@ namespace IBIIIS.Tests
             var edited = DialogueScriptEdits.MoveDisplayEdge(Sample(), 0, false, 1, out int owner); // ?가나끝다라 : 세로줄 0~1
             var moved = DialogueScriptEdits.MoveSpan(edited, owner, 2, out owner);
             Assert.AreEqual("가나?다라끝", Texts(moved), "두 세로줄 뒤로: 2~3");
-            var span = TutorialTimeline.SpanOf(moved, owner).Value;
+            var span = ScenarioTimeline.SpanOf(moved, owner).Value;
             var columns = DialogueScriptEdits.Columns(moved);
             Assert.AreEqual((2, 3), (DialogueScriptEdits.ColumnOf(columns, span.Start), DialogueScriptEdits.ColumnOf(columns, span.End)));
             Assert.AreEqual("가?나다끝라", Texts(DialogueScriptEdits.MoveSpan(moved, owner, -1, out _)), "앞으로 한 줄: 1~2");
@@ -53,7 +53,7 @@ namespace IBIIIS.Tests
         [Test] public void MovingAColumnCarriesItsStackedStepsButLeavesEndSteps()
         {
             // 세로줄: 0=[가] 1=[@, 끝, 나] 2=[다] — @는 등장, 끝은 앞 표시의 끝
-            var steps = new[] { Emote(), Line("가"), new TutorialStep { type = TutorialStepType.EndDisplay, target = "player" }, Show(), Line("나"), Line("다") };
+            var steps = new[] { Emote(), Line("가"), new ScenarioStep { type = ScenarioStepType.EndDisplay, target = "player" }, Show(), Line("나"), Line("다") };
             steps[0].untilEnd = true;
             var moved = DialogueScriptEdits.MoveColumn(steps, 1, 3, out int main);
             Assert.AreEqual("?가끝다@나", Texts(moved), "나 세로줄을 맨 끝으로: 등장은 함께, 표시 끝은 제자리");
@@ -75,8 +75,8 @@ namespace IBIIIS.Tests
             var steps = new[] { Line("가"), Line("나"), Line("다"), Line("라") };
             var edited = DialogueScriptEdits.AddSpan(steps, 2, 1, Emote("!"), out int owner);
             Assert.AreEqual("가!나다끝라", Texts(edited), "거꾸로 끌어도 1~2");
-            var span = TutorialTimeline.SpanOf(edited, owner).Value;
-            Assert.IsTrue(edited[owner].untilEnd); Assert.AreEqual(TutorialSpanEnd.EndStep, span.EndKind);
+            var span = ScenarioTimeline.SpanOf(edited, owner).Value;
+            Assert.IsTrue(edited[owner].untilEnd); Assert.AreEqual(ScenarioSpanEnd.EndStep, span.EndKind);
             Assert.AreEqual(owner, span.Start); Assert.AreEqual(3, span.End, "다 대사(3번)가 끝날 때까지");
         }
         [Test] public void DeletingADisplayAlsoRemovesItsEndStep()
@@ -86,7 +86,7 @@ namespace IBIIIS.Tests
         }
         [Test] public void PastedStepsGetNewIds()
         {
-            var script = ScriptableObject.CreateInstance<TutorialScript>();
+            var script = ScriptableObject.CreateInstance<ScenarioScript>();
             try
             {
                 script.Set("t", Sample());
@@ -106,11 +106,11 @@ namespace IBIIIS.Tests
         {
             var steps = new[]
             {
-                new TutorialStep { type = TutorialStepType.Pose },                                         // 그림 없음(오류)
+                new ScenarioStep { type = ScenarioStepType.Pose },                                         // 그림 없음(오류)
                 Line(""),                                                                                   // 빈 대사(주의)
-                new TutorialStep { type = TutorialStepType.EndDisplay, display = TutorialDisplay.Pose },  // 짝 없는 끝(주의)
-                new TutorialStep { type = TutorialStepType.WaitAction },                                    // 허용 행동 없음(오류)
-                new TutorialStep { type = TutorialStepType.LoadScene, scenePath = "Assets/없는씬.unity" },  // 없는 씬(오류)
+                new ScenarioStep { type = ScenarioStepType.EndDisplay, display = ScenarioDisplay.Pose },  // 짝 없는 끝(주의)
+                new ScenarioStep { type = ScenarioStepType.WaitAction },                                    // 허용 행동 없음(오류)
+                new ScenarioStep { type = ScenarioStepType.LoadScene, scenePath = "Assets/없는씬.unity" },  // 없는 씬(오류)
             };
             var issues = DialogueScriptEdits.Validate(steps);
             CollectionAssert.AreEquivalent(new[] { 0, 1, 2, 3, 4 }, issues.Select(i => i.Index));

@@ -47,7 +47,7 @@ namespace IBIIIS.Editor
         }
 
         /// <summary>두 대본을 이 코드의 기본 내용으로 다시 만든다. Inspector에서 고친 대본 내용은 사라지므로 확인을 받는다.</summary>
-        [MenuItem("IBIIIS/Reset Tutorial Scripts")]
+        [MenuItem("IBIIIS/Reset Scenario Scripts")]
         private static void ResetScriptsMenu()
         {
             if (EditorUtility.DisplayDialog("튜토리얼 대본 초기화", "Tutorial1Script·Tutorial2Script를 기본 대본으로 덮어씁니다. Inspector에서 고친 내용은 사라집니다.", "덮어쓰기", "취소")) ResetScripts();
@@ -58,9 +58,9 @@ namespace IBIIIS.Editor
             Overwrite(Stage1Script, "tutorial_1", Stage1Steps(cast, art));
             Overwrite(Stage2Script, "tutorial_2", Stage2Steps(cast, art));
         }
-        private static void Overwrite(string path, string id, TutorialStep[] steps)
+        private static void Overwrite(string path, string id, ScenarioStep[] steps)
         {
-            var script = AssetDatabase.LoadAssetAtPath<TutorialScript>(path);
+            var script = AssetDatabase.LoadAssetAtPath<ScenarioScript>(path);
             if (script == null) { EnsureScript(path, id, steps); return; }
             script.Set(id, steps); EditorUtility.SetDirty(script); AssetDatabase.SaveAssetIfDirty(script);
         }
@@ -158,13 +158,13 @@ namespace IBIIIS.Editor
         }
 
         // ── 대본(기획서 대사·지문 순서 그대로) ──
-        private static TutorialStep Say(DialogueCharacter who, string text, string nameOverride = null) => new TutorialStep { type = TutorialStepType.Line, line = new DialogueLine { speaker = who, text = text, nameOverride = nameOverride } };
-        private static TutorialStep Narrate(string text) => new TutorialStep { type = TutorialStepType.Line, line = DialogueLine.Narrate(text) };
-        private static TutorialStep Emote(string target, string mark, Sprite icon = null) => new TutorialStep { type = TutorialStepType.Emote, target = target, text = mark, sprite = icon };
+        private static ScenarioStep Say(DialogueCharacter who, string text, string nameOverride = null) => new ScenarioStep { type = ScenarioStepType.Line, line = new DialogueLine { speaker = who, text = text, nameOverride = nameOverride } };
+        private static ScenarioStep Narrate(string text) => new ScenarioStep { type = ScenarioStepType.Line, line = DialogueLine.Narrate(text) };
+        private static ScenarioStep Emote(string target, string mark, Sprite icon = null) => new ScenarioStep { type = ScenarioStepType.Emote, target = target, text = mark, sprite = icon };
         // 자세: 다음 대사가 끝날 때까지 그림을 바꾸고 처음에 움직임을 준다.
-        private static TutorialStep Pose(Sprite sprite, PoseMotion motion, PoseMotion endMotion = PoseMotion.None) => new TutorialStep { type = TutorialStepType.Pose, sprite = sprite, motion = motion, endMotion = endMotion };
-        private static TutorialStep Show(string target) => new TutorialStep { type = TutorialStepType.SetActive, target = target, active = true };
-        private static TutorialStep[] Stage1Steps(Cast c, Art art)
+        private static ScenarioStep Pose(Sprite sprite, PoseMotion motion, PoseMotion endMotion = PoseMotion.None) => new ScenarioStep { type = ScenarioStepType.Pose, sprite = sprite, motion = motion, endMotion = endMotion };
+        private static ScenarioStep Show(string target) => new ScenarioStep { type = ScenarioStepType.SetActive, target = target, active = true };
+        private static ScenarioStep[] Stage1Steps(Cast c, Art art)
         {
             const string unknown = "???(어시파리)";
             var wasd = "W A S D";
@@ -178,7 +178,7 @@ namespace IBIIIS.Editor
                 Say(c.Fly, "(어우씨 깜짝아 뭘 사람이 이렇게 놀라..;;) 나는 플레이어의 모험을 도울 어시스트 AI야!", unknown),
                 Say(c.Fly, "앞으로 자주 보게 될테니, 편하게 불러줘!", unknown),
                 Narrate("화면 앞 팝업창으로 ‘어시스트 AI의 이름을 붙여주세요 — 어씨 [  ]’ 가 뜬다"),
-                new TutorialStep { type = TutorialStepType.NameInput, line = DialogueLine.Narrate("어시스트 AI의 이름을 붙여주세요 — 어씨 [  ]"), text = "파리" },
+                new ScenarioStep { type = ScenarioStepType.NameInput, line = DialogueLine.Narrate("어시스트 AI의 이름을 붙여주세요 — 어씨 [  ]"), text = "파리" },
                 Say(c.Hero, ".....파리?"),
                 Narrate("어시스트 AI 이름이 ‘어시 파리’로 고정됩니다."),
                 Say(c.Fly, "(화난 표정으로) 잠깐만!! 야!! 파리가 뭐야!!!!!! 이거 바꾸지도 못한다고!!!"),
@@ -189,14 +189,14 @@ namespace IBIIIS.Editor
                 Emote("player", "▼"), Narrate("주인공 머리 위에 화살표가 뜬다"),
                 Say(c.Fly, "WASD로 이동할 수 있어! 한번 움직여볼래?"),
                 // 네 방향을 모두 한 번씩 눌러야 넘어간다(누른 키는 표시에서 빠짐).
-                new TutorialStep { type = TutorialStepType.WaitAllDirections, keys = wasd },
+                new ScenarioStep { type = ScenarioStepType.WaitAllDirections, keys = wasd },
                 Show("scarecrow"),
                 Say(c.Fly, "좋았어! 다음은 [공격]이야! 앞에 너를 위해 허수아비를 준비해뒀어! 허수아비 앞까지 이동해볼래?"),
                 Say(c.Fly, "허수아비는 너를 공격하지 않으니 안심하라고! (찡긋)"),
                 Narrate("허수아비 앞 칸이 빛나서 플레이어 이동을 유도한다"),
-                new TutorialStep { type = TutorialStepType.WaitReachCell, actions = TutorialActions.Move, cell = new Vector2Int(6, 2), keys = wasd },
+                new ScenarioStep { type = ScenarioStepType.WaitReachCell, actions = ScenarioActions.Move, cell = new Vector2Int(6, 2), keys = wasd },
                 Say(c.Fly, "자! 이제 허수아비를 좌클릭으로 [공격]해봐!"),
-                new TutorialStep { type = TutorialStepType.WaitClickCell, cell = new Vector2Int(7, 2), seconds = 1.1f, sprite = art.Sword, keys = "좌클릭" },
+                new ScenarioStep { type = ScenarioStepType.WaitClickCell, cell = new Vector2Int(7, 2), seconds = 1.1f, sprite = art.Sword, keys = "좌클릭" },
                 Narrate("주인공이 공격 모션을 취하지만, 칼이 옆으로 날라간다."),
                 Say(c.Fly, "..."),
                 Say(c.Hero, "..."),
@@ -207,10 +207,10 @@ namespace IBIIIS.Editor
                 Emote("player", ";;", art.Sweat), Narrate("주인공 땀 표시"),
                 Say(c.Fly, "괘,괜찮아! 실전만큼 도움되는 연습은 없지! 이, 일단 앞으로 나아가볼까? 하하.."),
                 Say(c.Hero, "(뭔가 얼렁뚱땅인데.... 괜찮으려나..)"),
-                new TutorialStep { type = TutorialStepType.LoadScene, scenePath = Stage2Scene },
+                new ScenarioStep { type = ScenarioStepType.LoadScene, scenePath = Stage2Scene },
             };
         }
-        private static TutorialStep[] Stage2Steps(Cast c, Art art)
+        private static ScenarioStep[] Stage2Steps(Cast c, Art art)
         {
             var enemy = AssetDatabase.LoadAssetAtPath<GameObject>(Enemy003);
             return new[]
@@ -226,17 +226,17 @@ namespace IBIIIS.Editor
                 Narrate("Enemy_00이 돌진 모션을 취함"),
                 Say(c.Hero, "살려줘 어씨파리!!!"),
                 // 대본 기준 위험 자세: 이 대사 뒤부터 첫 회피 행동(A)을 시작할 때까지. 튜토리얼 중에는 자동 위험 그림을 끈다.
-                new TutorialStep { type = TutorialStepType.Pose, sprite = art.Danger, motion = PoseMotion.Shake, endMotion = PoseMotion.Shake, untilAction = true },
+                new ScenarioStep { type = ScenarioStepType.Pose, sprite = art.Danger, motion = PoseMotion.Shake, endMotion = PoseMotion.Shake, untilAction = true },
                 Say(c.Fly, "일단 무기를 들어!"),
                 Say(c.Hero, "어? 아까 던져버렸는데????? 그런 거 말고ㅠㅠㅠ!!"),
                 Say(c.Fly, "아잇 쓸모없어!"),
                 Say(c.Hero, "빨리..! 이러다 맞겠어ㅠㅠ 뭐라도 알려줘..!"),
                 Say(c.Fly, "그럼 피해야지! 왼쪽으로 움직여!"),
-                new TutorialStep { type = TutorialStepType.WaitAction, actions = TutorialActions.Move, direction = Vector2Int.left, keys = "A" },
+                new ScenarioStep { type = ScenarioStepType.WaitAction, actions = ScenarioActions.Move, direction = Vector2Int.left, keys = "A" },
                 Pose(art.DangerGone, PoseMotion.Sigh, PoseMotion.Sigh),
                 // 1턴 직후 합류(기획서 (6,4)← · (0,5)→ → 맵 좌표)
-                new TutorialStep { type = TutorialStepType.SpawnEnemy, prefab = enemy, cell = new Vector2Int(6, 2), direction = Vector2Int.left },
-                new TutorialStep { type = TutorialStepType.SpawnEnemy, prefab = enemy, cell = new Vector2Int(0, 1), direction = Vector2Int.right },
+                new ScenarioStep { type = ScenarioStepType.SpawnEnemy, prefab = enemy, cell = new Vector2Int(6, 2), direction = Vector2Int.left },
+                new ScenarioStep { type = ScenarioStepType.SpawnEnemy, prefab = enemy, cell = new Vector2Int(0, 1), direction = Vector2Int.right },
                 Say(c.Hero, "휴... 피했다!!"),
                 Say(c.Enemy00, "감히 나의 죽음을 바라고 나를 피했겠다????"),
                 Say(c.Enemy01, "뭣?? 네 녀석은 누구냐!"),
@@ -244,9 +244,9 @@ namespace IBIIIS.Editor
                 Say(c.Fly, "내가 도라X몽이냐!(내가 니 엄마냐!!)"),
                 Say(c.Hero, "어시스턴트자나...!!ㅠㅠㅠ( ;( )"),
                 Say(c.Fly, "에휴.. 그럼 [대시]를 써봐! shift키를 누른채로 가고싶은 방향키를 눌러!"),
-                new TutorialStep { type = TutorialStepType.WaitAction, actions = TutorialActions.Dash, direction = Vector2Int.up, keys = "Shift W" },
+                new ScenarioStep { type = ScenarioStepType.WaitAction, actions = ScenarioActions.Dash, direction = Vector2Int.up, keys = "Shift W" },
                 // 기획서 검토 의견: 자동 연출 대신 직접 움직이게 하고, 맞을 위치로 가려 하면 막고 경고한다.
-                new TutorialStep { type = TutorialStepType.FreePlay, actions = TutorialActions.Move | TutorialActions.Wait | TutorialActions.Dash, line = new DialogueLine { speaker = c.Fly, text = "거기로 가면 위험해!" } },
+                new ScenarioStep { type = ScenarioStepType.FreePlay, actions = ScenarioActions.Move | ScenarioActions.Wait | ScenarioActions.Dash, line = new DialogueLine { speaker = c.Fly, text = "거기로 가면 위험해!" } },
                 Narrate("주인공이 회피 후 좌우를 두리번 거리고 신나한다, 몬스터끼리 부딪혀서 꽈당 사라진다"),
                 Say(c.Hero, "내, 내가 피했어!!"),
                 Say(c.Fly, "굼벵이도 구르는 재주가 있다더니... 이건 제법 잘하는데?"),
@@ -261,22 +261,22 @@ namespace IBIIIS.Editor
                 Say(c.Fly, "캬 내가 다 알려줬다~ 나머진 알아서 처리할 수 있지?"),
                 Say(c.Hero, "... 벌써 의지가 바닥났어... 스킵 없나.."),
                 Narrate("플레이어가 나머지 몬스터를 처리한다"),
-                new TutorialStep { type = TutorialStepType.RecordClear, text = ClearId },
-                new TutorialStep { type = TutorialStepType.LoadScene, scenePath = AssetPaths.OverworldScene },
+                new ScenarioStep { type = ScenarioStepType.RecordClear, text = ClearId },
+                new ScenarioStep { type = ScenarioStepType.LoadScene, scenePath = AssetPaths.OverworldScene },
             };
         }
-        private static TutorialScript EnsureScript(string path, string id, TutorialStep[] steps)
+        private static ScenarioScript EnsureScript(string path, string id, ScenarioStep[] steps)
         {
-            var existing = AssetDatabase.LoadAssetAtPath<TutorialScript>(path);
+            var existing = AssetDatabase.LoadAssetAtPath<ScenarioScript>(path);
             if (existing != null) return existing; // 사용자가 고친 대본은 덮어쓰지 않는다
-            var script = ScriptableObject.CreateInstance<TutorialScript>(); script.Set(id, steps);
+            var script = ScriptableObject.CreateInstance<ScenarioScript>(); script.Set(id, steps);
             AssetDatabase.CreateAsset(script, path); AssetDatabase.SaveAssetIfDirty(script);
             return script;
         }
 
         // ── 맵·씬 ──
         private static void EnsureStage(string folder, string mapPath, string scenePath, int width, int height, Vector2Int start,
-            (Vector2Int cell, Vector2Int facing)[] enemies, TutorialScript script, Sprite flySprite, bool flyVisibleAtStart, Sprite scarecrowSprite)
+            (Vector2Int cell, Vector2Int facing)[] enemies, ScenarioScript script, Sprite flySprite, bool flyVisibleAtStart, Sprite scarecrowSprite)
         {
             if (AssetDatabase.LoadAssetAtPath<SceneAsset>(scenePath) != null) return;
             AssetPaths.EnsureFolder(folder);
@@ -298,21 +298,21 @@ namespace IBIIIS.Editor
             {
                 GridMapPlayer battle = null;
                 foreach (var root in scene.GetRootGameObjects()) if (battle == null) battle = root.GetComponentInChildren<GridMapPlayer>(true);
-                var actors = new List<TutorialDirector.Actor>();
+                var actors = new List<ScenarioDirector.Actor>();
                 var fly = new GameObject("AssiFly"); SceneManager.MoveGameObjectToScene(fly, scene);
                 var flyRenderer = fly.AddComponent<SpriteRenderer>(); flyRenderer.sprite = flySprite; flyRenderer.sortingOrder = 4; fly.transform.localScale = Vector3.one * .55f;
                 fly.AddComponent<CompanionFollower>().Configure(battle);
                 fly.SetActive(flyVisibleAtStart);
-                actors.Add(new TutorialDirector.Actor { id = "fly", target = fly, height = .75f });
+                actors.Add(new ScenarioDirector.Actor { id = "fly", target = fly, height = .75f });
                 if (scarecrowSprite != null)
                 {
                     var scarecrow = new GameObject("Scarecrow"); SceneManager.MoveGameObjectToScene(scarecrow, scene);
                     var visual = new GameObject("Visual", typeof(SpriteRenderer), typeof(CameraFacingSprite)); visual.transform.SetParent(scarecrow.transform, false);
                     visual.transform.localScale = Vector3.one * 1.5f; visual.GetComponent<SpriteRenderer>().sprite = scarecrowSprite;
                     scarecrow.SetActive(false);
-                    actors.Add(new TutorialDirector.Actor { id = "scarecrow", target = scarecrow, height = 1.6f, blocksCell = true, cell = new Vector2Int(7, 2) });
+                    actors.Add(new ScenarioDirector.Actor { id = "scarecrow", target = scarecrow, height = 1.6f, blocksCell = true, cell = new Vector2Int(7, 2) });
                 }
-                var director = battle.gameObject.AddComponent<TutorialDirector>();
+                var director = battle.gameObject.AddComponent<ScenarioDirector>();
                 director.Configure(battle, script, actors.ToArray());
                 EditorUtility.SetDirty(director);
                 if (!EditorSceneManager.SaveScene(scene)) throw new System.IO.IOException($"튜토리얼 씬 저장 실패: {created}");
