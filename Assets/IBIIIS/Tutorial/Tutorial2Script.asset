@@ -1,0 +1,774 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3e88d472cfafe72408bb437a77c307a9, type: 3}
+  m_Name: Tutorial2Script
+  m_EditorClassIdentifier: IBIIIS.Runtime::IBIIIS.TutorialScript
+  scriptId: tutorial_2
+  steps:
+  - type: 0
+    line:
+      speaker: {fileID: 0}
+      expression: 
+      nameOverride: 
+      text: "\uD29C\uD1A0\uB9AC\uC5BC \uB358\uC804 2\uB2E8\uACC4 \uB9F5\uC73C\uB85C
+        \uC9C4\uC785\uD55C\uB2E4"
+    actions: 0
+    direction: {x: 0, y: 0}
+    cell: {x: 0, y: 0}
+    seconds: 0
+    keys: 
+    target: 
+    text: 
+    active: 0
+    scenePath: 
+    prefab: {fileID: 0}
+    sprite: {fileID: 0}
+  - type: 0
+    line:
+      speaker: {fileID: 11400000, guid: 62cbb598f2f40c249b3713c3d307662c, type: 2}
+      expression: 
+      nameOverride: 
+      text: "\uC774\uC81C \uBAAC\uC2A4\uD130\uB97C \uB9CC\uB098\uB7EC \uAC00\uBCF4\uC790!"
+    actions: 0
+    direction: {x: 0, y: 0}
+    cell: {x: 0, y: 0}
+    seconds: 0
+    keys: 
+    target: 
+    text: 
+    active: 0
+    scenePath: 
+    prefab: {fileID: 0}
+    sprite: {fileID: 0}
+  - type: 0
+    line:
+      speaker: {fileID: 11400000, guid: 62cbb598f2f40c249b3713c3d307662c, type: 2}
+      expression: 
+      nameOverride: 
+      text: "\uC800\uAE30 \uC55E\uC5D0 \uBAAC\uC2A4\uD130\uAC00 \uC788\uC5B4! \uB2E4\uAC00\uAC00\uBCFC\uB798?"
+    actions: 0
+    direction: {x: 0, y: 0}
+    cell: {x: 0, y: 0}
+    seconds: 0
+    keys: 
+    target: 
+    text: 
+    active: 0
+    scenePath: 
+    prefab: {fileID: 0}
+    sprite: {fileID: 0}
+  - type: 0
+    line:
+      speaker: {fileID: 11400000, guid: 1b570bab0e1d3ed40920b9225d59155c, type: 2}
+      expression: 
+      nameOverride: 
+      text: "\uC74C? \uB10C \uBB50\uC9C0?"
+    actions: 0
+    direction: {x: 0, y: 0}
+    cell: {x: 0, y: 0}
+    seconds: 0
+    keys: 
+    target: 
+    text: 
+    active: 0
+    scenePath: 
+    prefab: {fileID: 0}
+    sprite: {fileID: 0}
+  - type: 0
+    line:
+      speaker: {fileID: 11400000, guid: bd9c43e83beda0543960025aa730ad98, type: 2}
+      expression: 
+      nameOverride: 
+      text: "(\uB208\uC0AC\uB78C? \uC5EC\uAE30\uB294 \uD55C \uC5EC\uB984 \uC544\uB2CC\uAC00?
+        \uC5B4\uB5BB\uAC8C \uC548 \uB179\uACE0 \uC0B4\uC544\uC788\uC9C0?)"
+    actions: 0
+    direction: {x: 0, y: 0}
+    cell: {x: 0, y: 0}
+    seconds: 0
+    keys: 
+    target: 
+    text: 
+    active: 0
+    scenePath: 
+    prefab: {fileID: 0}
+    sprite: {fileID: 0}
+  - type: 0
+    line:
+      speaker: {fileID: 11400000, guid: bd9c43e83beda0543960025aa730ad98, type: 2}
+      expression: 
+      nameOverride: 
+      text: "\uB108 \uC65C \uC0B4\uC544\uC788\uC5B4? (\uC544\uB2C8 \uC5B4\uB5BB\uAC8C
+        \uB354\uC6B4\u3137\u3154..)"
+    actions: 0
+    direction: {x: 0, y: 0}
+    cell: {x: 0, y: 0}
+    seconds: 0
+    keys: 
+    target: 
+    text: 
+    active: 0
+    scenePath: 
+    prefab: {fileID: 0}
+    sprite: {fileID: 0}
+  - type: 0
+    line:
+      speaker: {fileID: 11400000, guid: 1b570bab0e1d3ed40920b9225d59155c, type: 2}
+      expression: 
+      nameOverride: 
+      text: "? \uC2DC\uBE44\uB0D0! \uC774\uBAB8\uC740 \uBB34\uB824 \uD2F0\uD0C0\uB284
+        \uC2A4\uB178\uC6B0\uB85C \uB9CC\uB4E4\uC5B4\uC9C4 \uB208\uC0AC\uB78C\uC774\uB77C\uACE0!!
+        \uAC10\uD788 \uB0B4\uAC00 \uD29C\uD1A0\uB9AC\uC5BC \uBAAC\uC2A4\uD130\uB77C\uACE0
+        \uB098\uB97C \uBB34\uC2DC\uD558\uB294 \uAC70\uB0D0???"
+    actions: 0
+    direction: {x: 0, y: 0}
+    cell: {x: 0, y: 0}
+    seconds: 0
+    keys: 
+    target: 
+    text: 
+    active: 0
+    scenePath: 
+    prefab: {fileID: 0}
+    sprite: {fileID: 0}
+  - type: 0
+    line:
+      speaker: {fileID: 11400000, guid: bd9c43e83beda0543960025aa730ad98, type: 2}
+      expression: 
+      nameOverride: 
+      text: "\uC544\uB2C8 \uADF8\uB7F0 \uC801 \uC5C6\uC5B4...! \uC624\uD574\uC57C!!
+        \uC560\uCD08\uC5D0 \uD2F0\uD0C0\uB284 \uC2A4\uB178\uC6B0 \uADF8\uB7F0\uAC8C
+        \uC65C \uC788\uB294\uB370?!?!?"
+    actions: 0
+    direction: {x: 0, y: 0}
+    cell: {x: 0, y: 0}
+    seconds: 0
+    keys: 
+    target: 
+    text: 
+    active: 0
+    scenePath: 
+    prefab: {fileID: 0}
+    sprite: {fileID: 0}
+  - type: 0
+    line:
+      speaker: {fileID: 0}
+      expression: 
+      nameOverride: 
+      text: "Enemy_00\uC774 \uB3CC\uC9C4 \uBAA8\uC158\uC744 \uCDE8\uD568"
+    actions: 0
+    direction: {x: 0, y: 0}
+    cell: {x: 0, y: 0}
+    seconds: 0
+    keys: 
+    target: 
+    text: 
+    active: 0
+    scenePath: 
+    prefab: {fileID: 0}
+    sprite: {fileID: 0}
+  - type: 0
+    line:
+      speaker: {fileID: 11400000, guid: bd9c43e83beda0543960025aa730ad98, type: 2}
+      expression: 
+      nameOverride: 
+      text: "\uC0B4\uB824\uC918 \uC5B4\uC528\uD30C\uB9AC!!!"
+    actions: 0
+    direction: {x: 0, y: 0}
+    cell: {x: 0, y: 0}
+    seconds: 0
+    keys: 
+    target: 
+    text: 
+    active: 0
+    scenePath: 
+    prefab: {fileID: 0}
+    sprite: {fileID: 0}
+  - type: 0
+    line:
+      speaker: {fileID: 11400000, guid: 62cbb598f2f40c249b3713c3d307662c, type: 2}
+      expression: 
+      nameOverride: 
+      text: "\uC77C\uB2E8 \uBB34\uAE30\uB97C \uB4E4\uC5B4!"
+    actions: 0
+    direction: {x: 0, y: 0}
+    cell: {x: 0, y: 0}
+    seconds: 0
+    keys: 
+    target: 
+    text: 
+    active: 0
+    scenePath: 
+    prefab: {fileID: 0}
+    sprite: {fileID: 0}
+  - type: 0
+    line:
+      speaker: {fileID: 11400000, guid: bd9c43e83beda0543960025aa730ad98, type: 2}
+      expression: 
+      nameOverride: 
+      text: "\uC5B4? \uC544\uAE4C \uB358\uC838\uBC84\uB838\uB294\uB370????? \uADF8\uB7F0
+        \uAC70 \uB9D0\uACE0\u3160\u3160\u3160!!"
+    actions: 0
+    direction: {x: 0, y: 0}
+    cell: {x: 0, y: 0}
+    seconds: 0
+    keys: 
+    target: 
+    text: 
+    active: 0
+    scenePath: 
+    prefab: {fileID: 0}
+    sprite: {fileID: 0}
+  - type: 0
+    line:
+      speaker: {fileID: 11400000, guid: 62cbb598f2f40c249b3713c3d307662c, type: 2}
+      expression: 
+      nameOverride: 
+      text: "\uC544\uC787 \uC4F8\uBAA8\uC5C6\uC5B4!"
+    actions: 0
+    direction: {x: 0, y: 0}
+    cell: {x: 0, y: 0}
+    seconds: 0
+    keys: 
+    target: 
+    text: 
+    active: 0
+    scenePath: 
+    prefab: {fileID: 0}
+    sprite: {fileID: 0}
+  - type: 0
+    line:
+      speaker: {fileID: 11400000, guid: bd9c43e83beda0543960025aa730ad98, type: 2}
+      expression: 
+      nameOverride: 
+      text: "\uBE68\uB9AC..! \uC774\uB7EC\uB2E4 \uB9DE\uACA0\uC5B4\u3160\u3160 \uBB50\uB77C\uB3C4
+        \uC54C\uB824\uC918..!"
+    actions: 0
+    direction: {x: 0, y: 0}
+    cell: {x: 0, y: 0}
+    seconds: 0
+    keys: 
+    target: 
+    text: 
+    active: 0
+    scenePath: 
+    prefab: {fileID: 0}
+    sprite: {fileID: 0}
+  - type: 0
+    line:
+      speaker: {fileID: 11400000, guid: 62cbb598f2f40c249b3713c3d307662c, type: 2}
+      expression: 
+      nameOverride: 
+      text: "\uADF8\uB7FC \uD53C\uD574\uC57C\uC9C0! \uC67C\uCABD\uC73C\uB85C \uC6C0\uC9C1\uC5EC!"
+    actions: 0
+    direction: {x: 0, y: 0}
+    cell: {x: 0, y: 0}
+    seconds: 0
+    keys: 
+    target: 
+    text: 
+    active: 0
+    scenePath: 
+    prefab: {fileID: 0}
+    sprite: {fileID: 0}
+  - type: 2
+    line:
+      speaker: {fileID: 0}
+      expression: 
+      nameOverride: 
+      text: 
+    actions: 1
+    direction: {x: -1, y: 0}
+    cell: {x: 0, y: 0}
+    seconds: 0
+    keys: A
+    target: 
+    text: 
+    active: 0
+    scenePath: 
+    prefab: {fileID: 0}
+    sprite: {fileID: 0}
+  - type: 10
+    line:
+      speaker: {fileID: 0}
+      expression: 
+      nameOverride: 
+      text: 
+    actions: 0
+    direction: {x: -1, y: 0}
+    cell: {x: 6, y: 2}
+    seconds: 0
+    keys: 
+    target: 
+    text: 
+    active: 0
+    scenePath: 
+    prefab: {fileID: 813248963188959153, guid: 9f7001c2cb22e264d9ca3774728dbd8d, type: 3}
+    sprite: {fileID: 0}
+  - type: 10
+    line:
+      speaker: {fileID: 0}
+      expression: 
+      nameOverride: 
+      text: 
+    actions: 0
+    direction: {x: 1, y: 0}
+    cell: {x: 0, y: 1}
+    seconds: 0
+    keys: 
+    target: 
+    text: 
+    active: 0
+    scenePath: 
+    prefab: {fileID: 813248963188959153, guid: 9f7001c2cb22e264d9ca3774728dbd8d, type: 3}
+    sprite: {fileID: 0}
+  - type: 0
+    line:
+      speaker: {fileID: 11400000, guid: bd9c43e83beda0543960025aa730ad98, type: 2}
+      expression: 
+      nameOverride: 
+      text: "\uD734... \uD53C\uD588\uB2E4!!"
+    actions: 0
+    direction: {x: 0, y: 0}
+    cell: {x: 0, y: 0}
+    seconds: 0
+    keys: 
+    target: 
+    text: 
+    active: 0
+    scenePath: 
+    prefab: {fileID: 0}
+    sprite: {fileID: 0}
+  - type: 0
+    line:
+      speaker: {fileID: 11400000, guid: 1b570bab0e1d3ed40920b9225d59155c, type: 2}
+      expression: 
+      nameOverride: 
+      text: "\uAC10\uD788 \uB098\uC758 \uC8FD\uC74C\uC744 \uBC14\uB77C\uACE0 \uB098\uB97C
+        \uD53C\uD588\uACA0\uB2E4????"
+    actions: 0
+    direction: {x: 0, y: 0}
+    cell: {x: 0, y: 0}
+    seconds: 0
+    keys: 
+    target: 
+    text: 
+    active: 0
+    scenePath: 
+    prefab: {fileID: 0}
+    sprite: {fileID: 0}
+  - type: 0
+    line:
+      speaker: {fileID: 11400000, guid: 3481636955f132a498f3239b0b9ce428, type: 2}
+      expression: 
+      nameOverride: 
+      text: "\uBB63?? \uB124 \uB140\uC11D\uC740 \uB204\uAD6C\uB0D0!"
+    actions: 0
+    direction: {x: 0, y: 0}
+    cell: {x: 0, y: 0}
+    seconds: 0
+    keys: 
+    target: 
+    text: 
+    active: 0
+    scenePath: 
+    prefab: {fileID: 0}
+    sprite: {fileID: 0}
+  - type: 0
+    line:
+      speaker: {fileID: 11400000, guid: bd9c43e83beda0543960025aa730ad98, type: 2}
+      expression: 
+      nameOverride: 
+      text: "\uC73C\uC545 \uC801\uC774 \uB298\uC5B4\uB0AC\uC5B4!! \uC5B4\uC528\uD30C\uB9AC..\u3160\u3160
+        \uB354 \uBA40\uB9AC \uC774\uB3D9\uD560 \uC218 \uC788\uB294 \uBC29\uBC95\uC774
+        \uC5C6\uC5B4? \uC774\uB7EC\uB2E4\uAC00 \uC7A1\uD788\uACA0\uC5B4!!"
+    actions: 0
+    direction: {x: 0, y: 0}
+    cell: {x: 0, y: 0}
+    seconds: 0
+    keys: 
+    target: 
+    text: 
+    active: 0
+    scenePath: 
+    prefab: {fileID: 0}
+    sprite: {fileID: 0}
+  - type: 0
+    line:
+      speaker: {fileID: 11400000, guid: 62cbb598f2f40c249b3713c3d307662c, type: 2}
+      expression: 
+      nameOverride: 
+      text: "\uB0B4\uAC00 \uB3C4\uB77CX\uBABD\uC774\uB0D0!(\uB0B4\uAC00 \uB2C8 \uC5C4\uB9C8\uB0D0!!)"
+    actions: 0
+    direction: {x: 0, y: 0}
+    cell: {x: 0, y: 0}
+    seconds: 0
+    keys: 
+    target: 
+    text: 
+    active: 0
+    scenePath: 
+    prefab: {fileID: 0}
+    sprite: {fileID: 0}
+  - type: 0
+    line:
+      speaker: {fileID: 11400000, guid: bd9c43e83beda0543960025aa730ad98, type: 2}
+      expression: 
+      nameOverride: 
+      text: "\uC5B4\uC2DC\uC2A4\uD134\uD2B8\uC790\uB098...!!\u3160\u3160\u3160( ;(
+        )"
+    actions: 0
+    direction: {x: 0, y: 0}
+    cell: {x: 0, y: 0}
+    seconds: 0
+    keys: 
+    target: 
+    text: 
+    active: 0
+    scenePath: 
+    prefab: {fileID: 0}
+    sprite: {fileID: 0}
+  - type: 0
+    line:
+      speaker: {fileID: 11400000, guid: 62cbb598f2f40c249b3713c3d307662c, type: 2}
+      expression: 
+      nameOverride: 
+      text: "\uC5D0\uD734.. \uADF8\uB7FC [\uB300\uC2DC]\uB97C \uC368\uBD10! shift\uD0A4\uB97C
+        \uB204\uB978\uCC44\uB85C \uAC00\uACE0\uC2F6\uC740 \uBC29\uD5A5\uD0A4\uB97C
+        \uB20C\uB7EC!"
+    actions: 0
+    direction: {x: 0, y: 0}
+    cell: {x: 0, y: 0}
+    seconds: 0
+    keys: 
+    target: 
+    text: 
+    active: 0
+    scenePath: 
+    prefab: {fileID: 0}
+    sprite: {fileID: 0}
+  - type: 2
+    line:
+      speaker: {fileID: 0}
+      expression: 
+      nameOverride: 
+      text: 
+    actions: 4
+    direction: {x: 0, y: 1}
+    cell: {x: 0, y: 0}
+    seconds: 0
+    keys: Shift W
+    target: 
+    text: 
+    active: 0
+    scenePath: 
+    prefab: {fileID: 0}
+    sprite: {fileID: 0}
+  - type: 11
+    line:
+      speaker: {fileID: 11400000, guid: 62cbb598f2f40c249b3713c3d307662c, type: 2}
+      expression: 
+      nameOverride: 
+      text: "\uAC70\uAE30\uB85C \uAC00\uBA74 \uC704\uD5D8\uD574!"
+    actions: 7
+    direction: {x: 0, y: 0}
+    cell: {x: 0, y: 0}
+    seconds: 1.5
+    keys: 
+    target: 
+    text: 
+    active: 0
+    scenePath: 
+    prefab: {fileID: 0}
+    sprite: {fileID: 0}
+  - type: 0
+    line:
+      speaker: {fileID: 0}
+      expression: 
+      nameOverride: 
+      text: "\uC8FC\uC778\uACF5\uC774 \uD68C\uD53C \uD6C4 \uC88C\uC6B0\uB97C \uB450\uB9AC\uBC88
+        \uAC70\uB9AC\uACE0 \uC2E0\uB098\uD55C\uB2E4, \uBAAC\uC2A4\uD130\uB07C\uB9AC
+        \uBD80\uB52A\uD600\uC11C \uAF48\uB2F9 \uC0AC\uB77C\uC9C4\uB2E4"
+    actions: 0
+    direction: {x: 0, y: 0}
+    cell: {x: 0, y: 0}
+    seconds: 0
+    keys: 
+    target: 
+    text: 
+    active: 0
+    scenePath: 
+    prefab: {fileID: 0}
+    sprite: {fileID: 0}
+  - type: 0
+    line:
+      speaker: {fileID: 11400000, guid: bd9c43e83beda0543960025aa730ad98, type: 2}
+      expression: 
+      nameOverride: 
+      text: "\uB0B4, \uB0B4\uAC00 \uD53C\uD588\uC5B4!!"
+    actions: 0
+    direction: {x: 0, y: 0}
+    cell: {x: 0, y: 0}
+    seconds: 0
+    keys: 
+    target: 
+    text: 
+    active: 0
+    scenePath: 
+    prefab: {fileID: 0}
+    sprite: {fileID: 0}
+  - type: 0
+    line:
+      speaker: {fileID: 11400000, guid: 62cbb598f2f40c249b3713c3d307662c, type: 2}
+      expression: 
+      nameOverride: 
+      text: "\uAD7C\uBCB5\uC774\uB3C4 \uAD6C\uB974\uB294 \uC7AC\uC8FC\uAC00 \uC788\uB2E4\uB354\uB2C8...
+        \uC774\uAC74 \uC81C\uBC95 \uC798\uD558\uB294\uB370?"
+    actions: 0
+    direction: {x: 0, y: 0}
+    cell: {x: 0, y: 0}
+    seconds: 0
+    keys: 
+    target: 
+    text: 
+    active: 0
+    scenePath: 
+    prefab: {fileID: 0}
+    sprite: {fileID: 0}
+  - type: 0
+    line:
+      speaker: {fileID: 0}
+      expression: 
+      nameOverride: 
+      text: "\uC5B4\uC528\uD30C\uB9AC\uAC00 \uC8FC\uBCC0\uC744 \uD655\uC778\uD55C\uB2E4"
+    actions: 0
+    direction: {x: 0, y: 0}
+    cell: {x: 0, y: 0}
+    seconds: 0
+    keys: 
+    target: 
+    text: 
+    active: 0
+    scenePath: 
+    prefab: {fileID: 0}
+    sprite: {fileID: 0}
+  - type: 0
+    line:
+      speaker: {fileID: 11400000, guid: 62cbb598f2f40c249b3713c3d307662c, type: 2}
+      expression: 
+      nameOverride: 
+      text: "\uC624? \uC2EC\uC9C0\uC5B4 \uBAAC\uC2A4\uD130\uB3C4 \uC11C\uB85C \uBD80\uB52A\uD600\uC11C
+        \uC4F0\uB7EC\uC84C\uC5B4! \uC544\uAE4C \uB3C4\uBC1C\uB3C4 \uADF8\uB807\uACE0,
+        \uB108.. \uC758\uB3C4\uD55C\uAC70\uC600\uAD6C\uB098!"
+    actions: 0
+    direction: {x: 0, y: 0}
+    cell: {x: 0, y: 0}
+    seconds: 0
+    keys: 
+    target: 
+    text: 
+    active: 0
+    scenePath: 
+    prefab: {fileID: 0}
+    sprite: {fileID: 0}
+  - type: 0
+    line:
+      speaker: {fileID: 11400000, guid: bd9c43e83beda0543960025aa730ad98, type: 2}
+      expression: 
+      nameOverride: 
+      text: "\uC5B4? \uC5B4..\uC5B4... \uADF8,\uADF8\uB7F0\uAC00?"
+    actions: 0
+    direction: {x: 0, y: 0}
+    cell: {x: 0, y: 0}
+    seconds: 0
+    keys: 
+    target: 
+    text: 
+    active: 0
+    scenePath: 
+    prefab: {fileID: 0}
+    sprite: {fileID: 0}
+  - type: 0
+    line:
+      speaker: {fileID: 11400000, guid: bd9c43e83beda0543960025aa730ad98, type: 2}
+      expression: 
+      nameOverride: 
+      text: "(\uC73C\uC4F1\uB300\uBA70) \uB098.. \uC7AC\uB2A5 \uC788\uC744\uC9C0\uB3C4?"
+    actions: 0
+    direction: {x: 0, y: 0}
+    cell: {x: 0, y: 0}
+    seconds: 0
+    keys: 
+    target: 
+    text: 
+    active: 0
+    scenePath: 
+    prefab: {fileID: 0}
+    sprite: {fileID: 0}
+  - type: 0
+    line:
+      speaker: {fileID: 11400000, guid: 62cbb598f2f40c249b3713c3d307662c, type: 2}
+      expression: 
+      nameOverride: 
+      text: "\uCC28\uB77C\uB9AC \uC55E\uC73C\uB85C \uC774\uB807\uAC8C \uC804\uD22C\uD574\uBCF4\uB294\uAC8C
+        \uC5B4\uB54C? \uB108 \uACF5\uACA9\uB3C4 \uB054\uCC0D\uD558\uAC8C \uBABB\uD558\uB2C8\uAE4C.."
+    actions: 0
+    direction: {x: 0, y: 0}
+    cell: {x: 0, y: 0}
+    seconds: 0
+    keys: 
+    target: 
+    text: 
+    active: 0
+    scenePath: 
+    prefab: {fileID: 0}
+    sprite: {fileID: 0}
+  - type: 0
+    line:
+      speaker: {fileID: 11400000, guid: 62cbb598f2f40c249b3713c3d307662c, type: 2}
+      expression: 
+      nameOverride: 
+      text: "\uD53C\uD574\uC11C \uC11C\uB85C \uBD80\uB52A\uD788\uAC8C \uB9CC\uB4DC\uB294\uAC70\uC57C!"
+    actions: 0
+    direction: {x: 0, y: 0}
+    cell: {x: 0, y: 0}
+    seconds: 0
+    keys: 
+    target: 
+    text: 
+    active: 0
+    scenePath: 
+    prefab: {fileID: 0}
+    sprite: {fileID: 0}
+  - type: 0
+    line:
+      speaker: {fileID: 11400000, guid: bd9c43e83beda0543960025aa730ad98, type: 2}
+      expression: 
+      nameOverride: 
+      text: "\uC5B4.... \uB0B4, \uB0B4\uAC00 \uD560 \uC218 \uC788\uC744\uAE4C...?"
+    actions: 0
+    direction: {x: 0, y: 0}
+    cell: {x: 0, y: 0}
+    seconds: 0
+    keys: 
+    target: 
+    text: 
+    active: 0
+    scenePath: 
+    prefab: {fileID: 0}
+    sprite: {fileID: 0}
+  - type: 0
+    line:
+      speaker: {fileID: 11400000, guid: 62cbb598f2f40c249b3713c3d307662c, type: 2}
+      expression: 
+      nameOverride: 
+      text: "\uD560 \uC218 \uC788\uB4E0 \uC544\uB2C8\uB4E0, \uD29C\uD1A0\uB9AC\uC5BC
+        \uB358\uC804\uC744 \uBE60\uC838\uB098\uAC00\uB824\uBA74 \uBAAC\uC2A4\uD130\uB97C
+        \uD574\uCE58\uC6CC\uC57C \uD574."
+    actions: 0
+    direction: {x: 0, y: 0}
+    cell: {x: 0, y: 0}
+    seconds: 0
+    keys: 
+    target: 
+    text: 
+    active: 0
+    scenePath: 
+    prefab: {fileID: 0}
+    sprite: {fileID: 0}
+  - type: 0
+    line:
+      speaker: {fileID: 11400000, guid: 62cbb598f2f40c249b3713c3d307662c, type: 2}
+      expression: 
+      nameOverride: 
+      text: "\uCEAC \uB0B4\uAC00 \uB2E4 \uC54C\uB824\uC92C\uB2E4~ \uB098\uBA38\uC9C4
+        \uC54C\uC544\uC11C \uCC98\uB9AC\uD560 \uC218 \uC788\uC9C0?"
+    actions: 0
+    direction: {x: 0, y: 0}
+    cell: {x: 0, y: 0}
+    seconds: 0
+    keys: 
+    target: 
+    text: 
+    active: 0
+    scenePath: 
+    prefab: {fileID: 0}
+    sprite: {fileID: 0}
+  - type: 0
+    line:
+      speaker: {fileID: 11400000, guid: bd9c43e83beda0543960025aa730ad98, type: 2}
+      expression: 
+      nameOverride: 
+      text: "... \uBC8C\uC368 \uC758\uC9C0\uAC00 \uBC14\uB2E5\uB0AC\uC5B4... \uC2A4\uD0B5
+        \uC5C6\uB098.."
+    actions: 0
+    direction: {x: 0, y: 0}
+    cell: {x: 0, y: 0}
+    seconds: 0
+    keys: 
+    target: 
+    text: 
+    active: 0
+    scenePath: 
+    prefab: {fileID: 0}
+    sprite: {fileID: 0}
+  - type: 0
+    line:
+      speaker: {fileID: 0}
+      expression: 
+      nameOverride: 
+      text: "\uD50C\uB808\uC774\uC5B4\uAC00 \uB098\uBA38\uC9C0 \uBAAC\uC2A4\uD130\uB97C
+        \uCC98\uB9AC\uD55C\uB2E4"
+    actions: 0
+    direction: {x: 0, y: 0}
+    cell: {x: 0, y: 0}
+    seconds: 0
+    keys: 
+    target: 
+    text: 
+    active: 0
+    scenePath: 
+    prefab: {fileID: 0}
+    sprite: {fileID: 0}
+  - type: 12
+    line:
+      speaker: {fileID: 0}
+      expression: 
+      nameOverride: 
+      text: 
+    actions: 0
+    direction: {x: 0, y: 0}
+    cell: {x: 0, y: 0}
+    seconds: 0
+    keys: 
+    target: 
+    text: tutorial
+    active: 0
+    scenePath: 
+    prefab: {fileID: 0}
+    sprite: {fileID: 0}
+  - type: 9
+    line:
+      speaker: {fileID: 0}
+      expression: 
+      nameOverride: 
+      text: 
+    actions: 0
+    direction: {x: 0, y: 0}
+    cell: {x: 0, y: 0}
+    seconds: 0
+    keys: 
+    target: 
+    text: 
+    active: 0
+    scenePath: Assets/IBIIIS/Overworld/OverworldTest.unity
+    prefab: {fileID: 0}
+    sprite: {fileID: 0}

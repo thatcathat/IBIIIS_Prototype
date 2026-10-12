@@ -21,6 +21,7 @@ namespace IBIIIS.Editor
             { TutorialStepType.Wait, new[] { ("seconds", "기다릴 시간(초)") } },
             { TutorialStepType.LoadScene, new[] { ("scenePath", "씬 경로") } },
             { TutorialStepType.SpawnEnemy, new[] { ("prefab", "적 프리팹"), ("cell", "칸"), ("direction", "방향") } },
+            { TutorialStepType.RecordClear, new[] { ("text", "기록 ID") } },
             { TutorialStepType.FreePlay, new[] { ("actions", "허용 행동"), ("line", "위험 경고 대사"), ("seconds", "경고 보이는 시간(초)") } },
         };
         private static (string field, string label)[] For(SerializedProperty property)

@@ -30,6 +30,8 @@ namespace IBIIIS
         SpawnEnemy = 10,
         /// <summary>허용한 행동으로 자유롭게 싸운다. 패배할 행동은 막고 경고 대사(Line)를 Seconds 동안 보인다. 적이 모두 사라지면 다음 단계.</summary>
         FreePlay = 11,
+        /// <summary>클리어 기록에 Text(기록 ID)를 남긴다(예: 튜토리얼 클리어). 바로 다음 단계.</summary>
+        RecordClear = 12,
     }
     /// <summary>대본에서 허용할 플레이어 행동(여러 개 선택 가능).</summary>
     [Flags]

@@ -29,6 +29,7 @@ namespace IBIIIS
         [SerializeField, Tooltip("등장 오브젝트. 대본의 Target ID로 찾습니다.")] private Actor[] actors = Array.Empty<Actor>();
         [SerializeField, Min(0), Tooltip("플레이어 감정 표시 높이(칸). 임시 1.6.")] private float playerEmoteHeight = 1.6f;
         [SerializeField, Tooltip("체크하면 전투가 준비되는 대로 대본을 시작합니다.")] private bool playOnStart = true;
+        [SerializeField, Tooltip("체크하면 대본이 도는 동안 적 인식 말풍선(대사)을 띄우지 않습니다. 대본 대사와 겹치지 않게 튜토리얼에서 켭니다.")] private bool hideEnemyAlerts = true;
         private int index = -1;
         private bool waitingFirstMove, clicked;
         private int baselineActions;
@@ -40,6 +41,8 @@ namespace IBIIIS
         /// <summary>자유 진행에서 막은(패배할) 행동 수. 테스트·디버그용.</summary>
         public int BlockedDangerousMoves { get; private set; }
         public bool IsRunning { get; private set; }
+        /// <summary>마지막 씬 전환 단계가 가리킨 씬(테스트·디버그용).</summary>
+        public string LoadedScene { get; private set; }
         public bool Finished { get; private set; }
         public int StepIndex => index;
         public TutorialStep Current => IsRunning && index >= 0 && index < script.Steps.Length ? script.Steps[index] : default;
@@ -70,6 +73,7 @@ namespace IBIIIS
             if (battle == null || script == null) { Debug.LogError($"[IBIIIS] {name}: 대본 진행기에 전투(Battle) 또는 대본(Script)이 연결되지 않았습니다.", this); return; }
             IsRunning = true; Finished = false; index = -1;
             battle.AllowUndoRestart = false; battle.AllowRangeToggle = false;
+            if (hideEnemyAlerts) battle.AlertsEnabled = false;
             Next();
         }
         /// <summary>시간을 진행하고 현재 단계의 끝 조건을 확인한다(매 프레임, 테스트에서는 직접 호출).</summary>
@@ -193,8 +197,14 @@ namespace IBIIIS
                 case TutorialStepType.Wait:
                     break;
                 case TutorialStepType.LoadScene:
-                    IsRunning = false; Finished = true; Restore();
-                    if (!StageFlow.LoadScene(step.scenePath)) Debug.LogError($"[IBIIIS] {name}: 대본의 다음 씬 '{step.scenePath}'을 불러오지 못했습니다.", this);
+                    IsRunning = false; Finished = true; LoadedScene = step.scenePath;
+                    // 씬 전환은 Play 중에만 한다(에디터 테스트에서는 기록만).
+                    if (Application.isPlaying && !StageFlow.LoadScene(step.scenePath)) { Debug.LogError($"[IBIIIS] {name}: 대본의 다음 씬 '{step.scenePath}'을 불러오지 못했습니다.", this); Restore(); }
+                    break;
+                case TutorialStepType.RecordClear:
+                    try { ProgressStore.MarkCleared(step.text); }
+                    catch (Exception e) { Debug.LogException(e); }
+                    Next();
                     break;
             }
         }
@@ -220,7 +230,7 @@ namespace IBIIIS
             EnsureDialogue().Hide();
             Restore();
         }
-        private void Restore() { battle.CommandFilter = null; battle.SetGuideCells(null); battle.AllowUndoRestart = true; battle.AllowRangeToggle = true; }
+        private void Restore() { battle.CommandFilter = null; battle.SetGuideCells(null); battle.AllowUndoRestart = true; battle.AllowRangeToggle = true; battle.AlertsEnabled = true; }
         private Actor FindActor(string id)
         {
             foreach (var actor in actors) if (actor.id == id) return actor;

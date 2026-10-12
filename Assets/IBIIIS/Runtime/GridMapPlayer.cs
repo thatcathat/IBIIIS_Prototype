@@ -439,7 +439,7 @@ namespace IBIIIS
         private void UpdateAlert(float seconds)
         {
             if (alert == null || session == null) return;
-            alert.Update(seconds, session, enemyViews, !session.IsBusy && !IsPresenting, ownsEnemy ??= OwnsEnemy);
+            alert.Update(seconds, session, enemyViews, alertsEnabled && !session.IsBusy && !IsPresenting, ownsEnemy ??= OwnsEnemy);
         }
         /// <summary>행동을 시작한다. 입력 대기 중인데 갈 수 없는 방향이면 그쪽으로 부딪히는 반응만 보이고 false를 돌려준다(시간·판정 변화 없음).</summary>
         public bool TryActionOrBump(PlayerAction action, Vector2Int direction)
@@ -455,6 +455,9 @@ namespace IBIIIS
         public bool AllowUndoRestart { get; set; } = true;
         /// <summary>false면 범위 표시 전환(키·버튼)을 막고 HUD 버튼을 숨긴다.</summary>
         public bool AllowRangeToggle { get; set; } = true;
+        /// <summary>false면 적 인식 말풍선을 띄우지 않는다(대본 대사와 겹치지 않게). 다시 켜면 현재 인식 상태로 조용히 맞춘다.</summary>
+        public bool AlertsEnabled { get => alertsEnabled; set { if (alertsEnabled == value) return; alertsEnabled = value; alert?.Resync(session); } }
+        private bool alertsEnabled = true;
         /// <summary>제한 판정에 막힌 행동(대본이 경고를 띄우는 데 쓴다).</summary>
         public event Action<PlayerAction, Vector2Int> CommandRejected;
         /// <summary>플레이어 명령 하나를 실행한다(키 입력과 같은 경로). 제한에 막히면 false, 갈 수 없는 방향이면 부딪힘 반응 후 false.</summary>

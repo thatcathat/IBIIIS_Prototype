@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: AssiFly
   m_EditorClassIdentifier: IBIIIS.Runtime::IBIIIS.DialogueCharacter
   characterId: assi_fly
-  displayName: "\uC5B4\uC2DC \uD30C\uB9AC"
+  displayName: "\uC5B4\uC2DC\uD30C\uB9AC"
   nameColor: {r: 0.55, g: 0.9, b: 0.45, a: 1}
   side: 1
   portrait: {fileID: 21300000, guid: a746cc57c73d8b449a0c879604504b9e, type: 3}
