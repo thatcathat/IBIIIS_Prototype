@@ -45,6 +45,8 @@ namespace IBIIIS
             public BattlePhase Phase;
             public bool EvasionLocked;
             public Vector2Int[] AttackCells;
+            // 이 행동 전에 있던 적 수. 그 뒤 합류한 적은 되돌리면 빠진다.
+            public int EnemyCount;
             public EnemyMemo[] Enemies;
         }
         private struct EnemyMemo
@@ -95,20 +97,63 @@ namespace IBIIIS
             if (map == null) throw new ArgumentNullException(nameof(map));
             var errors = map.ValidateMap();
             if (errors.Count > 0) throw new ArgumentException(string.Join("\n", errors));
+            source = map;
             walkable = new bool[map.Width, map.Height];
             for (int y = 0; y < map.Height; y++) for (int x = 0; x < map.Width; x++) walkable[x, y] = map.IsWalkable(new Vector2Int(x, y));
             available = Available;
             Position = Destination = map.Start;
-            foreach (var spawn in map.Enemies)
-            {
-                var d = spawn.Prefab.GetComponent<EnemyDefinition>();
-                enemies.Add(new EnemyState { Prefab = spawn.Prefab, Position = spawn.Position, StepFrom = spawn.Position, StepTo = spawn.Position,
-                    Direction = spawn.Direction, Actions = d.Actions, Recognition = d.Recognition, Attack = d.Attack, RecognizedAttack = d.RecognizedAttack });
-            }
+            foreach (var spawn in map.Enemies) enemies.Add(CreateEnemy(spawn.Prefab, spawn.Position, spawn.Direction));
+        }
+        private readonly GridMap source;
+        // 실행 중 막힌 칸(칸만 막는 오브젝트). 맵의 이동 불가 칸처럼 플레이어·적 모두 들어갈 수 없다.
+        private readonly HashSet<Vector2Int> blocked = new HashSet<Vector2Int>();
+        private static EnemyState CreateEnemy(GameObject prefab, Vector2Int position, Vector2Int direction)
+        {
+            var d = prefab.GetComponent<EnemyDefinition>();
+            return new EnemyState { Prefab = prefab, Position = position, StepFrom = position, StepTo = position,
+                Direction = direction, Actions = d.Actions, Recognition = d.Recognition, Attack = d.Attack, RecognizedAttack = d.RecognizedAttack };
+        }
+        /// <summary>입력 대기 중에 적 한 마리를 합류시킨다(대본의 몬스터 합류). 이동 가능한 빈 칸(플레이어·살아 있는 적 없음)이고 방향이 상하좌우여야 한다.
+        /// 합류한 적은 다음 행동부터 움직이고 판정에 참여한다. 합류 전 행동을 되돌리면 빠진다.</summary>
+        public bool TryAddEnemy(GameObject prefab, Vector2Int position, Vector2Int direction)
+        {
+            if (IsBusy || prefab == null) return false;
+            var definition = prefab.GetComponent<EnemyDefinition>();
+            if (definition == null || !definition.IsValid) return false;
+            if (Math.Abs((long)direction.x) + Math.Abs((long)direction.y) != 1 || !Available(position) || position == Position) return false;
+            enemies.Add(CreateEnemy(prefab, position, direction));
+            return true;
+        }
+        /// <summary>칸을 막거나 푼다(입력 대기 중). 플레이어나 살아 있는 적이 서 있는 칸은 막을 수 없다.</summary>
+        public bool SetBlocked(Vector2Int cell, bool value)
+        {
+            if (IsBusy) return false;
+            if (!value) return blocked.Remove(cell);
+            if (!IsWalkable(cell) || !Available(cell) || cell == Position) return false;
+            return blocked.Add(cell);
+        }
+        public bool IsBlocked(Vector2Int cell) => blocked.Contains(cell);
+        /// <summary>이 행동을 하면 결과가 어떻게 되는지 현재 상태를 복사해 미리 계산한다(현재 상태는 바뀌지 않는다). 할 수 없는 행동이면 현재 단계.</summary>
+        public BattlePhase Predict(PlayerAction action, Vector2Int direction)
+        {
+            if (!CanAct(action, direction)) return Phase;
+            var copy = Copy(); copy.RecordHistory = false;
+            copy.TryAct(action, direction);
+            copy.Advance(1000);
+            return copy.Phase;
+        }
+        // 같은 맵에서 새로 만들고, 합류한 적·막힌 칸을 더한 뒤 지금 상태를 옮긴다.
+        internal GridSession Copy()
+        {
+            var copy = new GridSession(source);
+            for (int i = copy.enemies.Count; i < enemies.Count; i++) copy.enemies.Add(CreateEnemy(enemies[i].Prefab, enemies[i].Position, enemies[i].Direction));
+            foreach (var cell in blocked) copy.blocked.Add(cell);
+            copy.LoadCore(SaveCore());
+            return copy;
         }
         public static bool CanStep(Vector2Int position, Vector2Int direction, Func<Vector2Int, bool> available)
             => Math.Abs((long)direction.x) + Math.Abs((long)direction.y) == 1 && available(position + direction);
-        private bool IsWalkable(Vector2Int p) => p.x >= 0 && p.y >= 0 && p.x < walkable.GetLength(0) && p.y < walkable.GetLength(1) && walkable[p.x, p.y];
+        private bool IsWalkable(Vector2Int p) => p.x >= 0 && p.y >= 0 && p.x < walkable.GetLength(0) && p.y < walkable.GetLength(1) && walkable[p.x, p.y] && !blocked.Contains(p);
         private bool Available(Vector2Int p)
         {
             if (!IsWalkable(p)) return false;
@@ -174,6 +219,7 @@ namespace IBIIIS
             var snapshot = history.Pop();
             Position = snapshot.Position; Destination = snapshot.Destination; Phase = snapshot.Phase; EvasionLocked = snapshot.EvasionLocked;
             attackCells.Clear(); foreach (var cell in snapshot.AttackCells) attackCells.Add(cell);
+            if (enemies.Count > snapshot.EnemyCount) enemies.RemoveRange(snapshot.EnemyCount, enemies.Count - snapshot.EnemyCount);
             for (int i = 0; i < enemies.Count; i++)
             {
                 var memo = snapshot.Enemies[i]; var e = enemies[i];
@@ -187,7 +233,7 @@ namespace IBIIIS
         private Snapshot Capture()
         {
             var snapshot = new Snapshot { Position = Position, Destination = Destination, Phase = Phase, EvasionLocked = EvasionLocked,
-                AttackCells = new List<Vector2Int>(attackCells).ToArray(), Enemies = new EnemyMemo[enemies.Count] };
+                AttackCells = new List<Vector2Int>(attackCells).ToArray(), Enemies = new EnemyMemo[enemies.Count], EnemyCount = enemies.Count };
             for (int i = 0; i < enemies.Count; i++)
             {
                 var e = enemies[i];

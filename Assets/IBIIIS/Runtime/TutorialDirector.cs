@@ -18,7 +18,10 @@ namespace IBIIIS
             [Tooltip("대본의 Target에 적는 ID. \"player\"는 플레이어로 예약되어 있습니다.")] public string id;
             public GameObject target;
             [Tooltip("감정 표시를 띄울 높이(칸, 발밑 기준 화면 위쪽).")] public float height;
+            [Tooltip("체크하면 켤 때 Cell 칸으로 옮기고 그 칸을 막습니다(허수아비처럼 칸만 막는 오브젝트). 끄면 풉니다.")] public bool blocksCell;
+            [Tooltip("막을 칸(맵 좌표).")] public Vector2Int cell;
         }
+        private sealed class Thrown { public Transform View; public SpriteRenderer Renderer; public Vector3 Start; public float Time, Duration; }
         private sealed class Emote { public Transform Target; public float Height, Left; public bool UntilLine; public string Text; public VisualElement View; }
 
         [SerializeField, Tooltip("필수. 대본을 진행할 전투(Grid Map Player).")] private GridMapPlayer battle;
@@ -32,6 +35,10 @@ namespace IBIIIS
         private float timer;
         private DialogueController dialogue;
         private readonly List<Emote> emotes = new List<Emote>();
+        private readonly List<Thrown> thrown = new List<Thrown>();
+        private float warningLeft;
+        /// <summary>자유 진행에서 막은(패배할) 행동 수. 테스트·디버그용.</summary>
+        public int BlockedDangerousMoves { get; private set; }
         public bool IsRunning { get; private set; }
         public bool Finished { get; private set; }
         public int StepIndex => index;
@@ -68,7 +75,7 @@ namespace IBIIIS
         /// <summary>시간을 진행하고 현재 단계의 끝 조건을 확인한다(매 프레임, 테스트에서는 직접 호출).</summary>
         public void Tick(float seconds)
         {
-            TickEmotes(seconds);
+            TickEmotes(seconds); TickThrown(seconds);
             if (!IsRunning) return;
             var step = Current; var session = battle.Session;
             bool ready = session != null && !session.IsBusy && !battle.IsPresenting;
@@ -92,13 +99,28 @@ namespace IBIIIS
                 case TutorialStepType.Wait:
                     timer += seconds; if (timer >= step.seconds) Next();
                     break;
+                case TutorialStepType.FreePlay:
+                    if (warningLeft > 0) { warningLeft -= seconds; if (warningLeft <= 0) EnsureDialogue().Hide(); }
+                    if (ready && session.Phase == BattlePhase.Won) Next();
+                    break;
             }
+        }
+        // 자유 진행의 입력 판정: 허용한 행동이고, 했을 때 패배하지 않아야 한다. 패배할 행동이면 막고 경고를 보인다.
+        private bool AllowSafe(PlayerAction action, Vector2Int direction)
+        {
+            var step = Current;
+            if (!step.Allows(action, direction)) return false;
+            if (battle.Session.Predict(action, direction) != BattlePhase.Lost) return true;
+            BlockedDangerousMoves++;
+            if (!string.IsNullOrEmpty(step.line.text)) { EnsureDialogue().Prompt(Ui, step.line, null); warningLeft = step.seconds > 0 ? step.seconds : 1.5f; }
+            return false;
         }
         /// <summary>칸을 눌렀다(마우스 왼쪽 버튼과 같은 경로). 칸 누르기 단계의 정답 칸이면 연출을 시작한다.</summary>
         public void ClickCell(Vector2Int cell)
         {
             if (!IsRunning || clicked || Current.type != TutorialStepType.WaitClickCell || cell != Current.cell) return;
             clicked = true; timer = 0; battle.SetGuideCells(null);
+            if (Current.sprite != null) Throw(Current.sprite, Current.seconds);
             CellClicked?.Invoke(Current);
         }
 
@@ -147,9 +169,26 @@ namespace IBIIIS
                     break;
                 case TutorialStepType.SetActive:
                     var actor = FindActor(step.target);
-                    if (actor.target != null) actor.target.SetActive(step.active);
+                    if (actor.target != null)
+                    {
+                        if (actor.blocksCell)
+                        {
+                            if (step.active) { actor.target.transform.position = battle.CellWorldPosition(actor.cell); if (!battle.SetCellBlocked(actor.cell, true)) Debug.LogWarning($"[IBIIIS] {name}: '{step.target}'이 막을 칸 {actor.cell}을 막지 못했습니다(이동 불가·플레이어·적이 있는 칸).", this); }
+                            else battle.SetCellBlocked(actor.cell, false);
+                        }
+                        actor.target.SetActive(step.active);
+                    }
                     else Debug.LogWarning($"[IBIIIS] {name}: 대본의 켜고 끄기 대상 '{step.target}'을 Actors에서 찾지 못했습니다.", this);
                     Next();
+                    break;
+                case TutorialStepType.SpawnEnemy:
+                    if (!battle.SpawnEnemy(step.prefab, step.cell, step.direction))
+                        Debug.LogWarning($"[IBIIIS] {name}: 대본의 적 합류({(step.prefab != null ? step.prefab.name : "프리팹 없음")}, {step.cell})에 실패했습니다(빈 이동 칸·상하좌우 방향·유효한 적 프리팹 필요).", this);
+                    Next();
+                    break;
+                case TutorialStepType.FreePlay:
+                    EnsureDialogue().Hide(); warningLeft = 0;
+                    battle.CommandFilter = AllowSafe;
                     break;
                 case TutorialStepType.Wait:
                     break;
@@ -232,6 +271,38 @@ namespace IBIIIS
                 e.View.style.left = point.x; e.View.style.top = point.y;
             }
         }
-        private void OnDisable() { foreach (var e in emotes) e.View?.RemoveFromHierarchy(); emotes.Clear(); }
+        // 칸 누르기 연출: 그림이 플레이어에게서 화면 오른쪽 위로 빙글빙글 돌며 날아가 흐려진다(표시 전용, 예: 공격 실패로 칼이 날아감).
+        private void Throw(Sprite sprite, float duration)
+        {
+            var anchor = battle.PlayerAnchor;
+            if (anchor == null) return;
+            var go = new GameObject("Thrown " + sprite.name); go.transform.SetParent(battle.Generated, true);
+            var renderer = go.AddComponent<SpriteRenderer>(); renderer.sprite = sprite; renderer.sortingOrder = 5;
+            var start = anchor.position + (battle.ViewCamera != null ? battle.ViewCamera.transform.up : Vector3.up) * .6f * battle.CellSize;
+            go.transform.position = start; go.transform.localScale = Vector3.one * .6f * battle.CellSize;
+            thrown.Add(new Thrown { View = go.transform, Renderer = renderer, Start = start, Duration = Mathf.Max(.1f, duration) });
+        }
+        private void TickThrown(float seconds)
+        {
+            var camera = battle != null ? battle.ViewCamera : null;
+            for (int i = thrown.Count - 1; i >= 0; i--)
+            {
+                var t = thrown[i];
+                if (t.View == null) { thrown.RemoveAt(i); continue; }
+                t.Time += seconds; float u = Mathf.Clamp01(t.Time / t.Duration);
+                Vector3 right = camera != null ? camera.transform.right : Vector3.right, up = camera != null ? camera.transform.up : Vector3.up;
+                t.View.position = t.Start + (right * 1.4f * u + up * (2.2f * u - 1.2f * u * u)) * battle.CellSize;
+                t.View.rotation = (camera != null ? camera.transform.rotation : Quaternion.identity) * Quaternion.Euler(0, 0, -720 * u);
+                t.Renderer.color = new Color(1, 1, 1, 1 - Mathf.Clamp01((u - .6f) / .4f));
+                if (u >= 1) { RuntimeObjects.Release(t.View.gameObject); thrown.RemoveAt(i); }
+            }
+        }
+        /// <summary>지금 날아가는 연출 수(테스트·디버그용).</summary>
+        public int ThrownCount => thrown.Count;
+        private void OnDisable()
+        {
+            foreach (var e in emotes) e.View?.RemoveFromHierarchy(); emotes.Clear();
+            foreach (var t in thrown) if (t.View != null) RuntimeObjects.Release(t.View.gameObject); thrown.Clear();
+        }
     }
 }

@@ -26,6 +26,10 @@ namespace IBIIIS
         Wait = 8,
         /// <summary>다른 씬(Scene Path)으로 넘어간다.</summary>
         LoadScene = 9,
+        /// <summary>적(Prefab)을 Cell에 Direction 방향으로 합류시킨다. 바로 다음 단계.</summary>
+        SpawnEnemy = 10,
+        /// <summary>허용한 행동으로 자유롭게 싸운다. 패배할 행동은 막고 경고 대사(Line)를 Seconds 동안 보인다. 적이 모두 사라지면 다음 단계.</summary>
+        FreePlay = 11,
     }
     /// <summary>대본에서 허용할 플레이어 행동(여러 개 선택 가능).</summary>
     [Flags]
@@ -35,9 +39,9 @@ namespace IBIIIS
     public struct TutorialStep
     {
         public TutorialStepType type;
-        [Tooltip("Line: 보여 줄 대사. 입력 대기·이름 입력: 그동안 보일 안내 줄(인물을 비우면 지문).")] public DialogueLine line;
+        [Tooltip("Line: 보여 줄 대사. 입력 대기·이름 입력: 그동안 보일 안내 줄(인물을 비우면 지문). 자유 진행: 위험한 이동을 막을 때 보일 경고 대사.")] public DialogueLine line;
         [Tooltip("입력 대기에서 허용할 행동.")] public TutorialActions actions;
-        [Tooltip("허용할 방향(위=(0,1), 왼쪽=(-1,0)). (0,0)이면 모든 방향.")] public Vector2Int direction;
+        [Tooltip("허용할 방향 또는 합류하는 적의 방향(위=(0,1), 왼쪽=(-1,0)). 입력 대기에서 (0,0)이면 모든 방향.")] public Vector2Int direction;
         [Tooltip("도착하거나 누를 칸(열, 행). 맵 좌표 기준(0,0 = 왼쪽 아래).")] public Vector2Int cell;
         [Tooltip("초. 자유 이동: 처음 움직인 뒤 기다릴 시간. 칸 누르기: 누른 뒤 연출 시간. 기다리기: 기다릴 시간. 감정 표시: 보이는 시간(0이면 다음 대사가 끝날 때까지).")] public float seconds;
         [Tooltip("화면에 깜빡일 키 표시. 공백으로 나눔(예: \"Shift W\" → Shift + W).")] public string keys;
@@ -45,6 +49,8 @@ namespace IBIIIS
         [Tooltip("감정 표시 글자(예: !, ?) 또는 이름 입력 기본값.")] public string text;
         [Tooltip("켜고 끄기: 켤지(체크) 끌지.")] public bool active;
         [Tooltip("넘어갈 씬 경로(Assets/...unity).")] public string scenePath;
+        [Tooltip("합류할 적 프리팹(EnemyDefinition 필요).")] public GameObject prefab;
+        [Tooltip("칸 누르기: 누른 뒤 플레이어에게서 날아가는 그림(예: 칼). 비우면 연출 없이 기다리기만 합니다.")] public Sprite sprite;
         public string[] KeyCaps => string.IsNullOrWhiteSpace(keys) ? Array.Empty<string>() : keys.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
         /// <summary>이 행동이 허용되는지(입력 대기 단계).</summary>
         public bool Allows(PlayerAction action, Vector2Int dir)

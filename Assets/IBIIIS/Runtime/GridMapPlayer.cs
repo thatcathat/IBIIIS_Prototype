@@ -220,17 +220,33 @@ namespace IBIIIS
         }
         private void CreateEnemyViews()
         {
-            if (map.Enemies.Count == 0) return;
-            var root = new GameObject("Enemies").transform; root.SetParent(generated, false);
-            foreach (var spawn in map.Enemies)
-            {
-                var instance = Instantiate(spawn.Prefab, root, false);
-                instance.transform.localPosition = LocalPosition(spawn.Position);
-                instance.transform.localScale = Vector3.one * cellSize;
-                instance.transform.localRotation = Quaternion.LookRotation(new Vector3(spawn.Direction.x, 0, spawn.Direction.y));
-                var view = instance.GetComponent<EnemyDefinition>(); view.FaceCamera(viewCamera); enemyViews.Add(view);
-            }
+            foreach (var spawn in map.Enemies) AddEnemyView(spawn.Prefab, spawn.Position, spawn.Direction);
         }
+        private void AddEnemyView(GameObject prefab, Vector2Int position, Vector2Int direction)
+        {
+            var root = generated.Find("Enemies");
+            if (root == null) { root = new GameObject("Enemies").transform; root.SetParent(generated, false); }
+            var instance = Instantiate(prefab, root, false);
+            instance.transform.localPosition = LocalPosition(position);
+            instance.transform.localScale = Vector3.one * cellSize;
+            instance.transform.localRotation = Quaternion.LookRotation(new Vector3(direction.x, 0, direction.y));
+            var view = instance.GetComponent<EnemyDefinition>(); view.FaceCamera(viewCamera); enemyViews.Add(view);
+        }
+        /// <summary>입력 대기 중에 적을 합류시킨다(대본의 몬스터 합류). 판정 규칙은 GridSession.TryAddEnemy를 따른다.</summary>
+        public bool SpawnEnemy(GameObject prefab, Vector2Int cell, Vector2Int direction)
+        {
+            if (session == null || IsPresenting || !session.TryAddEnemy(prefab, cell, direction)) return false;
+            AddEnemyView(prefab, cell, direction); UpdateEnemyViews(); RefreshMoveHints();
+            return true;
+        }
+        /// <summary>칸을 막거나 푼다(칸만 막는 오브젝트). 판정 규칙은 GridSession.SetBlocked를 따른다.</summary>
+        public bool SetCellBlocked(Vector2Int cell, bool value)
+        {
+            if (session == null || !session.SetBlocked(cell, value)) return false;
+            RefreshMoveHints(); return true;
+        }
+        /// <summary>칸 가운데의 월드 위치(바닥 높이).</summary>
+        public Vector3 CellWorldPosition(Vector2Int cell) => transform.TransformPoint(LocalPosition(cell));
         private void UpdateEnemyViews()
         {
             if (session == null) return;
@@ -363,6 +379,8 @@ namespace IBIIIS
             lastAction = previous.Action; lastDirection = previous.Direction;
             if (playerView != null) playerView.SetFacing(previous.Facing);
             if (player != null) player.localPosition = LocalPosition(session.Position);
+            // 되돌리기로 빠진 합류 적의 외형을 지운다.
+            while (enemyViews.Count > session.Enemies.Count) { var last = enemyViews[enemyViews.Count - 1]; enemyViews.RemoveAt(enemyViews.Count - 1); if (last != null) Release(last.gameObject); }
             if (Application.IsPlaying(gameObject)) MovementWorldTime.SetMoving(this, false);
             ShowPlayerVisual(); UpdateEnemyViews(); RefreshMoveHints();
             alert?.Resync(session); UpdateAlert(0);

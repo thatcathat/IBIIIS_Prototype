@@ -15,11 +15,13 @@ namespace IBIIIS.Editor
             { TutorialStepType.WaitAction, new[] { ("line", "안내 줄"), ("actions", "허용 행동"), ("direction", "허용 방향(0,0=모두)"), ("keys", "키 표시") } },
             { TutorialStepType.WaitFreeMove, new[] { ("line", "안내 줄"), ("actions", "허용 행동"), ("seconds", "첫 이동 뒤 시간(초)"), ("keys", "키 표시") } },
             { TutorialStepType.WaitReachCell, new[] { ("line", "안내 줄"), ("actions", "허용 행동"), ("cell", "도착 칸"), ("keys", "키 표시") } },
-            { TutorialStepType.WaitClickCell, new[] { ("line", "안내 줄"), ("cell", "누를 칸"), ("seconds", "누른 뒤 연출 시간(초)"), ("keys", "키 표시") } },
+            { TutorialStepType.WaitClickCell, new[] { ("line", "안내 줄"), ("cell", "누를 칸"), ("seconds", "누른 뒤 연출 시간(초)"), ("sprite", "날아가는 그림"), ("keys", "키 표시") } },
             { TutorialStepType.NameInput, new[] { ("line", "안내 줄"), ("text", "기본값") } },
             { TutorialStepType.SetActive, new[] { ("target", "대상 ID"), ("active", "켜기") } },
             { TutorialStepType.Wait, new[] { ("seconds", "기다릴 시간(초)") } },
             { TutorialStepType.LoadScene, new[] { ("scenePath", "씬 경로") } },
+            { TutorialStepType.SpawnEnemy, new[] { ("prefab", "적 프리팹"), ("cell", "칸"), ("direction", "방향") } },
+            { TutorialStepType.FreePlay, new[] { ("actions", "허용 행동"), ("line", "위험 경고 대사"), ("seconds", "경고 보이는 시간(초)") } },
         };
         private static (string field, string label)[] For(SerializedProperty property)
         {
