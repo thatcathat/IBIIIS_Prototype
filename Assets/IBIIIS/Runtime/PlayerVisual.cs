@@ -42,6 +42,12 @@ namespace IBIIIS
         [SerializeField] private RollFrames rollBackRight = new RollFrames();
         [SerializeField] private RollFrames rollFrontLeft = new RollFrames();
         [SerializeField] private RollFrames rollFrontRight = new RollFrames();
+        [Header("상황별 그림(선택, 방향 무관)")]
+        [SerializeField, Tooltip("선택. 입력 대기 중 적의 인식 범위 안에 있으면 대기 그림 대신 표시합니다. 비우면 일반 대기 그림.")] private Sprite danger;
+        [SerializeField, Tooltip("선택. 대시·구르기로 적의 공격을 피했을 때 위에서부터 순서대로 표시합니다.")] private Sprite[] evaded = new Sprite[0];
+        [SerializeField, Tooltip("선택. 대시·구르기 없이 한 칸 이동만으로 적의 인식 범위를 벗어났을 때 표시합니다.")] private Sprite escaped;
+        [SerializeField, Tooltip("선택. 패배했을 때 표시합니다. 되돌리기·재시작 전까지 유지됩니다.")] private Sprite defeated;
+        [SerializeField, Min(.05f), Tooltip("회피·벗어남 그림 한 장을 보이는 시간(초). 회피 그림이 여러 장이면 장마다 이 시간씩 보입니다.")] private float reactionFrameSeconds = .4f;
         [SerializeField, Tooltip("표시 전용 발 위치 보정(칸 단위). 스프라이트 아래 여백만큼 그림이 떠 보일 때 양수로 하면 화면상 아래(카메라 기준)로 내립니다. 격자 위치·판정에는 영향이 없습니다.")]
         private float footOffset;
         // 프리팹에서 지정한 스프라이트 자식의 원래 위치. 발 보정은 이 위치에서 더한다.
@@ -58,12 +64,25 @@ namespace IBIIIS
         public void SetFacing(PlayerFacing value) => facing = value;
         public static PlayerFacing FacingOf(Vector2Int direction)
             => Mathf.Abs(direction.x) >= Mathf.Abs(direction.y) ? (direction.x < 0 ? PlayerFacing.Left : PlayerFacing.Right) : (direction.y > 0 ? PlayerFacing.Back : PlayerFacing.Front);
+        /// <summary>설정하면 행동·방향과 관계없이 이 그림을 보인다(대본의 자세 연출 등). 가장 우선한다. null이면 원래대로.</summary>
+        public Sprite OverrideSprite { get; set; }
+        /// <summary>전투 상황 반응 그림(회피·벗어남·패배). OverrideSprite 다음으로 우선한다. null이면 원래대로.</summary>
+        public Sprite ReactionSprite { get; set; }
+        /// <summary>true면 대기 중 Danger 그림을 보인다(적의 인식 범위 안).</summary>
+        public bool InDanger { get; set; }
+        public Sprite DangerSprite => danger;
+        public IReadOnlyList<Sprite> EvadedSprites => evaded;
+        public Sprite EscapedSprite => escaped;
+        public Sprite DefeatedSprite => defeated;
+        public float ReactionFrameSeconds => reactionFrameSeconds;
         /// <summary>현재 행동에 맞는 스프라이트를 표시한다. moving=false면 대기 표시.</summary>
         public void Show(PlayerAction action, Vector2Int direction, float progress, bool moving, Camera camera)
         {
             if (action != PlayerAction.Wait && direction != Vector2Int.zero)
                 facing = action == PlayerAction.Roll ? (direction.x < 0 ? PlayerFacing.Left : PlayerFacing.Right) : FacingOf(direction);
             if (spriteRenderer == null) { Warn("Sprite Renderer"); return; }
+            var special = OverrideSprite != null ? OverrideSprite : ReactionSprite != null ? ReactionSprite : !moving && InDanger ? danger : null;
+            if (special != null) { spriteRenderer.sprite = special; if (camera != null) Face(camera); return; }
             var sprite = Select(action, direction, progress, moving);
             if (sprite == null) { Select(action, direction, progress, moving, out var slot); Warn(slot); } // 슬롯 이름은 경고할 때만 만든다
             else spriteRenderer.sprite = sprite;

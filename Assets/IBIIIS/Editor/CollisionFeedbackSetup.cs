@@ -107,7 +107,7 @@ namespace IBIIIS.Editor
                     writer.Write(new[] { 'd', 'a', 't', 'a' }); writer.Write(count * 2);
                     foreach (var sample in samples) writer.Write((short)Mathf.Clamp(sample / Mathf.Max(.0001f, peak) * .85f * short.MaxValue, short.MinValue, short.MaxValue));
                 }
-                AssetDatabase.ImportAsset(ImpactSound);
+                AssetDatabase.ImportAsset(ImpactSound); MotionFeedbackSetup.Preload(ImpactSound);
             }
             return AssetDatabase.LoadAssetAtPath<AudioClip>(ImpactSound);
         }

@@ -37,9 +37,6 @@ namespace IBIIIS
         private readonly Camera camera;
         private readonly List<Effect> effects = new List<Effect>();
         private readonly HashSet<int> owned = new HashSet<int>();
-        private const int PlayerIndex = -1;
-        // 패배 연출 뒤 숨긴 플레이어. 되돌리기·재시작 때 다시 보이게 한다.
-        private Transform hiddenPlayer;
         private AudioSource audio;
         private bool shaking;
         private float shakeTime;
@@ -51,6 +48,7 @@ namespace IBIIIS
             ownsSettings = settings == null;
             this.settings = settings != null ? settings : CreateDefaults();
             this.parent = parent; this.cellPosition = cellPosition; this.cellSize = cellSize; this.camera = camera;
+            RuntimeObjects.Prepare(ref audio, parent, "Collision Audio", this.settings.ImpactSound); // 첫 효과음이 빠지지 않게 미리 준비
         }
         private static CollisionFeedbackSettings CreateDefaults()
         {
@@ -66,8 +64,6 @@ namespace IBIIIS
         }
         /// <summary>해당 인덱스의 적 외형을 연출이 맡고 있으면 true. 그동안 일반 위치·표시 갱신을 건너뛴다.</summary>
         public bool Owns(int enemyIndex) => enemyIndex >= 0 && owned.Contains(enemyIndex);
-        /// <summary>플레이어 외형을 연출이 맡고 있으면 true(날아가 사라진 뒤 포함). 그동안 일반 위치·표시 갱신을 건너뛴다.</summary>
-        public bool OwnsPlayer => owned.Contains(PlayerIndex) || hiddenPlayer != null;
 
         public void Begin(EnemyCollision collision, IReadOnlyList<EnemyDefinition> views, IReadOnlyList<EnemyState> states)
         {
@@ -84,14 +80,6 @@ namespace IBIIIS
                 foreach (var other in effect.Actors) if (Vector3.Dot(other.Away, away) > .9f) away = Quaternion.Euler(0, n % 2 == 0 ? 70 : -70, 0) * away;
                 effect.Actors.Add(CreateActor(index, views[index].transform, views[index].Visual, center, away, n % 2 == 0 ? 1 : -1));
             }
-            Start(effect, center);
-        }
-        /// <summary>플레이어 패배 연출: 같은 연출을 플레이어에게만 적용한다. away는 튕겨 나갈 수평 방향(맵 기준), root는 플레이어 위치 루트, visual은 카메라를 향하는 외형.</summary>
-        public void BeginPlayer(Vector2Int cell, Transform root, Transform visual, Vector3 away)
-        {
-            if (!settings.Enabled || root == null || OwnsPlayer) return;
-            var effect = new Effect(); var center = cellPosition(cell);
-            effect.Actors.Add(CreateActor(PlayerIndex, root, visual, center, away, 1));
             Start(effect, center);
         }
         private Actor CreateActor(int index, Transform root, Transform visual, Vector3 center, Vector3 away, float spinSign)
@@ -200,7 +188,7 @@ namespace IBIIIS
                 if (actor.Visual != null) { actor.Visual.localScale = actor.VisualScale; actor.Visual.localRotation = actor.VisualRotation; }
                 for (int b = 0; b < actor.Bodies.Length; b++) if (actor.Bodies[b] != null) actor.Bodies[b].color = actor.BodyColors[b];
                 foreach (var marker in actor.Markers) if (marker != null) marker.enabled = true;
-                if (finished) { actor.Root.gameObject.SetActive(false); if (actor.Index == PlayerIndex) hiddenPlayer = actor.Root; }
+                if (finished) actor.Root.gameObject.SetActive(false);
                 owned.Remove(actor.Index);
             }
             if (effect.Impact != null) { Release(effect.Impact); effect.Impact = null; }
@@ -215,7 +203,6 @@ namespace IBIIIS
         {
             foreach (var effect in effects) Finish(effect, false);
             effects.Clear(); owned.Clear(); StopShake();
-            if (hiddenPlayer != null) { hiddenPlayer.gameObject.SetActive(true); hiddenPlayer = null; }
         }
         public void Dispose()
         {

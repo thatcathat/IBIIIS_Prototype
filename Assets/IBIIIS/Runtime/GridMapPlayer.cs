@@ -50,7 +50,11 @@ namespace IBIIIS
         // 이번 행동의 충돌 기록 중 연출을 시작한 개수와 패배 연출 시작 여부
         private int shownCollisions;
         private bool shownDefeat;
-        private Transform fallbackPlayerVisual;
+        // 상황 반응(표시 전용): 행동 시작 때 인식 범위 안이었는지·제자리에 있으면 맞았는지 기록하고, 판정이 끝나면 반응 그림을 고른다.
+        private bool reactionPending, startedRecognized, startedThreatened;
+        private Sprite[] reactionFrames;
+        private float reactionTime;
+        private bool reactionHold;
         /// <summary>충돌 연출이 재생 중이면 true. 이 동안 입력을 받지 않는다.</summary>
         public bool IsPresenting => feedback != null && feedback.IsPlaying;
         public CollisionFeedback Feedback => feedback;
@@ -118,12 +122,13 @@ namespace IBIIIS
             if (feedback != null) { feedback.Dispose(); feedback = null; }
             if (motion != null) { motion.Dispose(); motion = null; }
             if (alert != null) { alert.Dispose(); alert = null; }
-            shownCollisions = 0; shownDefeat = false; fallbackPlayerVisual = null;
+            shownCollisions = 0; shownDefeat = false; ClearReaction();
             if (generated != null) { generated.gameObject.SetActive(false); Release(generated.gameObject); }
             MovementWorldTime.Unregister(this);
             generated = null; player = null; playerView = null; lastAction = PlayerAction.Wait; lastDirection = Vector2Int.zero; session = null; moveHints = null; enemyViews.Clear();
             if (input != null) { input.Dispose(); input = null; }
             hud = null; restartRequested = false; // HUD 오브젝트는 generated 아래에 있어 함께 지워진다
+            poseSprite = null; poseTime = poseDuration = 0; poseMotion = poseEndMotion = PoseMotion.None; poseUntilAction = false;
             guideMarks.Clear(); guideMaterial = null; // 안내 칸도 generated 아래(재질은 materials 목록이 지운다)
             actionHistory.Clear(); rangeRoot = null; attackMarks.Clear(); recognitionMarks.Clear(); attackMaterial = recognitionMaterial = null;
             foreach (var material in materials) if (material != null) Release(material);
@@ -198,7 +203,7 @@ namespace IBIIIS
             else
             {
                 var visual = GameObject.CreatePrimitive(PrimitiveType.Quad);
-                visual.name = "Temporary Player Visual"; visual.transform.SetParent(player, false); fallbackPlayerVisual = visual.transform;
+                visual.name = "Temporary Player Visual"; visual.transform.SetParent(player, false);
                 visual.transform.localPosition = new Vector3(0, cellSize * .45f, 0);
                 visual.transform.localScale = Vector3.one * cellSize * .7f;
                 CameraFacingSprite.Face(visual.transform, viewCamera);
@@ -359,9 +364,15 @@ namespace IBIIIS
         public bool TryBeginAction(PlayerAction action, Vector2Int direction)
         {
             float duration = MoveDuration * (action == PlayerAction.Dash ? 2 : 1);
-            if (session == null || !session.TryAct(action, direction, duration, playerSettings != null ? playerSettings.EnemyStepDuration : .25f)) return false;
+            if (session == null || !session.CanAct(action, direction) || session.Phase != BattlePhase.Waiting) return false;
+            // 반응 판정용(표시 전용): 행동 전 인식 여부, 회피기라면 제자리에 있었을 때 맞았을지.
+            bool recognized = AnyRecognizing();
+            bool threatened = (action == PlayerAction.Dash || action == PlayerAction.Roll) && session.Predict(PlayerAction.Wait, Vector2Int.zero) == BattlePhase.Lost;
+            if (!session.TryAct(action, direction, duration, playerSettings != null ? playerSettings.EnemyStepDuration : .25f)) return false;
             if (Application.IsPlaying(gameObject)) MovementWorldTime.SetMoving(this, true);
             shownCollisions = 0; shownDefeat = false; motion?.BeginAction(action, session.Position, direction);
+            ClearReaction(); reactionPending = true; startedRecognized = recognized; startedThreatened = threatened;
+            if (poseUntilAction) EndPose();
             actionHistory.Push(new ActionMemo { Action = lastAction, Direction = lastDirection, Facing = playerView != null ? playerView.Facing : PlayerFacing.Front });
             lastAction = action; lastDirection = direction; ShowPlayerVisual();
             UpdateEnemyViews(); RefreshMoveHints();
@@ -373,7 +384,7 @@ namespace IBIIIS
         public bool TryUndo()
         {
             if (session == null || !session.TryUndo()) return false;
-            feedback?.Clear(); motion?.Clear(); shownCollisions = 0; shownDefeat = false;
+            feedback?.Clear(); motion?.Clear(); shownCollisions = 0; shownDefeat = false; ClearReaction();
             if (playerView != null) playerView.SetPose(MotionPose.Identity, viewCamera);
             var previous = actionHistory.Count > 0 ? actionHistory.Pop() : new ActionMemo { Action = PlayerAction.Wait, Facing = PlayerFacing.Front };
             lastAction = previous.Action; lastDirection = previous.Direction;
@@ -388,8 +399,9 @@ namespace IBIIIS
         }
         private void ShowPlayerVisual()
         {
-            if (playerView == null || (feedback != null && feedback.OwnsPlayer)) return;
+            if (playerView == null) return;
             bool moving = session != null && session.IsMoving;
+            playerView.InDanger = dangerIdleEnabled && session != null && session.Phase == BattlePhase.Waiting && !session.IsBusy && AnyRecognizing();
             playerView.Show(lastAction, lastDirection, session != null ? session.Progress : 0, moving, viewCamera);
         }
         /// <summary>행동과 충돌 연출을 진행한다. 충돌 직후 맞닿음·멈춤 시간 동안은 다른 움직임을 멈춘다(연출 전용, 판정 결과는 같다).</summary>
@@ -402,36 +414,81 @@ namespace IBIIIS
             if (left > 0 && session.IsBusy) session.Advance(left, feedback != null && feedback.Settings.Enabled);
             for (; feedback != null && shownCollisions < session.Collisions.Count; shownCollisions++)
                 feedback.Begin(session.Collisions[shownCollisions], enemyViews, session.Enemies);
-            if (!shownDefeat && feedback != null && player != null && session.Phase == BattlePhase.Lost)
-            {
-                shownDefeat = true;
-                feedback.BeginPlayer(session.Position, player, playerView != null && playerView.Renderer != null ? playerView.Renderer.transform : fallbackPlayerVisual, DefeatAway());
-            }
-            if (feedback == null || !feedback.OwnsPlayer) player.localPosition = session.IsMoving ? Vector3.Lerp(LocalPosition(session.Position), LocalPosition(session.Destination), session.Progress) : LocalPosition(session.Position);
+            if (reactionPending && !session.IsBusy) { reactionPending = false; ChooseReaction(); }
+            player.localPosition = session.IsMoving ? Vector3.Lerp(LocalPosition(session.Position), LocalPosition(session.Destination), session.Progress) : LocalPosition(session.Position);
             ShowPlayerVisual(); UpdateEnemyViews();
             if (Application.IsPlaying(gameObject)) MovementWorldTime.SetMoving(this, session.IsBusy || IsPresenting);
             RefreshMoveHints();
         }
-        // 플레이어가 튕겨 나갈 방향: 맞힌 적들이 바라보는 방향(여럿이면 합).
-        // 서로 반대를 봐서 상쇄되면 적에게서 멀어지는 쪽, 그것도 없으면 마지막 이동의 반대 방향을 쓴다.
-        private Vector3 DefeatAway()
+        private bool AnyRecognizing()
         {
-            var away = Vector2.zero;
-            foreach (var index in session.Attackers) away += (Vector2)session.Enemies[index].Direction;
-            if (away.sqrMagnitude < 1e-6f)
-                foreach (var index in session.Attackers) { var delta = session.Position - session.Enemies[index].Position; if (delta != Vector2Int.zero) away += ((Vector2)delta).normalized; }
-            if (away.sqrMagnitude < 1e-6f) away = -(Vector2)lastDirection;
-            return new Vector3(away.x, 0, away.y);
+            if (session == null) return false;
+            foreach (var e in session.Enemies) if (session.IsRecognizing(e)) return true;
+            return false;
+        }
+        /// <summary>지금 보이는 상황 반응 그림(없으면 null). 테스트·디버그용.</summary>
+        public Sprite ReactionSprite => playerView != null ? playerView.ReactionSprite : null;
+        // 판정이 끝난 행동의 반응: 패배 → 패배 그림(유지)·떨림, 대시·구르기로 맞을 공격을 피함 → 회피 그림들 차례로·으쓱,
+        // 이동만으로 인식 범위를 벗어남 → 벗어남 그림·한숨. 그림이 비어 있으면 그 반응은 건너뛴다(진행에는 영향 없음).
+        private void ChooseReaction()
+        {
+            if (playerView == null || session == null) return;
+            if (session.Phase == BattlePhase.Lost) { StartReaction(playerView.DefeatedSprite != null ? new[] { playerView.DefeatedSprite } : null, true, PoseMotion.Shake); return; }
+            bool skill = lastAction == PlayerAction.Dash || lastAction == PlayerAction.Roll;
+            if (skill && startedThreatened)
+            {
+                var frames = new List<Sprite>(); foreach (var s in playerView.EvadedSprites) if (s != null) frames.Add(s);
+                StartReaction(frames.ToArray(), false, PoseMotion.Proud);
+            }
+            else if (lastAction == PlayerAction.Move && startedRecognized && !AnyRecognizing())
+                StartReaction(playerView.EscapedSprite != null ? new[] { playerView.EscapedSprite } : null, false, PoseMotion.Sigh);
+        }
+        private void StartReaction(Sprite[] frames, bool hold, PoseMotion motionKind)
+        {
+            if (frames == null || frames.Length == 0) return;
+            reactionFrames = frames; reactionTime = 0; reactionHold = hold;
+            if (poseSprite == null) { poseMotion = motionKind; poseEndMotion = PoseMotion.None; poseTime = 0; } // 대본 자세가 보이는 중이면 움직임은 그쪽을 따른다
+            playerView.ReactionSprite = frames[0]; ShowPlayerVisual();
+        }
+        private void ClearReaction()
+        {
+            reactionPending = false; reactionFrames = null; reactionTime = 0; reactionHold = false;
+            if (playerView != null) playerView.ReactionSprite = null;
+        }
+        // 반응 그림을 장마다 정한 시간씩 넘기고 끝나면 원래 그림으로 돌아간다. 패배 그림은 되돌리기·재시작까지 유지.
+        private void TickReaction(float seconds)
+        {
+            if (reactionFrames == null || reactionHold || playerView == null) return;
+            reactionTime += seconds;
+            int index = Mathf.FloorToInt(reactionTime / playerView.ReactionFrameSeconds);
+            var sprite = index < reactionFrames.Length ? reactionFrames[index] : null;
+            if (sprite == null) reactionFrames = null;
+            if (playerView.ReactionSprite != sprite) { playerView.ReactionSprite = sprite; ShowPlayerVisual(); }
         }
         /// <summary>표시 연출을 갱신한다(매 프레임): 적 인식 표시, 먼지·잔상, 적 손맛, 플레이어 손맛 자세. 충돌·패배 연출이 플레이어를 맡고 있으면 플레이어 자세는 건드리지 않는다.</summary>
         public void UpdateMotion(float seconds)
         {
             UpdateAlert(seconds);
+            TickReaction(seconds);
             if (motion == null || session == null) return;
             motion.TickEffects(seconds);
             TickEnemyMotion(seconds);
-            if (playerView == null || (feedback != null && feedback.OwnsPlayer)) return;
-            playerView.SetPose(motion.Tick(seconds, session, lastAction, lastDirection, playerView.Renderer), viewCamera);
+            if (playerView == null) return;
+            var bodyPose = motion.Tick(seconds, session, lastAction, lastDirection, playerView.Renderer);
+            if (poseSprite != null || poseMotion != PoseMotion.None)
+            {
+                poseTime += seconds;
+                if (poseSprite != null && poseDuration > 0 && poseTime >= poseDuration) EndPose();
+                else
+                {
+                    var extra = PoseOffset();
+                    bodyPose.Lift += extra.Lift; bodyPose.Shift += extra.Shift; bodyPose.Tilt += extra.Tilt;
+                    bodyPose.Squash = Vector2.Scale(bodyPose.Squash, extra.Squash);
+                    // 기본 그림으로 돌아온 뒤의 움직임은 한 번 끝나면 멈춘다.
+                    if (poseSprite == null && poseTime >= MotionLength(poseMotion)) poseMotion = PoseMotion.None;
+                }
+            }
+            playerView.SetPose(bodyPose, viewCamera);
         }
         private bool OwnsEnemy(int i) => feedback != null && feedback.Owns(i);
         private void TickEnemyMotion(float seconds) { if (motion != null && session != null) motion.TickEnemies(seconds, session, enemyViews, ownsEnemy ??= OwnsEnemy); }
@@ -477,6 +534,47 @@ namespace IBIIIS
             var local = transform.InverseTransformPoint(ray.GetPoint(distance));
             cell = new Vector2Int(Mathf.RoundToInt(local.x / cellSize), Mathf.RoundToInt(local.z / cellSize));
             return map.Contains(cell);
+        }
+        private Sprite poseSprite;
+        private PoseMotion poseMotion, poseEndMotion;
+        private bool poseUntilAction;
+        private bool dangerIdleEnabled = true;
+        /// <summary>false면 인식 범위 안 대기의 위험 그림을 자동으로 보이지 않는다(대본이 직접 정할 때). 회피·벗어남·패배 그림은 그대로.</summary>
+        public bool DangerIdleEnabled { get => dangerIdleEnabled; set { if (dangerIdleEnabled == value) return; dangerIdleEnabled = value; ShowPlayerVisual(); } }
+        private float poseTime, poseDuration;
+        /// <summary>지금 보이는 자세 그림(없으면 null). 테스트·디버그용.</summary>
+        public Sprite PoseSprite => poseSprite;
+        /// <summary>플레이어 그림을 자세 그림으로 바꾸고 움직임을 준다(표시 전용). seconds가 0 이하면 EndPose까지 유지.</summary>
+        /// <param name="untilAction">true면 다음 플레이어 행동을 시작할 때 끝낸다(seconds 무시).</param>
+        public void PlayPose(Sprite sprite, PoseMotion motionKind, float seconds, PoseMotion endMotion = PoseMotion.None, bool untilAction = false)
+        {
+            poseUntilAction = untilAction; if (untilAction) seconds = 0;
+            poseSprite = sprite; poseMotion = motionKind; poseEndMotion = endMotion; poseTime = 0; poseDuration = seconds;
+            if (playerView != null) { playerView.OverrideSprite = sprite; ShowPlayerVisual(); }
+        }
+        /// <summary>자세 그림을 끝내고 기본 그림으로 돌아간다. PlayPose에 돌아올 때 움직임을 정했으면 그 움직임을 한 번 준다.</summary>
+        public void EndPose()
+        {
+            if (poseSprite == null) return;
+            poseSprite = null; poseTime = poseDuration = 0; poseMotion = poseEndMotion; poseEndMotion = PoseMotion.None; poseUntilAction = false;
+            if (playerView != null) { playerView.OverrideSprite = null; ShowPlayerVisual(); }
+        }
+        // 자세 움직임(처음 0.5초 안팎): 펄쩍 뜀, 좌우 떨림, 한숨처럼 납작했다 펴짐, 으쓱하며 위로 늘어났다 돌아옴.
+        /// <summary>지금 주고 있는 자세 움직임(없으면 None). 테스트·디버그용.</summary>
+        public PoseMotion PoseMotionPlaying => poseMotion;
+        private static float MotionLength(PoseMotion kind) => kind == PoseMotion.Hop ? .35f : kind == PoseMotion.Sigh ? .6f : kind == PoseMotion.None ? 0 : .5f;
+        private MotionPose PoseOffset()
+        {
+            var pose = MotionPose.Identity;
+            float t = poseTime;
+            switch (poseMotion)
+            {
+                case PoseMotion.Hop: { float u = Mathf.Clamp01(t / .35f); pose.Lift = .3f * Mathf.Sin(Mathf.PI * u); break; }
+                case PoseMotion.Shake: { float u = Mathf.Clamp01(t / .5f); pose.Shift = new Vector3(.06f * Mathf.Sin(2 * Mathf.PI * 7 * t) * (1 - u), 0, 0); break; }
+                case PoseMotion.Sigh: { float u = Mathf.Clamp01(t / .6f); pose = MotionPoses.Squashed(.14f * Mathf.Sin(Mathf.PI * u)); break; }
+                case PoseMotion.Proud: { float u = Mathf.Clamp01(t / .5f); pose = MotionPoses.Squashed(-.12f * Mathf.Sin(Mathf.PI * u)); pose.Lift = .08f * Mathf.Sin(Mathf.PI * u); break; }
+            }
+            return pose;
         }
         /// <summary>플레이어 외형 기준점(발밑). 전투가 없으면 null. 말풍선·감정 표시 위치용.</summary>
         public Transform PlayerAnchor => player;

@@ -42,6 +42,7 @@ namespace IBIIIS
             if (settings == null) { settings = ScriptableObject.CreateInstance<MotionFeedbackSettings>(); settings.hideFlags = HideFlags.HideAndDontSave; }
             this.settings = settings; this.parent = parent; this.cellPosition = cellPosition; this.cellSize = cellSize;
             effects = new MotionEffects(parent, camera);
+            effects.PrepareAudio(settings.FootstepSound, settings.DashSound, settings.RollSound, settings.EnemyFootstepSound, settings.BumpSound);
         }
         public MotionFeedbackSettings Settings => settings;
         /// <summary>착지·부딪힘 여운이나 먼지·잔상이 남아 있으면 true. 숨쉬기는 포함하지 않는다. 입력은 막지 않는다.</summary>

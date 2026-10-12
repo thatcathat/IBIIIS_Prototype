@@ -11,7 +11,9 @@ namespace IBIIIS.Editor
         private static readonly Dictionary<TutorialStepType, (string field, string label)[]> Fields = new Dictionary<TutorialStepType, (string, string)[]>
         {
             { TutorialStepType.Line, new[] { ("line", "대사") } },
-            { TutorialStepType.Emote, new[] { ("target", "대상 ID"), ("text", "표시 글자"), ("seconds", "보이는 시간(초, 0=다음 대사까지)") } },
+            { TutorialStepType.Emote, new[] { ("target", "대상 ID"), ("text", "표시 글자"), ("sprite", "아이콘(있으면 글자 대신)"), ("seconds", "보이는 시간(초, 0=다음 대사까지)") } },
+            { TutorialStepType.Pose, new[] { ("sprite", "자세 그림"), ("motion", "움직임"), ("endMotion", "돌아올 때 움직임"), ("untilAction", "다음 행동까지 유지"), ("seconds", "보이는 시간(초, 0=다음 대사까지, 다음 행동까지 유지면 무시)") } },
+            { TutorialStepType.WaitAllDirections, new[] { ("line", "안내 줄"), ("keys", "키 표시(위 왼쪽 아래 오른쪽 순)") } },
             { TutorialStepType.WaitAction, new[] { ("line", "안내 줄"), ("actions", "허용 행동"), ("direction", "허용 방향(0,0=모두)"), ("keys", "키 표시") } },
             { TutorialStepType.WaitFreeMove, new[] { ("line", "안내 줄"), ("actions", "허용 행동"), ("seconds", "첫 이동 뒤 시간(초)"), ("keys", "키 표시") } },
             { TutorialStepType.WaitReachCell, new[] { ("line", "안내 줄"), ("actions", "허용 행동"), ("cell", "도착 칸"), ("keys", "키 표시") } },
@@ -22,7 +24,7 @@ namespace IBIIIS.Editor
             { TutorialStepType.LoadScene, new[] { ("scenePath", "씬 경로") } },
             { TutorialStepType.SpawnEnemy, new[] { ("prefab", "적 프리팹"), ("cell", "칸"), ("direction", "방향") } },
             { TutorialStepType.RecordClear, new[] { ("text", "기록 ID") } },
-            { TutorialStepType.FreePlay, new[] { ("actions", "허용 행동"), ("line", "위험 경고 대사"), ("seconds", "경고 보이는 시간(초)") } },
+            { TutorialStepType.FreePlay, new[] { ("actions", "허용 행동"), ("line", "위험 경고 대사(넘겨야 닫힘)") } },
         };
         private static (string field, string label)[] For(SerializedProperty property)
         {

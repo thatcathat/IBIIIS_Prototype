@@ -116,33 +116,61 @@ namespace IBIIIS.Tests
             Assert.AreEqual(Vector3.one, EnemyView(0).Find("Visual").localScale); Assert.AreEqual(Color.white, EnemyView(0).Find("Visual").GetComponent<SpriteRenderer>().color);
         }
         private Transform PlayerAnchor => player.Generated.Find("Player Logic Anchor");
-        [Test] public void DefeatSendsOnlyThePlayerFlyingAwayFromTheAttackerUntilUndo()
+        // 상황별 그림을 채운 임시 플레이어 외형(프리팹 대신 장면 오브젝트를 복제해 쓴다).
+        private Sprite idle, danger, cleared, cleared2, gone, defeated;
+        private void UseReactionVisual()
         {
+            Sprite Make(string n) { var s = Sprite.Create(Texture2D.whiteTexture, new Rect(0, 0, 1, 1), Vector2.zero); s.name = n; return s; }
+            idle = Make("idle"); danger = Make("danger"); cleared = Make("cleared"); cleared2 = Make("cleared2"); gone = Make("gone"); defeated = Make("defeated");
+            var root = Add(new GameObject("Visual Source")); var child = new GameObject("Sprite"); child.transform.SetParent(root.transform, false);
+            var visual = root.AddComponent<PlayerVisual>(); var so = new SerializedObject(visual);
+            so.FindProperty("spriteRenderer").objectReferenceValue = child.AddComponent<SpriteRenderer>();
+            foreach (var face in new[] { "back", "right", "front", "left" }) so.FindProperty("idle").FindPropertyRelative(face).objectReferenceValue = idle;
+            so.FindProperty("danger").objectReferenceValue = danger; so.FindProperty("escaped").objectReferenceValue = gone; so.FindProperty("defeated").objectReferenceValue = defeated;
+            var evaded = so.FindProperty("evaded"); evaded.arraySize = 2;
+            evaded.GetArrayElementAtIndex(0).objectReferenceValue = cleared; evaded.GetArrayElementAtIndex(1).objectReferenceValue = cleared2;
+            so.FindProperty("reactionFrameSeconds").floatValue = .4f;
+            so.ApplyModifiedPropertiesWithoutUndo();
+            so = new SerializedObject(playerSettings); so.FindProperty("visualPrefab").objectReferenceValue = root; so.ApplyModifiedPropertiesWithoutUndo();
+        }
+        private Sprite Shown => player.Generated.GetComponentInChildren<PlayerVisual>(true).Renderer.sprite;
+        [TearDown] public void DestroyReactionSprites() { foreach (var s in new[] { idle, danger, cleared, cleared2, gone, defeated }) if (s != null) Object.DestroyImmediate(s); }
+        [Test] public void DefeatShowsTheDefeatedSpriteInPlaceWithoutFlyingUntilUndo()
+        {
+            UseReactionVisual();
             map.SetStart(new Vector2Int(1, 3)); Enemy(0, 3, Vector2Int.right, 2); Build();
             Assert.True(player.TryBeginAction(PlayerAction.Wait, Vector2Int.zero)); player.AdvanceMovement(.5f);
-            Assert.AreEqual(BattlePhase.Lost, player.Session.Phase); Assert.True(player.IsPresenting); Assert.True(player.Feedback.OwnsPlayer);
-            Assert.False(player.Feedback.Owns(0), "공격한 적은 날아가지 않는다"); Assert.NotNull(Impact);
-            player.AdvanceMovement(settings.HoldTime + settings.FlyTime * .5f);
-            Assert.Greater(PlayerAnchor.localPosition.x, 1 + 1e-3f, "적이 바라보는 오른쪽으로 날아감");
-            Assert.That(PlayerAnchor.localPosition.z, Is.EqualTo(3).Within(1e-3f));
-            Assert.That(EnemyView(0).localPosition.x, Is.EqualTo(2).Within(1e-4f)); Assert.True(EnemyView(0).gameObject.activeSelf);
-            player.AdvanceMovement(1f);
-            Assert.False(player.IsPresenting); Assert.False(PlayerAnchor.gameObject.activeSelf, "날아가 사라진 채 유지"); Assert.True(player.Feedback.OwnsPlayer);
-            Assert.True(player.TryUndo());
-            Assert.True(PlayerAnchor.gameObject.activeSelf); Assert.False(player.Feedback.OwnsPlayer);
-            Assert.That(PlayerAnchor.localPosition.x, Is.EqualTo(1).Within(1e-4f)); Assert.That(PlayerAnchor.localPosition.y, Is.EqualTo(0).Within(1e-4f));
+            Assert.AreEqual(BattlePhase.Lost, player.Session.Phase);
+            Assert.False(player.IsPresenting, "플레이어는 날아가지 않음"); Assert.Null(Impact);
+            Assert.AreSame(defeated, Shown, "패배 그림");
+            player.UpdateMotion(5); Assert.AreSame(defeated, Shown, "되돌리기 전까지 유지");
+            Assert.True(PlayerAnchor.gameObject.activeSelf); Assert.That(PlayerAnchor.localPosition.x, Is.EqualTo(1).Within(1e-4f)); Assert.That(PlayerAnchor.localPosition.z, Is.EqualTo(3).Within(1e-4f));
+            Assert.True(player.TryUndo()); Assert.IsNull(player.ReactionSprite); Assert.AreSame(idle, Shown, "되돌리면 원래 그림");
         }
-        [Test] public void DefeatedPlayerFliesAlongTheAttackerFacingNotAwayFromItsPosition()
+        [Test] public void SkillEvasionShowsEvadedSpritesInOrderThenReturns()
         {
-            // 위를 보는 적이 앞오른쪽 칸(대각선)을 공격: 위치 기준이면 대각선이지만 바라보는 방향(위, +Z)으로 날아가야 한다.
-            map.SetStart(new Vector2Int(4, 4)); Enemy(3, 2, Vector2Int.up);
-            var definition = map.EnemyAt(new Vector2Int(3, 2)).Prefab.GetComponent<EnemyDefinition>();
-            var so = new SerializedObject(definition); var attack = so.FindProperty("attack"); attack.arraySize = 1; attack.GetArrayElementAtIndex(0).vector2IntValue = Vector2Int.one; so.ApplyModifiedPropertiesWithoutUndo();
+            UseReactionVisual();
+            map.SetStart(new Vector2Int(1, 3)); Enemy(0, 3, Vector2Int.right, 2); Build();
+            Assert.True(player.TryBeginAction(PlayerAction.Dash, Vector2Int.up)); player.AdvanceMovement(2);
+            Assert.AreEqual(BattlePhase.Waiting, player.Session.Phase, "대시로 피함");
+            Assert.AreSame(cleared, Shown, "첫 회피 그림");
+            player.UpdateMotion(.45f); Assert.AreSame(cleared2, Shown, "다음 회피 그림");
+            player.UpdateMotion(.45f); Assert.IsNull(player.ReactionSprite); Assert.AreSame(idle, Shown, "끝나면 원래 그림");
+        }
+        [Test] public void DangerIdleAndWalkingOutOfRecognitionShowEscapedSprite()
+        {
+            UseReactionVisual();
+            map.SetStart(new Vector2Int(4, 2)); Enemy(3, 4, Vector2Int.down);
+            var so = new SerializedObject(map.EnemyAt(new Vector2Int(3, 4)).Prefab.GetComponent<EnemyDefinition>()); var recognition = so.FindProperty("recognition"); recognition.arraySize = 6;
+            int n = 0; for (int x = -1; x <= 1; x++) for (int y = 1; y <= 2; y++) recognition.GetArrayElementAtIndex(n++).vector2IntValue = new Vector2Int(x, y);
+            so.ApplyModifiedPropertiesWithoutUndo();
             Build();
-            Assert.True(player.TryBeginAction(PlayerAction.Wait, Vector2Int.zero)); player.AdvanceMovement(.5f);
-            Assert.AreEqual(BattlePhase.Lost, player.Session.Phase); CollectionAssert.AreEqual(new[] { 0 }, player.Session.Attackers);
-            player.AdvanceMovement(settings.HoldTime + settings.FlyTime * .5f);
-            Assert.Greater(PlayerAnchor.localPosition.z, 4 + 1e-3f); Assert.That(PlayerAnchor.localPosition.x, Is.EqualTo(4).Within(1e-3f));
+            Assert.AreSame(danger, Shown, "인식 범위 안에서 대기하면 위험 그림");
+            Assert.True(player.TryBeginAction(PlayerAction.Move, Vector2Int.right)); player.AdvanceMovement(2);
+            Assert.AreEqual(BattlePhase.Waiting, player.Session.Phase);
+            Assert.AreSame(gone, Shown, "이동만으로 인식 범위를 벗어남");
+            player.UpdateMotion(.45f); Assert.IsNull(player.ReactionSprite); Assert.AreSame(idle, Shown, "벗어났으므로 일반 대기 그림");
+            Assert.True(player.TryUndo()); Assert.AreSame(danger, Shown, "되돌리면 다시 인식 범위 안");
         }
         [Test] public void DisabledFeedbackLeavesTheDefeatedPlayerInPlace()
         {

@@ -59,6 +59,9 @@ namespace IBIIIS.Tests
                     case TutorialStepType.WaitAction:
                         Do(battle, (step.actions & TutorialActions.Dash) != 0 ? PlayerAction.Dash : PlayerAction.Move, step.direction); break;
                     case TutorialStepType.WaitFreeMove: Do(battle, PlayerAction.Move, Vector2Int.right); director.Tick(step.seconds + .01f); break;
+                    case TutorialStepType.WaitAllDirections:
+                        foreach (var d in new[] { Vector2Int.up, Vector2Int.down, Vector2Int.left, Vector2Int.right }) Do(battle, PlayerAction.Move, d);
+                        break;
                     case TutorialStepType.WaitReachCell:
                         var at = battle.Session.Position;
                         var dir = at.x != step.cell.x ? new Vector2Int(System.Math.Sign(step.cell.x - at.x), 0) : new Vector2Int(0, System.Math.Sign(step.cell.y - at.y));

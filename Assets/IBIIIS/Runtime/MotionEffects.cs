@@ -17,12 +17,28 @@ namespace IBIIIS
         public static void PlayOneShot(ref AudioSource audio, Transform parent, string name, AudioClip clip, float volume)
         {
             if (clip == null || parent == null) return;
-            if (audio == null)
-            {
-                var go = new GameObject(name); go.transform.SetParent(parent, false);
-                audio = go.AddComponent<AudioSource>(); audio.playOnAwake = false; audio.spatialBlend = 0;
-            }
+            EnsureSource(ref audio, parent, name);
             audio.PlayOneShot(clip, volume);
+        }
+        /// <summary>효과음을 처음 낼 때 재생기를 만들고 소리를 불러오느라 첫 소리가 빠지지 않도록, 재생기를 미리 만들고 소리 데이터를 미리 불러온다.
+        /// 쓸 소리가 하나도 없으면 아무것도 만들지 않는다.</summary>
+        public static void Prepare(ref AudioSource audio, Transform parent, string name, params AudioClip[] clips)
+        {
+            if (parent == null || clips == null) return;
+            bool any = false;
+            foreach (var clip in clips)
+            {
+                if (clip == null) continue;
+                any = true;
+                if (clip.loadState == AudioDataLoadState.Unloaded) clip.LoadAudioData();
+            }
+            if (any) EnsureSource(ref audio, parent, name);
+        }
+        private static void EnsureSource(ref AudioSource audio, Transform parent, string name)
+        {
+            if (audio != null) return;
+            var go = new GameObject(name); go.transform.SetParent(parent, false);
+            audio = go.AddComponent<AudioSource>(); audio.playOnAwake = false; audio.spatialBlend = 0;
         }
     }
     public static class MotionPoses
@@ -110,6 +126,8 @@ namespace IBIIIS
         }
         /// <summary>먼지·잔상을 흐리게 하고 다 사라지면 지운다(매 프레임).</summary>
         public void Tick(float seconds) { TickFades(puffs, seconds); TickFades(ghosts, seconds); }
+        /// <summary>쓸 효과음을 미리 준비한다(재생기 생성·데이터 불러오기). 첫 소리가 빠지지 않게 생성 직후 부른다.</summary>
+        public void PrepareAudio(params AudioClip[] clips) => RuntimeObjects.Prepare(ref audio, parent, "Motion Audio", clips);
         public void Play(AudioClip clip, float volume)
         {
             RuntimeObjects.PlayOneShot(ref audio, parent, "Motion Audio", clip, volume);

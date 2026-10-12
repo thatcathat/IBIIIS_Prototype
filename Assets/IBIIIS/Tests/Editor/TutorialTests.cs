@@ -123,7 +123,7 @@ namespace IBIIIS.Tests
                     new TutorialStep { type = TutorialStepType.SpawnEnemy, prefab = prefab, cell = new Vector2Int(6, 2), direction = Vector2Int.left },
                     new TutorialStep { type = TutorialStepType.SpawnEnemy, prefab = prefab, cell = new Vector2Int(0, 1), direction = Vector2Int.right },
                     new TutorialStep { type = TutorialStepType.WaitAction, actions = TutorialActions.Dash, direction = Vector2Int.up, keys = "Shift W" },
-                    new TutorialStep { type = TutorialStepType.FreePlay, actions = TutorialActions.Move | TutorialActions.Wait | TutorialActions.Dash, line = DialogueLine.Say(fly, "거기로 가면 위험해!"), seconds = 1.5f },
+                    new TutorialStep { type = TutorialStepType.FreePlay, actions = TutorialActions.Move | TutorialActions.Wait | TutorialActions.Dash, line = DialogueLine.Say(fly, "거기로 가면 위험해!") },
                     new TutorialStep { type = TutorialStepType.Line, line = DialogueLine.Say(fly, "끝") },
                 });
                 run.Configure(fight, steps); run.Begin();
@@ -135,9 +135,14 @@ namespace IBIIIS.Tests
                 foreach (var dir in new[] { Vector2Int.up, Vector2Int.down, Vector2Int.left, Vector2Int.right })
                     if (fight.Session.Predict(PlayerAction.Move, dir) == BattlePhase.Lost)
                     {
-                        int blocked = run.BlockedDangerousMoves;
+                        int blocked = run.BlockedDangerousMoves; var before = fight.Session.Position;
                         Assert.IsFalse(fight.TryPlayerCommand(PlayerAction.Move, dir), "패배할 이동은 막음"); Assert.AreEqual(blocked + 1, run.BlockedDangerousMoves);
                         Assert.AreEqual("거기로 가면 위험해!", run.Dialogue.Runner.Text);
+                        // 경고가 떠 있는 동안에는 안전한 대기도 받지 않는다(경고를 넘기는 Space가 대기로 읽혀 턴이 넘어가던 문제).
+                        Assert.IsFalse(fight.TryPlayerCommand(PlayerAction.Wait, Vector2Int.zero), "경고 중에는 턴이 넘어가지 않음");
+                        Assert.IsFalse(fight.Session.IsBusy); Assert.AreEqual(before, fight.Session.Position);
+                        run.Dialogue.Runner.Advance(); run.Dialogue.Runner.Advance(); run.Tick(0);
+                        Assert.IsFalse(run.Dialogue.IsOpen, "경고는 넘기면 닫힘"); Assert.AreEqual(4, run.StepIndex, "경고를 닫아도 자유 진행 유지");
                     }
                 for (int turn = 0; turn < 5 && run.StepIndex == 4; turn++)
                 {
@@ -149,6 +154,60 @@ namespace IBIIIS.Tests
                 Assert.AreEqual(5, run.StepIndex, "적이 모두 사라지면 다음 대사");
             }
             finally { Object.DestroyImmediate(evade); Object.DestroyImmediate(steps); }
+        }
+        [Test] public void AllDirectionsMustBeTriedAndPoseAndIconEmotesShow()
+        {
+            var pose = Sprite.Create(Texture2D.whiteTexture, new Rect(0, 0, 4, 4), new Vector2(.5f, 0));
+            var steps = ScriptableObject.CreateInstance<TutorialScript>();
+            try
+            {
+                steps.Set("dirs", new[]
+                {
+                    new TutorialStep { type = TutorialStepType.Emote, target = "player", text = ";;", sprite = pose },
+                    new TutorialStep { type = TutorialStepType.Pose, sprite = pose, motion = PoseMotion.Hop, endMotion = PoseMotion.Sigh },
+                    new TutorialStep { type = TutorialStepType.Line, line = DialogueLine.Say(fly, "놀랐지?") },
+                    new TutorialStep { type = TutorialStepType.WaitAllDirections, keys = "W A S D" },
+                    new TutorialStep { type = TutorialStepType.Line, line = DialogueLine.Say(fly, "끝") },
+                });
+                director.Configure(battle, steps); director.Begin();
+                Assert.AreEqual(2, director.StepIndex, "감정 표시·자세는 기다리지 않음");
+                Assert.AreSame(pose, battle.PoseSprite, "자세 그림으로 바뀜"); CollectionAssert.Contains(director.ActiveEmotes, ";;");
+                NextLine();
+                Assert.IsNull(battle.PoseSprite, "다음 대사가 끝나면 원래 그림");
+                Assert.AreEqual(PoseMotion.Sigh, battle.PoseMotionPlaying, "기본 그림으로 돌아올 때 정한 움직임을 줌");
+                CollectionAssert.AreEqual(new[] { "W", "A", "S", "D" }, director.Dialogue.Keys);
+                Act(PlayerAction.Move, Vector2Int.right); Act(PlayerAction.Move, Vector2Int.right);
+                Act(PlayerAction.Dash, Vector2Int.up, false);
+                CollectionAssert.AreEqual(new[] { "W", "A", "S" }, director.Dialogue.Keys, "누른 키는 표시에서 빠짐");
+                Act(PlayerAction.Move, Vector2Int.up); Act(PlayerAction.Move, Vector2Int.left);
+                Assert.AreEqual(3, director.StepIndex, "한 방향이라도 남으면 기다림"); CollectionAssert.AreEqual(new[] { "S" }, director.Dialogue.Keys);
+                Act(PlayerAction.Move, Vector2Int.down);
+                Assert.AreEqual(4, director.StepIndex, "네 방향을 모두 눌러야 다음");
+            }
+            finally { Object.DestroyImmediate(steps); Object.DestroyImmediate(pose); }
+        }
+        [Test] public void PoseCanHoldUntilTheNextPlayerAction()
+        {
+            var pose = Sprite.Create(Texture2D.whiteTexture, new Rect(0, 0, 4, 4), new Vector2(.5f, 0));
+            var steps = ScriptableObject.CreateInstance<TutorialScript>();
+            try
+            {
+                steps.Set("hold", new[]
+                {
+                    new TutorialStep { type = TutorialStepType.Pose, sprite = pose, motion = PoseMotion.Shake, untilAction = true },
+                    new TutorialStep { type = TutorialStepType.Line, line = DialogueLine.Say(fly, "피해!") },
+                    new TutorialStep { type = TutorialStepType.WaitAction, actions = TutorialActions.Move, direction = Vector2Int.left, keys = "A" },
+                    new TutorialStep { type = TutorialStepType.Line, line = DialogueLine.Say(fly, "끝") },
+                });
+                director.Configure(battle, steps); director.Begin();
+                Assert.IsFalse(battle.DangerIdleEnabled, "대본 중에는 위험 그림을 대본이 정함");
+                Assert.AreSame(pose, battle.PoseSprite);
+                NextLine(); battle.UpdateMotion(10); Assert.AreSame(pose, battle.PoseSprite, "대사가 끝나고 시간이 지나도 유지");
+                Act(PlayerAction.Move, Vector2Int.left);
+                Assert.IsNull(battle.PoseSprite, "다음 행동을 시작하면 끝남");
+                NextLine(); Assert.IsTrue(battle.DangerIdleEnabled, "대본이 끝나면 자동 위험 그림 복원");
+            }
+            finally { Object.DestroyImmediate(steps); Object.DestroyImmediate(pose); }
         }
         [Test] public void ScriptRunsLinesInputsAndConditionsInOrder()
         {

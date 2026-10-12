@@ -22,7 +22,7 @@ namespace IBIIIS
             [Tooltip("막을 칸(맵 좌표).")] public Vector2Int cell;
         }
         private sealed class Thrown { public Transform View; public SpriteRenderer Renderer; public Vector3 Start; public float Time, Duration; }
-        private sealed class Emote { public Transform Target; public float Height, Left; public bool UntilLine; public string Text; public VisualElement View; }
+        private sealed class Emote { public Transform Target; public float Height, Left; public bool UntilLine; public string Text; public Sprite Icon; public VisualElement View; }
 
         [SerializeField, Tooltip("필수. 대본을 진행할 전투(Grid Map Player).")] private GridMapPlayer battle;
         [SerializeField, Tooltip("필수. 실행할 대본.")] private TutorialScript script;
@@ -30,6 +30,7 @@ namespace IBIIIS
         [SerializeField, Min(0), Tooltip("플레이어 감정 표시 높이(칸). 임시 1.6.")] private float playerEmoteHeight = 1.6f;
         [SerializeField, Tooltip("체크하면 전투가 준비되는 대로 대본을 시작합니다.")] private bool playOnStart = true;
         [SerializeField, Tooltip("체크하면 대본이 도는 동안 적 인식 말풍선(대사)을 띄우지 않습니다. 대본 대사와 겹치지 않게 튜토리얼에서 켭니다.")] private bool hideEnemyAlerts = true;
+        [SerializeField, Tooltip("체크하면 대본이 도는 동안 적 인식 범위 안의 위험 그림을 자동으로 보이지 않습니다. 위험 자세는 대본의 Pose 단계로 정합니다.")] private bool scriptControlsDanger = true;
         private int index = -1;
         private bool waitingFirstMove, clicked;
         private int baselineActions;
@@ -37,7 +38,14 @@ namespace IBIIIS
         private DialogueController dialogue;
         private readonly List<Emote> emotes = new List<Emote>();
         private readonly List<Thrown> thrown = new List<Thrown>();
-        private float warningLeft;
+        // 자유 진행 경고 대사가 떠 있는 동안 전투 입력을 막는다(경고를 넘기는 키가 대기 등으로 읽혀 턴이 넘어가지 않게).
+        private bool warningOpen;
+        // 대사를 닫은 프레임. 대사를 넘긴 키(Space 등)가 같은 프레임에 전투 명령으로 읽히지 않게 그 프레임은 입력을 막는다(Play 중).
+        private int closedFrame = -1;
+        // "다음 대사가 끝날 때까지" 자세를 보이는 중.
+        private bool poseUntilLine;
+        private readonly HashSet<Vector2Int> triedDirections = new HashSet<Vector2Int>();
+        private static readonly Vector2Int[] Cardinal = { Vector2Int.up, Vector2Int.left, Vector2Int.down, Vector2Int.right };
         /// <summary>자유 진행에서 막은(패배할) 행동 수. 테스트·디버그용.</summary>
         public int BlockedDangerousMoves { get; private set; }
         public bool IsRunning { get; private set; }
@@ -74,6 +82,7 @@ namespace IBIIIS
             IsRunning = true; Finished = false; index = -1;
             battle.AllowUndoRestart = false; battle.AllowRangeToggle = false;
             if (hideEnemyAlerts) battle.AlertsEnabled = false;
+            if (scriptControlsDanger) battle.DangerIdleEnabled = false;
             Next();
         }
         /// <summary>시간을 진행하고 현재 단계의 끝 조건을 확인한다(매 프레임, 테스트에서는 직접 호출).</summary>
@@ -104,21 +113,46 @@ namespace IBIIIS
                     timer += seconds; if (timer >= step.seconds) Next();
                     break;
                 case TutorialStepType.FreePlay:
-                    if (warningLeft > 0) { warningLeft -= seconds; if (warningLeft <= 0) EnsureDialogue().Hide(); }
-                    if (ready && session.Phase == BattlePhase.Won) Next();
+                    if (!warningOpen && ready && session.Phase == BattlePhase.Won) Next();
+                    break;
+                case TutorialStepType.WaitAllDirections:
+                    if (triedDirections.Count >= Cardinal.Length && ready) Next();
                     break;
             }
         }
-        // 자유 진행의 입력 판정: 허용한 행동이고, 했을 때 패배하지 않아야 한다. 패배할 행동이면 막고 경고를 보인다.
+        private bool JustClosed => Application.isPlaying && Time.frameCount == closedFrame;
+        // 입력 대기 단계의 판정을 감싼다: 경고가 떠 있거나 방금 대사를 닫은 프레임이면 막는다.
+        private Func<PlayerAction, Vector2Int, bool> Guard(Func<PlayerAction, Vector2Int, bool> inner) => (action, direction) => !warningOpen && !JustClosed && inner(action, direction);
+        // 자유 진행의 입력 판정: 허용한 행동이고, 했을 때 패배하지 않아야 한다. 패배할 행동이면 막고 경고 대사를 띄운다.
+        // 경고는 넘겨야 닫히며(F·Enter·Space·클릭), 그동안과 닫은 프레임에는 어떤 행동도 받지 않아 턴이 넘어가지 않는다.
         private bool AllowSafe(PlayerAction action, Vector2Int direction)
         {
             var step = Current;
             if (!step.Allows(action, direction)) return false;
             if (battle.Session.Predict(action, direction) != BattlePhase.Lost) return true;
             BlockedDangerousMoves++;
-            if (!string.IsNullOrEmpty(step.line.text)) { EnsureDialogue().Prompt(Ui, step.line, null); warningLeft = step.seconds > 0 ? step.seconds : 1.5f; }
+            if (!string.IsNullOrEmpty(step.line.text))
+            {
+                warningOpen = true;
+                EnsureDialogue().Open(Ui, new[] { step.line }, () => { warningOpen = false; closedFrame = Time.frameCount; }, true);
+            }
             return false;
         }
+        // 네 방향 누르기: 이동이면서 상하좌우 중 하나면 받아들이고(벽에 막혀 부딪혀도) 누른 방향을 기록한다. 남은 키만 표시한다.
+        private bool AllowDirection(PlayerAction action, Vector2Int direction)
+        {
+            if (action != PlayerAction.Move || Array.IndexOf(Cardinal, direction) < 0) return false;
+            if (triedDirections.Add(direction)) ShowRemainingKeys(Current);
+            return true;
+        }
+        private void ShowRemainingKeys(TutorialStep step)
+        {
+            var caps = step.KeyCaps; var remaining = new List<string>();
+            for (int i = 0; i < Cardinal.Length; i++) if (!triedDirections.Contains(Cardinal[i])) remaining.Add(caps.Length == Cardinal.Length ? caps[i] : Cardinal[i].ToString());
+            EnsureDialogue().Prompt(Ui, step.line, remaining);
+        }
+        /// <summary>네 방향 누르기 단계에서 지금까지 누른 방향 수(테스트·디버그용).</summary>
+        public int TriedDirections => triedDirections.Count;
         /// <summary>칸을 눌렀다(마우스 왼쪽 버튼과 같은 경로). 칸 누르기 단계의 정답 칸이면 연출을 시작한다.</summary>
         public void ClickCell(Vector2Int cell)
         {
@@ -138,7 +172,7 @@ namespace IBIIIS
         private void EndStep()
         {
             battle.SetGuideCells(null); battle.CommandFilter = DenyAll;
-            clicked = false; waitingFirstMove = false; timer = 0;
+            clicked = false; warningOpen = false; triedDirections.Clear(); waitingFirstMove = false; timer = 0;
         }
         private static bool DenyAll(PlayerAction action, Vector2Int direction) => false;
         private void StartStep(TutorialStep step)
@@ -155,15 +189,15 @@ namespace IBIIIS
                     break;
                 case TutorialStepType.WaitAction:
                     Prompt(step);
-                    battle.CommandFilter = step.Allows;
+                    battle.CommandFilter = Guard(step.Allows);
                     if (step.direction != Vector2Int.zero && battle.Session != null)
                         battle.SetGuideCells(new[] { battle.Session.Position + step.direction * ((step.actions & TutorialActions.Dash) != 0 ? 2 : 1) });
                     break;
                 case TutorialStepType.WaitFreeMove:
-                    Prompt(step); battle.CommandFilter = step.Allows; waitingFirstMove = true;
+                    Prompt(step); battle.CommandFilter = Guard(step.Allows); waitingFirstMove = true;
                     break;
                 case TutorialStepType.WaitReachCell:
-                    Prompt(step); battle.CommandFilter = step.Allows; battle.SetGuideCells(new[] { step.cell });
+                    Prompt(step); battle.CommandFilter = Guard(step.Allows); battle.SetGuideCells(new[] { step.cell });
                     break;
                 case TutorialStepType.WaitClickCell:
                     Prompt(step); battle.SetGuideCells(new[] { step.cell });
@@ -191,8 +225,16 @@ namespace IBIIIS
                     Next();
                     break;
                 case TutorialStepType.FreePlay:
-                    EnsureDialogue().Hide(); warningLeft = 0;
-                    battle.CommandFilter = AllowSafe;
+                    EnsureDialogue().Hide();
+                    battle.CommandFilter = Guard(AllowSafe);
+                    break;
+                case TutorialStepType.WaitAllDirections:
+                    ShowRemainingKeys(step); battle.CommandFilter = Guard(AllowDirection);
+                    break;
+                case TutorialStepType.Pose:
+                    if (step.sprite == null) Debug.LogWarning($"[IBIIIS] {name}: 대본의 자세 단계에 그림이 없습니다.", this);
+                    else { battle.PlayPose(step.sprite, step.motion, step.untilAction ? 0 : step.seconds, step.endMotion, step.untilAction); poseUntilLine = !step.untilAction && step.seconds <= 0; }
+                    Next();
                     break;
                 case TutorialStepType.Wait:
                     break;
@@ -210,6 +252,8 @@ namespace IBIIIS
         }
         private void OnLineDone()
         {
+            closedFrame = Time.frameCount;
+            if (poseUntilLine) { poseUntilLine = false; battle.EndPose(); }
             // 다 본 대사와 함께 "다음 대사까지" 감정 표시를 지운다.
             emotes.RemoveAll(e => { if (e.UntilLine) { e.View?.RemoveFromHierarchy(); return true; } return false; });
             Next();
@@ -230,7 +274,7 @@ namespace IBIIIS
             EnsureDialogue().Hide();
             Restore();
         }
-        private void Restore() { battle.CommandFilter = null; battle.SetGuideCells(null); battle.AllowUndoRestart = true; battle.AllowRangeToggle = true; battle.AlertsEnabled = true; }
+        private void Restore() { battle.CommandFilter = null; battle.SetGuideCells(null); battle.AllowUndoRestart = true; battle.AllowRangeToggle = true; battle.AlertsEnabled = true; battle.DangerIdleEnabled = true; }
         private Actor FindActor(string id)
         {
             foreach (var actor in actors) if (actor.id == id) return actor;
@@ -244,7 +288,7 @@ namespace IBIIIS
             else { var actor = FindActor(step.target); target = actor.target != null ? actor.target.transform : null; height = actor.height > 0 ? actor.height : playerEmoteHeight; }
             if (target == null) { Debug.LogWarning($"[IBIIIS] {name}: 감정 표시 대상 '{step.target}'을 찾지 못했습니다.", this); return; }
             emotes.RemoveAll(e => { if (e.Target == target) { e.View?.RemoveFromHierarchy(); return true; } return false; });
-            emotes.Add(new Emote { Target = target, Height = height, Text = step.text, Left = step.seconds, UntilLine = step.seconds <= 0 });
+            emotes.Add(new Emote { Target = target, Height = height, Text = step.text, Icon = step.sprite, Left = step.seconds, UntilLine = step.seconds <= 0 });
         }
         private void TickEmotes(float seconds)
         {
@@ -256,21 +300,20 @@ namespace IBIIIS
                 if (e.Left <= 0 || e.Target == null) { e.View?.RemoveFromHierarchy(); emotes.RemoveAt(i); }
             }
         }
-        // 감정 표시는 전투 HUD의 말풍선 층에 말풍선 화면 구성(emote 클래스)으로 그린다. 화면이 없으면 그리지 않는다.
+        // 감정 표시는 말풍선 없이 아이콘만(그림이 있으면 그림, 없으면 글자) 전투 HUD의 말풍선 층에 그린다. 모양은 GameUi.uss의 emote-icon. 화면이 없으면 그리지 않는다.
         private void RenderEmotes()
         {
             var layer = battle != null && battle.Hud != null ? battle.Hud.Root.Q("bubbles") : null;
-            var ui = Ui; var camera = battle != null ? battle.ViewCamera : null;
-            if (layer == null || layer.panel == null || ui == null || ui.SpeechBubble == null || camera == null) return;
+            var camera = battle != null ? battle.ViewCamera : null;
+            if (layer == null || layer.panel == null || camera == null) return;
             foreach (var e in emotes)
             {
                 if (e.Target == null) continue;
                 if (e.View == null)
                 {
-                    e.View = ui.SpeechBubble.Instantiate().Q("bubble");
-                    if (e.View == null) continue;
-                    e.View.AddToClassList("emote"); e.View.pickingMode = PickingMode.Ignore;
-                    var label = e.View.Q<Label>("text"); if (label != null) label.text = e.Text;
+                    if (e.Icon != null) { e.View = new VisualElement(); e.View.AddToClassList("image"); e.View.style.backgroundImage = new StyleBackground(e.Icon); }
+                    else e.View = new Label(e.Text);
+                    e.View.AddToClassList("emote-icon"); e.View.pickingMode = PickingMode.Ignore;
                     layer.Add(e.View);
                 }
                 var world = e.Target.position + camera.transform.up * e.Height * battle.CellSize;

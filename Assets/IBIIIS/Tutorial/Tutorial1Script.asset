@@ -32,6 +32,9 @@ MonoBehaviour:
     scenePath: 
     prefab: {fileID: 0}
     sprite: {fileID: 0}
+    motion: 0
+    endMotion: 0
+    untilAction: 0
   - type: 1
     line:
       speaker: {fileID: 0}
@@ -49,6 +52,9 @@ MonoBehaviour:
     scenePath: 
     prefab: {fileID: 0}
     sprite: {fileID: 0}
+    motion: 0
+    endMotion: 0
+    untilAction: 0
   - type: 0
     line:
       speaker: {fileID: 0}
@@ -67,6 +73,9 @@ MonoBehaviour:
     scenePath: 
     prefab: {fileID: 0}
     sprite: {fileID: 0}
+    motion: 0
+    endMotion: 0
+    untilAction: 0
   - type: 7
     line:
       speaker: {fileID: 0}
@@ -84,6 +93,9 @@ MonoBehaviour:
     scenePath: 
     prefab: {fileID: 0}
     sprite: {fileID: 0}
+    motion: 0
+    endMotion: 0
+    untilAction: 0
   - type: 0
     line:
       speaker: {fileID: 0}
@@ -102,6 +114,9 @@ MonoBehaviour:
     scenePath: 
     prefab: {fileID: 0}
     sprite: {fileID: 0}
+    motion: 0
+    endMotion: 0
+    untilAction: 0
   - type: 0
     line:
       speaker: {fileID: 11400000, guid: 62cbb598f2f40c249b3713c3d307662c, type: 2}
@@ -119,6 +134,9 @@ MonoBehaviour:
     scenePath: 
     prefab: {fileID: 0}
     sprite: {fileID: 0}
+    motion: 0
+    endMotion: 0
+    untilAction: 0
   - type: 1
     line:
       speaker: {fileID: 0}
@@ -136,6 +154,29 @@ MonoBehaviour:
     scenePath: 
     prefab: {fileID: 0}
     sprite: {fileID: 0}
+    motion: 0
+    endMotion: 0
+    untilAction: 0
+  - type: 13
+    line:
+      speaker: {fileID: 0}
+      expression: 
+      nameOverride: 
+      text: 
+    actions: 0
+    direction: {x: 0, y: 0}
+    cell: {x: 0, y: 0}
+    seconds: 0
+    keys: 
+    target: 
+    text: 
+    active: 0
+    scenePath: 
+    prefab: {fileID: 0}
+    sprite: {fileID: 21300000, guid: 64c5c2e396e45744f96b350e8cdc41d7, type: 3}
+    motion: 1
+    endMotion: 1
+    untilAction: 0
   - type: 0
     line:
       speaker: {fileID: 0}
@@ -153,6 +194,9 @@ MonoBehaviour:
     scenePath: 
     prefab: {fileID: 0}
     sprite: {fileID: 0}
+    motion: 0
+    endMotion: 0
+    untilAction: 0
   - type: 0
     line:
       speaker: {fileID: 11400000, guid: 62cbb598f2f40c249b3713c3d307662c, type: 2}
@@ -172,6 +216,9 @@ MonoBehaviour:
     scenePath: 
     prefab: {fileID: 0}
     sprite: {fileID: 0}
+    motion: 0
+    endMotion: 0
+    untilAction: 0
   - type: 0
     line:
       speaker: {fileID: 11400000, guid: 62cbb598f2f40c249b3713c3d307662c, type: 2}
@@ -190,6 +237,9 @@ MonoBehaviour:
     scenePath: 
     prefab: {fileID: 0}
     sprite: {fileID: 0}
+    motion: 0
+    endMotion: 0
+    untilAction: 0
   - type: 0
     line:
       speaker: {fileID: 0}
@@ -209,6 +259,9 @@ MonoBehaviour:
     scenePath: 
     prefab: {fileID: 0}
     sprite: {fileID: 0}
+    motion: 0
+    endMotion: 0
+    untilAction: 0
   - type: 6
     line:
       speaker: {fileID: 0}
@@ -227,6 +280,9 @@ MonoBehaviour:
     scenePath: 
     prefab: {fileID: 0}
     sprite: {fileID: 0}
+    motion: 0
+    endMotion: 0
+    untilAction: 0
   - type: 0
     line:
       speaker: {fileID: 11400000, guid: bd9c43e83beda0543960025aa730ad98, type: 2}
@@ -244,6 +300,9 @@ MonoBehaviour:
     scenePath: 
     prefab: {fileID: 0}
     sprite: {fileID: 0}
+    motion: 0
+    endMotion: 0
+    untilAction: 0
   - type: 0
     line:
       speaker: {fileID: 0}
@@ -262,6 +321,9 @@ MonoBehaviour:
     scenePath: 
     prefab: {fileID: 0}
     sprite: {fileID: 0}
+    motion: 0
+    endMotion: 0
+    untilAction: 0
   - type: 0
     line:
       speaker: {fileID: 11400000, guid: 62cbb598f2f40c249b3713c3d307662c, type: 2}
@@ -281,6 +343,9 @@ MonoBehaviour:
     scenePath: 
     prefab: {fileID: 0}
     sprite: {fileID: 0}
+    motion: 0
+    endMotion: 0
+    untilAction: 0
   - type: 1
     line:
       speaker: {fileID: 0}
@@ -297,7 +362,10 @@ MonoBehaviour:
     active: 0
     scenePath: 
     prefab: {fileID: 0}
-    sprite: {fileID: 0}
+    sprite: {fileID: 21300000, guid: 6a4b70ae4128b8242a7ee0a7e140e2e5, type: 3}
+    motion: 0
+    endMotion: 0
+    untilAction: 0
   - type: 0
     line:
       speaker: {fileID: 0}
@@ -315,6 +383,9 @@ MonoBehaviour:
     scenePath: 
     prefab: {fileID: 0}
     sprite: {fileID: 0}
+    motion: 0
+    endMotion: 0
+    untilAction: 0
   - type: 0
     line:
       speaker: {fileID: 11400000, guid: 62cbb598f2f40c249b3713c3d307662c, type: 2}
@@ -335,6 +406,9 @@ MonoBehaviour:
     scenePath: 
     prefab: {fileID: 0}
     sprite: {fileID: 0}
+    motion: 0
+    endMotion: 0
+    untilAction: 0
   - type: 0
     line:
       speaker: {fileID: 0}
@@ -352,6 +426,9 @@ MonoBehaviour:
     scenePath: 
     prefab: {fileID: 0}
     sprite: {fileID: 0}
+    motion: 0
+    endMotion: 0
+    untilAction: 0
   - type: 0
     line:
       speaker: {fileID: 11400000, guid: 62cbb598f2f40c249b3713c3d307662c, type: 2}
@@ -370,6 +447,9 @@ MonoBehaviour:
     scenePath: 
     prefab: {fileID: 0}
     sprite: {fileID: 0}
+    motion: 0
+    endMotion: 0
+    untilAction: 0
   - type: 1
     line:
       speaker: {fileID: 0}
@@ -387,6 +467,9 @@ MonoBehaviour:
     scenePath: 
     prefab: {fileID: 0}
     sprite: {fileID: 0}
+    motion: 0
+    endMotion: 0
+    untilAction: 0
   - type: 0
     line:
       speaker: {fileID: 0}
@@ -405,6 +488,9 @@ MonoBehaviour:
     scenePath: 
     prefab: {fileID: 0}
     sprite: {fileID: 0}
+    motion: 0
+    endMotion: 0
+    untilAction: 0
   - type: 0
     line:
       speaker: {fileID: 11400000, guid: 62cbb598f2f40c249b3713c3d307662c, type: 2}
@@ -422,16 +508,19 @@ MonoBehaviour:
     scenePath: 
     prefab: {fileID: 0}
     sprite: {fileID: 0}
-  - type: 3
+    motion: 0
+    endMotion: 0
+    untilAction: 0
+  - type: 14
     line:
       speaker: {fileID: 0}
       expression: 
       nameOverride: 
       text: 
-    actions: 1
+    actions: 0
     direction: {x: 0, y: 0}
     cell: {x: 0, y: 0}
-    seconds: 3
+    seconds: 0
     keys: W A S D
     target: 
     text: 
@@ -439,6 +528,9 @@ MonoBehaviour:
     scenePath: 
     prefab: {fileID: 0}
     sprite: {fileID: 0}
+    motion: 0
+    endMotion: 0
+    untilAction: 0
   - type: 7
     line:
       speaker: {fileID: 0}
@@ -456,6 +548,9 @@ MonoBehaviour:
     scenePath: 
     prefab: {fileID: 0}
     sprite: {fileID: 0}
+    motion: 0
+    endMotion: 0
+    untilAction: 0
   - type: 0
     line:
       speaker: {fileID: 11400000, guid: 62cbb598f2f40c249b3713c3d307662c, type: 2}
@@ -475,6 +570,9 @@ MonoBehaviour:
     scenePath: 
     prefab: {fileID: 0}
     sprite: {fileID: 0}
+    motion: 0
+    endMotion: 0
+    untilAction: 0
   - type: 0
     line:
       speaker: {fileID: 11400000, guid: 62cbb598f2f40c249b3713c3d307662c, type: 2}
@@ -493,6 +591,9 @@ MonoBehaviour:
     scenePath: 
     prefab: {fileID: 0}
     sprite: {fileID: 0}
+    motion: 0
+    endMotion: 0
+    untilAction: 0
   - type: 0
     line:
       speaker: {fileID: 0}
@@ -511,6 +612,9 @@ MonoBehaviour:
     scenePath: 
     prefab: {fileID: 0}
     sprite: {fileID: 0}
+    motion: 0
+    endMotion: 0
+    untilAction: 0
   - type: 4
     line:
       speaker: {fileID: 0}
@@ -528,6 +632,9 @@ MonoBehaviour:
     scenePath: 
     prefab: {fileID: 0}
     sprite: {fileID: 0}
+    motion: 0
+    endMotion: 0
+    untilAction: 0
   - type: 0
     line:
       speaker: {fileID: 11400000, guid: 62cbb598f2f40c249b3713c3d307662c, type: 2}
@@ -546,6 +653,9 @@ MonoBehaviour:
     scenePath: 
     prefab: {fileID: 0}
     sprite: {fileID: 0}
+    motion: 0
+    endMotion: 0
+    untilAction: 0
   - type: 5
     line:
       speaker: {fileID: 0}
@@ -563,6 +673,9 @@ MonoBehaviour:
     scenePath: 
     prefab: {fileID: 0}
     sprite: {fileID: 21300000, guid: 69debc8544a5e304fbd0037dce0e7889, type: 3}
+    motion: 0
+    endMotion: 0
+    untilAction: 0
   - type: 0
     line:
       speaker: {fileID: 0}
@@ -581,6 +694,9 @@ MonoBehaviour:
     scenePath: 
     prefab: {fileID: 0}
     sprite: {fileID: 0}
+    motion: 0
+    endMotion: 0
+    untilAction: 0
   - type: 0
     line:
       speaker: {fileID: 11400000, guid: 62cbb598f2f40c249b3713c3d307662c, type: 2}
@@ -598,6 +714,9 @@ MonoBehaviour:
     scenePath: 
     prefab: {fileID: 0}
     sprite: {fileID: 0}
+    motion: 0
+    endMotion: 0
+    untilAction: 0
   - type: 0
     line:
       speaker: {fileID: 11400000, guid: bd9c43e83beda0543960025aa730ad98, type: 2}
@@ -615,6 +734,9 @@ MonoBehaviour:
     scenePath: 
     prefab: {fileID: 0}
     sprite: {fileID: 0}
+    motion: 0
+    endMotion: 0
+    untilAction: 0
   - type: 0
     line:
       speaker: {fileID: 11400000, guid: 68acced557beaed46ac3b08c3daedcdd, type: 2}
@@ -632,6 +754,9 @@ MonoBehaviour:
     scenePath: 
     prefab: {fileID: 0}
     sprite: {fileID: 0}
+    motion: 0
+    endMotion: 0
+    untilAction: 0
   - type: 0
     line:
       speaker: {fileID: 11400000, guid: bd9c43e83beda0543960025aa730ad98, type: 2}
@@ -649,6 +774,9 @@ MonoBehaviour:
     scenePath: 
     prefab: {fileID: 0}
     sprite: {fileID: 0}
+    motion: 0
+    endMotion: 0
+    untilAction: 0
   - type: 0
     line:
       speaker: {fileID: 11400000, guid: 62cbb598f2f40c249b3713c3d307662c, type: 2}
@@ -667,6 +795,9 @@ MonoBehaviour:
     scenePath: 
     prefab: {fileID: 0}
     sprite: {fileID: 0}
+    motion: 0
+    endMotion: 0
+    untilAction: 0
   - type: 0
     line:
       speaker: {fileID: 11400000, guid: bd9c43e83beda0543960025aa730ad98, type: 2}
@@ -684,6 +815,9 @@ MonoBehaviour:
     scenePath: 
     prefab: {fileID: 0}
     sprite: {fileID: 0}
+    motion: 0
+    endMotion: 0
+    untilAction: 0
   - type: 1
     line:
       speaker: {fileID: 0}
@@ -700,7 +834,10 @@ MonoBehaviour:
     active: 0
     scenePath: 
     prefab: {fileID: 0}
-    sprite: {fileID: 0}
+    sprite: {fileID: 21300000, guid: 6a4b70ae4128b8242a7ee0a7e140e2e5, type: 3}
+    motion: 0
+    endMotion: 0
+    untilAction: 0
   - type: 0
     line:
       speaker: {fileID: 0}
@@ -718,6 +855,9 @@ MonoBehaviour:
     scenePath: 
     prefab: {fileID: 0}
     sprite: {fileID: 0}
+    motion: 0
+    endMotion: 0
+    untilAction: 0
   - type: 0
     line:
       speaker: {fileID: 11400000, guid: 62cbb598f2f40c249b3713c3d307662c, type: 2}
@@ -737,6 +877,9 @@ MonoBehaviour:
     scenePath: 
     prefab: {fileID: 0}
     sprite: {fileID: 0}
+    motion: 0
+    endMotion: 0
+    untilAction: 0
   - type: 0
     line:
       speaker: {fileID: 11400000, guid: bd9c43e83beda0543960025aa730ad98, type: 2}
@@ -754,6 +897,9 @@ MonoBehaviour:
     scenePath: 
     prefab: {fileID: 0}
     sprite: {fileID: 0}
+    motion: 0
+    endMotion: 0
+    untilAction: 0
   - type: 9
     line:
       speaker: {fileID: 0}
@@ -771,3 +917,6 @@ MonoBehaviour:
     scenePath: Assets/IBIIIS/Maps/Tutorial2/Tutorial2.unity
     prefab: {fileID: 0}
     sprite: {fileID: 0}
+    motion: 0
+    endMotion: 0
+    untilAction: 0

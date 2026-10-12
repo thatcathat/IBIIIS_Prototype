@@ -14,6 +14,10 @@ namespace IBIIIS.Editor
     {
         public const string Folder = AssetPaths.Root + "/Tutorial";
         public const string FlySprite = Folder + "/AssiFly.png", ScarecrowSprite = Folder + "/Scarecrow.png", SwordSprite = Folder + "/Sword.png";
+        // 임시: 땀 아이콘 에셋이 없어 코드로 그린 물방울. 정식 그림이 생기면 대본의 감정 표시 아이콘만 바꾼다.
+        public const string SweatSprite = Folder + "/Sweat.png";
+        // 대본 자세 연출에 쓰는 플레이어 그림(Characters/Player/Sprites).
+        public const string SurprisedPose = PlayerPrefabSetup.SpriteFolder + "/c_motion_surprized_R.png", DangerGonePose = PlayerPrefabSetup.SpriteFolder + "/c_danger_gone.png", ProudPose = PlayerPrefabSetup.SpriteFolder + "/c_danger_cleared.png", DangerPose = PlayerPrefabSetup.SpriteFolder + "/c_danger.png";
         public const string Stage1Folder = AssetPaths.Maps + "/Tutorial1", Stage2Folder = AssetPaths.Maps + "/Tutorial2";
         public const string Stage1Map = Stage1Folder + "/Tutorial1.asset", Stage1Scene = Stage1Folder + "/Tutorial1.unity";
         public const string Stage2Map = Stage2Folder + "/Tutorial2.asset", Stage2Scene = Stage2Folder + "/Tutorial2.unity";
@@ -31,15 +35,62 @@ namespace IBIIIS.Editor
             var cast = EnsureCast();
             var fly = EnsureSprite(FlySprite, FlyShape);
             var scarecrow = EnsureSprite(ScarecrowSprite, ScarecrowShape);
-            var sword = EnsureSprite(SwordSprite, SwordShape);
-            var script1 = EnsureScript(Stage1Script, "tutorial_1", Stage1Steps(cast, sword));
-            var script2 = EnsureScript(Stage2Script, "tutorial_2", Stage2Steps(cast));
+            var art = EnsureArt();
+            var script1 = EnsureScript(Stage1Script, "tutorial_1", Stage1Steps(cast, art));
+            var script2 = EnsureScript(Stage2Script, "tutorial_2", Stage2Steps(cast, art));
             EnsureStage(Stage1Folder, Stage1Map, Stage1Scene, 9, 5, new Vector2Int(1, 2), new (Vector2Int, Vector2Int)[0], script1, fly, false, scarecrow);
             EnsureStage(Stage2Folder, Stage2Map, Stage2Scene, 7, 7, new Vector2Int(3, 0),
                 new[] { (new Vector2Int(1, 5), Vector2Int.down), (new Vector2Int(4, 1), Vector2Int.down) }, script2, fly, true, null);
             EnsureTitle(ui);
             EnsureBuildList(TitleScene, Stage1Scene, Stage2Scene, AssetPaths.OverworldScene);
             Debug.Log($"[IBIIIS] 튜토리얼 콘텐츠 준비: {TitleScene} → {Stage1Scene} → {Stage2Scene} → {AssetPaths.OverworldScene}");
+        }
+
+        /// <summary>두 대본을 이 코드의 기본 내용으로 다시 만든다. Inspector에서 고친 대본 내용은 사라지므로 확인을 받는다.</summary>
+        [MenuItem("IBIIIS/Reset Tutorial Scripts")]
+        private static void ResetScriptsMenu()
+        {
+            if (EditorUtility.DisplayDialog("튜토리얼 대본 초기화", "Tutorial1Script·Tutorial2Script를 기본 대본으로 덮어씁니다. Inspector에서 고친 내용은 사라집니다.", "덮어쓰기", "취소")) ResetScripts();
+        }
+        public static void ResetScripts()
+        {
+            var cast = EnsureCast(); var art = EnsureArt();
+            Overwrite(Stage1Script, "tutorial_1", Stage1Steps(cast, art));
+            Overwrite(Stage2Script, "tutorial_2", Stage2Steps(cast, art));
+        }
+        private static void Overwrite(string path, string id, TutorialStep[] steps)
+        {
+            var script = AssetDatabase.LoadAssetAtPath<TutorialScript>(path);
+            if (script == null) { EnsureScript(path, id, steps); return; }
+            script.Set(id, steps); EditorUtility.SetDirty(script); AssetDatabase.SaveAssetIfDirty(script);
+        }
+        // ── 대본에 쓰는 그림 ──
+        public sealed class Art { public Sprite Sword, Sweat, Surprised, DangerGone, Proud, Danger; }
+        private static Art EnsureArt()
+        {
+            PlayerPrefabSetup.ImportSprites();
+            return new Art
+            {
+                Sword = EnsureSprite(SwordSprite, SwordShape), Sweat = EnsureSprite(SweatSprite, SweatShape),
+                Surprised = LoadPose(SurprisedPose), DangerGone = LoadPose(DangerGonePose), Proud = LoadPose(ProudPose), Danger = LoadPose(DangerPose),
+            };
+        }
+        // 자세 그림이 없으면 경고만 하고 그 자세 단계는 건너뛴다(진행은 막지 않음).
+        private static Sprite LoadPose(string path)
+        {
+            var sprite = AssetDatabase.LoadAssetAtPath<Sprite>(path);
+            if (sprite == null) Debug.LogWarning($"[IBIIIS] 튜토리얼 자세 그림이 없습니다: {path}");
+            return sprite;
+        }
+        // 물방울: 아래는 둥글고 위로 뾰족한 하늘색 방울.
+        private static Color SweatShape(float u, float v)
+        {
+            var p = new Vector2(u, v - .36f);
+            float round = p.magnitude - .26f;
+            float tip = GeneratedSprites.Triangle(new Vector2(u, v), new Vector2(-.22f, .48f), new Vector2(.22f, .48f), new Vector2(0, .92f));
+            float d = Mathf.Min(round, tip);
+            if (new Vector2(u + .09f, v - .42f).magnitude < .06f && d < -.02f) return Color.white; // 반짝임
+            return GeneratedSprites.Shade(d, new Color(.55f, .82f, 1f));
         }
 
         // ── 대화 인물 ──
@@ -109,9 +160,11 @@ namespace IBIIIS.Editor
         // ── 대본(기획서 대사·지문 순서 그대로) ──
         private static TutorialStep Say(DialogueCharacter who, string text, string nameOverride = null) => new TutorialStep { type = TutorialStepType.Line, line = new DialogueLine { speaker = who, text = text, nameOverride = nameOverride } };
         private static TutorialStep Narrate(string text) => new TutorialStep { type = TutorialStepType.Line, line = DialogueLine.Narrate(text) };
-        private static TutorialStep Emote(string target, string mark) => new TutorialStep { type = TutorialStepType.Emote, target = target, text = mark };
+        private static TutorialStep Emote(string target, string mark, Sprite icon = null) => new TutorialStep { type = TutorialStepType.Emote, target = target, text = mark, sprite = icon };
+        // 자세: 다음 대사가 끝날 때까지 그림을 바꾸고 처음에 움직임을 준다.
+        private static TutorialStep Pose(Sprite sprite, PoseMotion motion, PoseMotion endMotion = PoseMotion.None) => new TutorialStep { type = TutorialStepType.Pose, sprite = sprite, motion = motion, endMotion = endMotion };
         private static TutorialStep Show(string target) => new TutorialStep { type = TutorialStepType.SetActive, target = target, active = true };
-        private static TutorialStep[] Stage1Steps(Cast c, Sprite sword)
+        private static TutorialStep[] Stage1Steps(Cast c, Art art)
         {
             const string unknown = "???(어시파리)";
             var wasd = "W A S D";
@@ -121,7 +174,7 @@ namespace IBIIIS.Editor
                 Emote("player", "?"), Narrate("좌우를 살피며, 어리둥절한 모습이다"),
                 Show("fly"), Narrate("어씨파리가 재빠르게 나타나 말을 건다"),
                 Say(c.Fly, "안녕 플레이어! 만나서 반가워!", unknown),
-                Emote("player", "!"), Narrate("주인공 화들짝 놀람"),
+                Emote("player", "!"), Pose(art.Surprised, PoseMotion.Hop, PoseMotion.Hop), Narrate("주인공 화들짝 놀람"),
                 Say(c.Fly, "(어우씨 깜짝아 뭘 사람이 이렇게 놀라..;;) 나는 플레이어의 모험을 도울 어시스트 AI야!", unknown),
                 Say(c.Fly, "앞으로 자주 보게 될테니, 편하게 불러줘!", unknown),
                 Narrate("화면 앞 팝업창으로 ‘어시스트 AI의 이름을 붙여주세요 — 어씨 [  ]’ 가 뜬다"),
@@ -129,20 +182,21 @@ namespace IBIIIS.Editor
                 Say(c.Hero, ".....파리?"),
                 Narrate("어시스트 AI 이름이 ‘어시 파리’로 고정됩니다."),
                 Say(c.Fly, "(화난 표정으로) 잠깐만!! 야!! 파리가 뭐야!!!!!! 이거 바꾸지도 못한다고!!!"),
-                Emote("player", ";;"), Narrate("주인공은 놀라서 ;; 땀을 흘린다"),
+                Emote("player", ";;", art.Sweat), Narrate("주인공은 놀라서 ;; 땀을 흘린다"),
                 Say(c.Fly, "하... 일단 정해진 이름은 어쩔 수 없으니.. (후... 참자....) 이 게임의 기본적인 튜토리얼을 알려줄게!(이꽉문 표정)"),
                 Narrate("주인공 끄덕거림"),
                 Say(c.Fly, "자 맵이 보이지? 이게 플레이어, 너야!"),
                 Emote("player", "▼"), Narrate("주인공 머리 위에 화살표가 뜬다"),
                 Say(c.Fly, "WASD로 이동할 수 있어! 한번 움직여볼래?"),
-                new TutorialStep { type = TutorialStepType.WaitFreeMove, actions = TutorialActions.Move, seconds = 3, keys = wasd },
+                // 네 방향을 모두 한 번씩 눌러야 넘어간다(누른 키는 표시에서 빠짐).
+                new TutorialStep { type = TutorialStepType.WaitAllDirections, keys = wasd },
                 Show("scarecrow"),
                 Say(c.Fly, "좋았어! 다음은 [공격]이야! 앞에 너를 위해 허수아비를 준비해뒀어! 허수아비 앞까지 이동해볼래?"),
                 Say(c.Fly, "허수아비는 너를 공격하지 않으니 안심하라고! (찡긋)"),
                 Narrate("허수아비 앞 칸이 빛나서 플레이어 이동을 유도한다"),
                 new TutorialStep { type = TutorialStepType.WaitReachCell, actions = TutorialActions.Move, cell = new Vector2Int(6, 2), keys = wasd },
                 Say(c.Fly, "자! 이제 허수아비를 좌클릭으로 [공격]해봐!"),
-                new TutorialStep { type = TutorialStepType.WaitClickCell, cell = new Vector2Int(7, 2), seconds = 1.1f, sprite = sword, keys = "좌클릭" },
+                new TutorialStep { type = TutorialStepType.WaitClickCell, cell = new Vector2Int(7, 2), seconds = 1.1f, sprite = art.Sword, keys = "좌클릭" },
                 Narrate("주인공이 공격 모션을 취하지만, 칼이 옆으로 날라간다."),
                 Say(c.Fly, "..."),
                 Say(c.Hero, "..."),
@@ -150,13 +204,13 @@ namespace IBIIIS.Editor
                 Say(c.Hero, "(쟤 분명 나 비웃은 것 같은ㄷ....)"),
                 Say(c.Fly, "너... 끔찍하게 못.. 아니... 그.. 공격은 조금 연습이 필요하겠네..."),
                 Say(c.Hero, "(끔찍하게 못...??)"),
-                Emote("player", ";;"), Narrate("주인공 땀 표시"),
+                Emote("player", ";;", art.Sweat), Narrate("주인공 땀 표시"),
                 Say(c.Fly, "괘,괜찮아! 실전만큼 도움되는 연습은 없지! 이, 일단 앞으로 나아가볼까? 하하.."),
                 Say(c.Hero, "(뭔가 얼렁뚱땅인데.... 괜찮으려나..)"),
                 new TutorialStep { type = TutorialStepType.LoadScene, scenePath = Stage2Scene },
             };
         }
-        private static TutorialStep[] Stage2Steps(Cast c)
+        private static TutorialStep[] Stage2Steps(Cast c, Art art)
         {
             var enemy = AssetDatabase.LoadAssetAtPath<GameObject>(Enemy003);
             return new[]
@@ -171,12 +225,15 @@ namespace IBIIIS.Editor
                 Say(c.Hero, "아니 그런 적 없어...! 오해야!! 애초에 티타늄 스노우 그런게 왜 있는데?!?!?"),
                 Narrate("Enemy_00이 돌진 모션을 취함"),
                 Say(c.Hero, "살려줘 어씨파리!!!"),
+                // 대본 기준 위험 자세: 이 대사 뒤부터 첫 회피 행동(A)을 시작할 때까지. 튜토리얼 중에는 자동 위험 그림을 끈다.
+                new TutorialStep { type = TutorialStepType.Pose, sprite = art.Danger, motion = PoseMotion.Shake, endMotion = PoseMotion.Shake, untilAction = true },
                 Say(c.Fly, "일단 무기를 들어!"),
                 Say(c.Hero, "어? 아까 던져버렸는데????? 그런 거 말고ㅠㅠㅠ!!"),
                 Say(c.Fly, "아잇 쓸모없어!"),
                 Say(c.Hero, "빨리..! 이러다 맞겠어ㅠㅠ 뭐라도 알려줘..!"),
                 Say(c.Fly, "그럼 피해야지! 왼쪽으로 움직여!"),
                 new TutorialStep { type = TutorialStepType.WaitAction, actions = TutorialActions.Move, direction = Vector2Int.left, keys = "A" },
+                Pose(art.DangerGone, PoseMotion.Sigh, PoseMotion.Sigh),
                 // 1턴 직후 합류(기획서 (6,4)← · (0,5)→ → 맵 좌표)
                 new TutorialStep { type = TutorialStepType.SpawnEnemy, prefab = enemy, cell = new Vector2Int(6, 2), direction = Vector2Int.left },
                 new TutorialStep { type = TutorialStepType.SpawnEnemy, prefab = enemy, cell = new Vector2Int(0, 1), direction = Vector2Int.right },
@@ -189,14 +246,14 @@ namespace IBIIIS.Editor
                 Say(c.Fly, "에휴.. 그럼 [대시]를 써봐! shift키를 누른채로 가고싶은 방향키를 눌러!"),
                 new TutorialStep { type = TutorialStepType.WaitAction, actions = TutorialActions.Dash, direction = Vector2Int.up, keys = "Shift W" },
                 // 기획서 검토 의견: 자동 연출 대신 직접 움직이게 하고, 맞을 위치로 가려 하면 막고 경고한다.
-                new TutorialStep { type = TutorialStepType.FreePlay, actions = TutorialActions.Move | TutorialActions.Wait | TutorialActions.Dash, line = new DialogueLine { speaker = c.Fly, text = "거기로 가면 위험해!" }, seconds = 1.5f },
+                new TutorialStep { type = TutorialStepType.FreePlay, actions = TutorialActions.Move | TutorialActions.Wait | TutorialActions.Dash, line = new DialogueLine { speaker = c.Fly, text = "거기로 가면 위험해!" } },
                 Narrate("주인공이 회피 후 좌우를 두리번 거리고 신나한다, 몬스터끼리 부딪혀서 꽈당 사라진다"),
                 Say(c.Hero, "내, 내가 피했어!!"),
                 Say(c.Fly, "굼벵이도 구르는 재주가 있다더니... 이건 제법 잘하는데?"),
                 Narrate("어씨파리가 주변을 확인한다"),
                 Say(c.Fly, "오? 심지어 몬스터도 서로 부딪혀서 쓰러졌어! 아까 도발도 그렇고, 너.. 의도한거였구나!"),
                 Say(c.Hero, "어? 어..어... 그,그런가?"),
-                Say(c.Hero, "(으쓱대며) 나.. 재능 있을지도?"),
+                Pose(art.Proud, PoseMotion.Proud, PoseMotion.Proud), Say(c.Hero, "(으쓱대며) 나.. 재능 있을지도?"),
                 Say(c.Fly, "차라리 앞으로 이렇게 전투해보는게 어때? 너 공격도 끔찍하게 못하니까.."),
                 Say(c.Fly, "피해서 서로 부딪히게 만드는거야!"),
                 Say(c.Hero, "어.... 내, 내가 할 수 있을까...?"),

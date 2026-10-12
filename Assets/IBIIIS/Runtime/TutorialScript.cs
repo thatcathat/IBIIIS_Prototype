@@ -28,11 +28,17 @@ namespace IBIIIS
         LoadScene = 9,
         /// <summary>적(Prefab)을 Cell에 Direction 방향으로 합류시킨다. 바로 다음 단계.</summary>
         SpawnEnemy = 10,
-        /// <summary>허용한 행동으로 자유롭게 싸운다. 패배할 행동은 막고 경고 대사(Line)를 Seconds 동안 보인다. 적이 모두 사라지면 다음 단계.</summary>
+        /// <summary>허용한 행동으로 자유롭게 싸운다. 패배할 행동은 막고 경고 대사(Line)를 띄운다(넘겨야 닫히고 그동안 턴이 넘어가지 않음). 적이 모두 사라지면 다음 단계.</summary>
         FreePlay = 11,
         /// <summary>클리어 기록에 Text(기록 ID)를 남긴다(예: 튜토리얼 클리어). 바로 다음 단계.</summary>
         RecordClear = 12,
+        /// <summary>플레이어 그림을 자세 그림(Sprite)으로 바꾸고 움직임(Motion)을 준다. Seconds 동안(0이면 다음 대사가 끝날 때까지). 바로 다음 단계.</summary>
+        Pose = 13,
+        /// <summary>네 방향(위·왼쪽·아래·오른쪽)을 모두 한 번씩 눌러야 다음 단계. 키 표시는 Keys에 위 왼쪽 아래 오른쪽 순서로 적고, 누른 키는 표시에서 빠진다.</summary>
+        WaitAllDirections = 14,
     }
+    /// <summary>자세 연출의 움직임. 표시 전용. 값은 에셋에 정수로 저장되므로 끝에만 추가한다.</summary>
+    public enum PoseMotion { None = 0, Hop = 1, Shake = 2, Sigh = 3, Proud = 4 }
     /// <summary>대본에서 허용할 플레이어 행동(여러 개 선택 가능).</summary>
     [Flags]
     public enum TutorialActions { None = 0, Move = 1, Wait = 2, Dash = 4, Roll = 8 }
@@ -52,7 +58,10 @@ namespace IBIIIS
         [Tooltip("켜고 끄기: 켤지(체크) 끌지.")] public bool active;
         [Tooltip("넘어갈 씬 경로(Assets/...unity).")] public string scenePath;
         [Tooltip("합류할 적 프리팹(EnemyDefinition 필요).")] public GameObject prefab;
-        [Tooltip("칸 누르기: 누른 뒤 플레이어에게서 날아가는 그림(예: 칼). 비우면 연출 없이 기다리기만 합니다.")] public Sprite sprite;
+        [Tooltip("칸 누르기: 누른 뒤 날아가는 그림(예: 칼). 감정 표시: 글자 대신 보일 아이콘. 자세: 플레이어가 잠시 바꿔 보일 자세 그림.")] public Sprite sprite;
+        [Tooltip("자세: 그림을 바꾸며 주는 움직임(Hop 펄쩍, Shake 좌우 떨림, Sigh 한숨처럼 납작, Proud 으쓱하며 늘어남).")] public PoseMotion motion;
+        [Tooltip("자세: 자세가 끝나 기본 그림으로 돌아올 때 주는 움직임. None이면 움직임 없이 바로 돌아옵니다.")] public PoseMotion endMotion;
+        [Tooltip("자세: 체크하면 시간·대사와 관계없이 플레이어가 다음 행동을 시작할 때까지 유지합니다.")] public bool untilAction;
         public string[] KeyCaps => string.IsNullOrWhiteSpace(keys) ? Array.Empty<string>() : keys.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
         /// <summary>이 행동이 허용되는지(입력 대기 단계).</summary>
         public bool Allows(PlayerAction action, Vector2Int dir)

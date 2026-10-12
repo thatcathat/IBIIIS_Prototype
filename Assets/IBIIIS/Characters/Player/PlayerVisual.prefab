@@ -165,6 +165,13 @@ MonoBehaviour:
   rollFrontRight:
     first: {fileID: 21300000, guid: 8952de8f6cd288f43821bbd63c44f1ab, type: 3}
     second: {fileID: 21300000, guid: 718bd9c477e4934418a0aaacc8449e94, type: 3}
+  danger: {fileID: 21300000, guid: 3341306f837616b4296312ec51c91156, type: 3}
+  evaded:
+  - {fileID: 21300000, guid: 542fb6407a995cb40bb6a6120d456c74, type: 3}
+  - {fileID: 21300000, guid: 57da86e36bbdfd045920a654adb402fd, type: 3}
+  escaped: {fileID: 21300000, guid: 27ba9ee173fdbcf4284fc2ac8beecc7b, type: 3}
+  defeated: {fileID: 21300000, guid: 1fd73b1956818e94a9f899f4f72a15a7, type: 3}
+  reactionFrameSeconds: 0.4
   footOffset: 0.1
 --- !u!1001 &9048460886877336197
 PrefabInstance:

@@ -23,6 +23,7 @@ namespace IBIIIS.Editor
             ImportSprites();
             var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath);
             if (prefab == null) { prefab = CreatePrefab(); GroundMarkerSetup.AttachTo(PrefabPath, false); }
+            FillReactionSlots(PrefabPath);
             var settings = AssetDatabase.LoadAssetAtPath<PlayerSettings>(SettingsPath);
             if (settings == null) return;
             var so = new SerializedObject(settings); var property = so.FindProperty("visualPrefab");
@@ -30,7 +31,8 @@ namespace IBIIIS.Editor
             property.objectReferenceValue = prefab; so.ApplyModifiedPropertiesWithoutUndo();
             EditorUtility.SetDirty(settings); AssetDatabase.SaveAssetIfDirty(settings);
         }
-        private static void ImportSprites()
+        /// <summary>플레이어 스프라이트 폴더의 그림을 스프라이트(PPU 500, 기준점 아래 중앙)로 맞춘다. 이미 맞으면 건드리지 않는다.</summary>
+        public static void ImportSprites()
         {
             foreach (var guid in AssetDatabase.FindAssets("t:Texture2D", new[] { SpriteFolder }))
             {
@@ -46,6 +48,38 @@ namespace IBIIIS.Editor
                 importer.SetTextureSettings(settings); importer.SaveAndReimport();
             }
         }
+        /// <summary>프리팹 PlayerVisual의 상황별 그림 슬롯 중 비어 있는 것만 기본 그림으로 채운다(사용자가 바꾼 슬롯은 그대로). 그림 파일이 없으면 비워 둔다.</summary>
+        public static void FillReactionSlots(string prefabPath)
+        {
+            var root = PrefabUtility.LoadPrefabContents(prefabPath);
+            try
+            {
+                var visual = root.GetComponentInChildren<PlayerVisual>(true); if (visual == null) return;
+                var so = new SerializedObject(visual); bool changed = false;
+                changed |= FillSlot(so.FindProperty("danger"), "c_danger");
+                changed |= FillSlot(so.FindProperty("escaped"), "c_danger_gone");
+                changed |= FillSlot(so.FindProperty("defeated"), "c_defeated");
+                var evaded = so.FindProperty("evaded");
+                if (evaded.arraySize == 0)
+                {
+                    var first = TryLoad("c_danger_cleared"); var second = TryLoad("c_danger_cleared_2");
+                    if (first != null && second != null)
+                    {
+                        evaded.arraySize = 2; evaded.GetArrayElementAtIndex(0).objectReferenceValue = first; evaded.GetArrayElementAtIndex(1).objectReferenceValue = second; changed = true;
+                    }
+                }
+                if (!changed) return;
+                so.ApplyModifiedPropertiesWithoutUndo(); PrefabUtility.SaveAsPrefabAsset(root, prefabPath);
+            }
+            finally { PrefabUtility.UnloadPrefabContents(root); }
+        }
+        private static bool FillSlot(SerializedProperty property, string name)
+        {
+            if (property.objectReferenceValue != null) return false;
+            var sprite = TryLoad(name); if (sprite == null) return false;
+            property.objectReferenceValue = sprite; return true;
+        }
+        private static Sprite TryLoad(string name) => AssetDatabase.LoadAssetAtPath<Sprite>($"{SpriteFolder}/{name}.png");
         private static Sprite Load(string name)
         {
             var sprite = AssetDatabase.LoadAssetAtPath<Sprite>($"{SpriteFolder}/{name}.png");

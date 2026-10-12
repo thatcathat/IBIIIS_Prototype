@@ -64,6 +64,7 @@ namespace IBIIIS
         {
             this.settings = settings; this.parent = parent; this.camera = camera; this.cellSize = cellSize; this.player = player;
             this.random = random ?? new System.Random();
+            if (settings != null) RuntimeObjects.Prepare(ref audio, parent, "Alert Audio", settings.AlertSound); // 첫 효과음이 빠지지 않게 미리 준비
         }
         private bool Active => settings != null && settings.Enabled;
         /// <summary>지금 살아 있는 말풍선(대기 중인 대답 포함).</summary>

@@ -112,9 +112,17 @@ namespace IBIIIS.Editor
                     writer.Write(new[] { 'd', 'a', 't', 'a' }); writer.Write(count * 2);
                     foreach (var sample in samples) writer.Write((short)Mathf.Clamp(sample / Mathf.Max(.0001f, peak) * .8f * short.MaxValue, short.MinValue, short.MaxValue));
                 }
-                AssetDatabase.ImportAsset(path);
+                AssetDatabase.ImportAsset(path); Preload(path);
             }
             return AssetDatabase.LoadAssetAtPath<AudioClip>(path);
+        }
+        /// <summary>효과음을 씬과 함께 미리 불러오게 한다. 꺼져 있으면 처음 재생할 때 불러오느라 첫 소리가 빠질 수 있다. 새로 만든 소리에만 쓴다(사용자가 바꾼 설정은 건드리지 않음).</summary>
+        internal static void Preload(string path)
+        {
+            if (!(AssetImporter.GetAtPath(path) is AudioImporter importer)) return;
+            var settings = importer.defaultSampleSettings;
+            if (settings.preloadAudioData) return;
+            settings.preloadAudioData = true; importer.defaultSampleSettings = settings; importer.SaveAndReimport();
         }
     }
 }
