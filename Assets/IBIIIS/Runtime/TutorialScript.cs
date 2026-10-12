@@ -36,7 +36,11 @@ namespace IBIIIS
         Pose = 13,
         /// <summary>네 방향(위·왼쪽·아래·오른쪽)을 모두 한 번씩 눌러야 다음 단계. 키 표시는 Keys에 위 왼쪽 아래 오른쪽 순서로 적고, 누른 키는 표시에서 빠진다.</summary>
         WaitAllDirections = 14,
+        /// <summary>'표시 끝 단계까지 유지'로 띄운 감정 표시(Target 대상) 또는 자세를 끝낸다. 바로 다음 단계. IBIIIS Dialogue Editor에서는 막대의 끝으로 보인다.</summary>
+        EndDisplay = 15,
     }
+    /// <summary>표시 끝 단계가 끝낼 표시 종류.</summary>
+    public enum TutorialDisplay { Emote = 0, Pose = 1 }
     /// <summary>자세 연출의 움직임. 표시 전용. 값은 에셋에 정수로 저장되므로 끝에만 추가한다.</summary>
     public enum PoseMotion { None = 0, Hop = 1, Shake = 2, Sigh = 3, Proud = 4 }
     /// <summary>대본에서 허용할 플레이어 행동(여러 개 선택 가능).</summary>
@@ -46,6 +50,7 @@ namespace IBIIIS
     [Serializable]
     public struct TutorialStep
     {
+        [HideInInspector, Tooltip("단계 고유 ID(자동). 편집기에서 선택·복사·연결에 쓴다. 비거나 겹치면 대본이 새로 채운다.")] public string id;
         public TutorialStepType type;
         [Tooltip("Line: 보여 줄 대사. 입력 대기·이름 입력: 그동안 보일 안내 줄(인물을 비우면 지문). 자유 진행: 위험한 이동을 막을 때 보일 경고 대사.")] public DialogueLine line;
         [Tooltip("입력 대기에서 허용할 행동.")] public TutorialActions actions;
@@ -62,6 +67,8 @@ namespace IBIIIS
         [Tooltip("자세: 그림을 바꾸며 주는 움직임(Hop 펄쩍, Shake 좌우 떨림, Sigh 한숨처럼 납작, Proud 으쓱하며 늘어남).")] public PoseMotion motion;
         [Tooltip("자세: 자세가 끝나 기본 그림으로 돌아올 때 주는 움직임. None이면 움직임 없이 바로 돌아옵니다.")] public PoseMotion endMotion;
         [Tooltip("자세: 체크하면 시간·대사와 관계없이 플레이어가 다음 행동을 시작할 때까지 유지합니다.")] public bool untilAction;
+        [Tooltip("감정 표시·자세: 체크하면 시간·대사와 관계없이 뒤에 오는 '표시 끝' 단계까지 유지합니다(다른 끝 조건보다 우선). IBIIIS Dialogue Editor에서 막대 끝을 끌면 자동으로 켜집니다.")] public bool untilEnd;
+        [Tooltip("표시 끝: 끝낼 표시 종류(감정 표시는 대상 ID도 맞아야 함).")] public TutorialDisplay display;
         public string[] KeyCaps => string.IsNullOrWhiteSpace(keys) ? Array.Empty<string>() : keys.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
         /// <summary>이 행동이 허용되는지(입력 대기 단계).</summary>
         public bool Allows(PlayerAction action, Vector2Int dir)
@@ -78,6 +85,18 @@ namespace IBIIIS
         [SerializeField] private TutorialStep[] steps = Array.Empty<TutorialStep>();
         public string Id => scriptId;
         public TutorialStep[] Steps => steps ?? Array.Empty<TutorialStep>();
-        public void Set(string id, TutorialStep[] value) { scriptId = id; steps = value ?? Array.Empty<TutorialStep>(); }
+        public void Set(string id, TutorialStep[] value) { scriptId = id; steps = value ?? Array.Empty<TutorialStep>(); EnsureStepIds(); }
+        /// <summary>비었거나 앞 단계와 겹치는 단계 ID를 새로 채운다(복사·추가된 단계). 바뀌었으면 true. 진행에는 쓰지 않고 편집기만 쓴다.</summary>
+        public bool EnsureStepIds()
+        {
+            var seen = new System.Collections.Generic.HashSet<string>(); bool changed = false;
+            for (int i = 0; i < Steps.Length; i++)
+            {
+                if (string.IsNullOrEmpty(steps[i].id) || !seen.Add(steps[i].id)) { steps[i].id = Guid.NewGuid().ToString("N"); seen.Add(steps[i].id); changed = true; }
+            }
+            return changed;
+        }
+        // Inspector에서 단계를 복제하면 ID가 겹치므로 고친다.
+        private void OnValidate() => EnsureStepIds();
     }
 }

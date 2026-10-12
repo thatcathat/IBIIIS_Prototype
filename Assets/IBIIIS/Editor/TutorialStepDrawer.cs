@@ -11,8 +11,9 @@ namespace IBIIIS.Editor
         private static readonly Dictionary<TutorialStepType, (string field, string label)[]> Fields = new Dictionary<TutorialStepType, (string, string)[]>
         {
             { TutorialStepType.Line, new[] { ("line", "대사") } },
-            { TutorialStepType.Emote, new[] { ("target", "대상 ID"), ("text", "표시 글자"), ("sprite", "아이콘(있으면 글자 대신)"), ("seconds", "보이는 시간(초, 0=다음 대사까지)") } },
-            { TutorialStepType.Pose, new[] { ("sprite", "자세 그림"), ("motion", "움직임"), ("endMotion", "돌아올 때 움직임"), ("untilAction", "다음 행동까지 유지"), ("seconds", "보이는 시간(초, 0=다음 대사까지, 다음 행동까지 유지면 무시)") } },
+            { TutorialStepType.Emote, new[] { ("target", "대상 ID"), ("text", "표시 글자"), ("sprite", "아이콘(있으면 글자 대신)"), ("untilEnd", "표시 끝 단계까지 유지"), ("seconds", "보이는 시간(초, 0=다음 대사까지, 표시 끝 단계까지 유지면 무시)") } },
+            { TutorialStepType.Pose, new[] { ("sprite", "자세 그림"), ("motion", "움직임"), ("endMotion", "돌아올 때 움직임"), ("untilEnd", "표시 끝 단계까지 유지"), ("untilAction", "다음 행동까지 유지"), ("seconds", "보이는 시간(초, 0=다음 대사까지, 유지 옵션이 켜져 있으면 무시)") } },
+            { TutorialStepType.EndDisplay, new[] { ("display", "끝낼 표시"), ("target", "대상 ID(감정 표시만)") } },
             { TutorialStepType.WaitAllDirections, new[] { ("line", "안내 줄"), ("keys", "키 표시(위 왼쪽 아래 오른쪽 순)") } },
             { TutorialStepType.WaitAction, new[] { ("line", "안내 줄"), ("actions", "허용 행동"), ("direction", "허용 방향(0,0=모두)"), ("keys", "키 표시") } },
             { TutorialStepType.WaitFreeMove, new[] { ("line", "안내 줄"), ("actions", "허용 행동"), ("seconds", "첫 이동 뒤 시간(초)"), ("keys", "키 표시") } },

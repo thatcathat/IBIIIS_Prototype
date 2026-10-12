@@ -22,7 +22,7 @@ namespace IBIIIS
             [Tooltip("막을 칸(맵 좌표).")] public Vector2Int cell;
         }
         private sealed class Thrown { public Transform View; public SpriteRenderer Renderer; public Vector3 Start; public float Time, Duration; }
-        private sealed class Emote { public Transform Target; public float Height, Left; public bool UntilLine; public string Text; public Sprite Icon; public VisualElement View; }
+        private sealed class Emote { public Transform Target; public float Height, Left; public bool UntilLine, UntilEnd; public string Text; public Sprite Icon; public VisualElement View; }
 
         [SerializeField, Tooltip("필수. 대본을 진행할 전투(Grid Map Player).")] private GridMapPlayer battle;
         [SerializeField, Tooltip("필수. 실행할 대본.")] private TutorialScript script;
@@ -233,7 +233,17 @@ namespace IBIIIS
                     break;
                 case TutorialStepType.Pose:
                     if (step.sprite == null) Debug.LogWarning($"[IBIIIS] {name}: 대본의 자세 단계에 그림이 없습니다.", this);
+                    else if (step.untilEnd) { battle.PlayPose(step.sprite, step.motion, 0, step.endMotion); poseUntilLine = false; } // 표시 끝 단계가 끝낸다
                     else { battle.PlayPose(step.sprite, step.motion, step.untilAction ? 0 : step.seconds, step.endMotion, step.untilAction); poseUntilLine = !step.untilAction && step.seconds <= 0; }
+                    Next();
+                    break;
+                case TutorialStepType.EndDisplay:
+                    if (step.display == TutorialDisplay.Pose) { poseUntilLine = false; battle.EndPose(); }
+                    else
+                    {
+                        var ended = EmoteTarget(step.target);
+                        emotes.RemoveAll(e => { if (e.Target == ended) { e.View?.RemoveFromHierarchy(); return true; } return false; });
+                    }
                     Next();
                     break;
                 case TutorialStepType.Wait:
@@ -281,6 +291,11 @@ namespace IBIIIS
             return default;
         }
 
+        private Transform EmoteTarget(string id)
+        {
+            if (id == "player") return battle.PlayerAnchor;
+            var actor = FindActor(id); return actor.target != null ? actor.target.transform : null;
+        }
         private void AddEmote(TutorialStep step)
         {
             Transform target; float height;
@@ -288,14 +303,14 @@ namespace IBIIIS
             else { var actor = FindActor(step.target); target = actor.target != null ? actor.target.transform : null; height = actor.height > 0 ? actor.height : playerEmoteHeight; }
             if (target == null) { Debug.LogWarning($"[IBIIIS] {name}: 감정 표시 대상 '{step.target}'을 찾지 못했습니다.", this); return; }
             emotes.RemoveAll(e => { if (e.Target == target) { e.View?.RemoveFromHierarchy(); return true; } return false; });
-            emotes.Add(new Emote { Target = target, Height = height, Text = step.text, Icon = step.sprite, Left = step.seconds, UntilLine = step.seconds <= 0 });
+            emotes.Add(new Emote { Target = target, Height = height, Text = step.text, Icon = step.sprite, Left = step.seconds, UntilEnd = step.untilEnd, UntilLine = !step.untilEnd && step.seconds <= 0 });
         }
         private void TickEmotes(float seconds)
         {
             for (int i = emotes.Count - 1; i >= 0; i--)
             {
                 var e = emotes[i];
-                if (e.UntilLine) continue;
+                if (e.UntilLine || e.UntilEnd) continue;
                 e.Left -= seconds;
                 if (e.Left <= 0 || e.Target == null) { e.View?.RemoveFromHierarchy(); emotes.RemoveAt(i); }
             }

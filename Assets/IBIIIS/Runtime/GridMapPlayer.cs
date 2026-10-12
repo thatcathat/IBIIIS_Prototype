@@ -47,9 +47,8 @@ namespace IBIIIS
         private EnemyAlert alert;
         public EnemyAlert Alert => alert;
         public MotionFeedback Motion => motion;
-        // 이번 행동의 충돌 기록 중 연출을 시작한 개수와 패배 연출 시작 여부
+        // 이번 행동의 충돌 기록 중 연출을 시작한 개수
         private int shownCollisions;
-        private bool shownDefeat;
         // 상황 반응(표시 전용): 행동 시작 때 인식 범위 안이었는지·제자리에 있으면 맞았는지 기록하고, 판정이 끝나면 반응 그림을 고른다.
         private bool reactionPending, startedRecognized, startedThreatened;
         private Sprite[] reactionFrames;
@@ -122,7 +121,7 @@ namespace IBIIIS
             if (feedback != null) { feedback.Dispose(); feedback = null; }
             if (motion != null) { motion.Dispose(); motion = null; }
             if (alert != null) { alert.Dispose(); alert = null; }
-            shownCollisions = 0; shownDefeat = false; ClearReaction();
+            shownCollisions = 0; ClearReaction();
             if (generated != null) { generated.gameObject.SetActive(false); Release(generated.gameObject); }
             MovementWorldTime.Unregister(this);
             generated = null; player = null; playerView = null; lastAction = PlayerAction.Wait; lastDirection = Vector2Int.zero; session = null; moveHints = null; enemyViews.Clear();
@@ -370,7 +369,7 @@ namespace IBIIIS
             bool threatened = (action == PlayerAction.Dash || action == PlayerAction.Roll) && session.Predict(PlayerAction.Wait, Vector2Int.zero) == BattlePhase.Lost;
             if (!session.TryAct(action, direction, duration, playerSettings != null ? playerSettings.EnemyStepDuration : .25f)) return false;
             if (Application.IsPlaying(gameObject)) MovementWorldTime.SetMoving(this, true);
-            shownCollisions = 0; shownDefeat = false; motion?.BeginAction(action, session.Position, direction);
+            shownCollisions = 0; motion?.BeginAction(action, session.Position, direction);
             ClearReaction(); reactionPending = true; startedRecognized = recognized; startedThreatened = threatened;
             if (poseUntilAction) EndPose();
             actionHistory.Push(new ActionMemo { Action = lastAction, Direction = lastDirection, Facing = playerView != null ? playerView.Facing : PlayerFacing.Front });
@@ -384,7 +383,7 @@ namespace IBIIIS
         public bool TryUndo()
         {
             if (session == null || !session.TryUndo()) return false;
-            feedback?.Clear(); motion?.Clear(); shownCollisions = 0; shownDefeat = false; ClearReaction();
+            feedback?.Clear(); motion?.Clear(); shownCollisions = 0; ClearReaction();
             if (playerView != null) playerView.SetPose(MotionPose.Identity, viewCamera);
             var previous = actionHistory.Count > 0 ? actionHistory.Pop() : new ActionMemo { Action = PlayerAction.Wait, Facing = PlayerFacing.Front };
             lastAction = previous.Action; lastDirection = previous.Direction;

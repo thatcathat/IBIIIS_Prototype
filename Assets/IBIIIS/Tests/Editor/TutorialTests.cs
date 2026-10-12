@@ -209,6 +209,40 @@ namespace IBIIIS.Tests
             }
             finally { Object.DestroyImmediate(steps); Object.DestroyImmediate(pose); }
         }
+        [Test] public void EndDisplayStepEndsHeldEmoteAndPoseAndMatchesTheTimeline()
+        {
+            var pose = Sprite.Create(Texture2D.whiteTexture, new Rect(0, 0, 4, 4), new Vector2(.5f, 0));
+            var steps = ScriptableObject.CreateInstance<TutorialScript>();
+            try
+            {
+                var list = new[]
+                {
+                    new TutorialStep { type = TutorialStepType.Emote, target = "player", text = "!", untilEnd = true },
+                    new TutorialStep { type = TutorialStepType.Pose, sprite = pose, untilEnd = true },
+                    new TutorialStep { type = TutorialStepType.Line, line = DialogueLine.Say(fly, "하나") },
+                    new TutorialStep { type = TutorialStepType.Line, line = DialogueLine.Say(fly, "둘") },
+                    new TutorialStep { type = TutorialStepType.EndDisplay, display = TutorialDisplay.Emote, target = "player" },
+                    new TutorialStep { type = TutorialStepType.Line, line = DialogueLine.Say(fly, "셋") },
+                    new TutorialStep { type = TutorialStepType.EndDisplay, display = TutorialDisplay.Pose },
+                    new TutorialStep { type = TutorialStepType.Line, line = DialogueLine.Say(fly, "넷") },
+                };
+                steps.Set("end", list);
+                var emote = TutorialTimeline.SpanOf(list, 0).Value; var held = TutorialTimeline.SpanOf(list, 1).Value;
+                Assert.AreEqual((3, 4, TutorialSpanEnd.EndStep), (emote.End, emote.Marker, emote.EndKind), "감정 표시는 4번 표시 끝 앞의 3번 대사까지");
+                Assert.AreEqual((5, 6), (held.End, held.Marker), "자세는 6번 표시 끝 앞의 5번 대사까지");
+                director.Configure(battle, steps); director.Begin();
+                foreach (int line in new[] { 2, 3, 5, 7 })
+                {
+                    Assert.AreEqual(line, director.StepIndex);
+                    Assert.AreEqual(emote.Covers(line), director.ActiveEmotes.Count > 0, $"{line}번의 감정 표시");
+                    Assert.AreEqual(held.Covers(line), battle.PoseSprite == pose, $"{line}번의 자세");
+                    battle.UpdateMotion(30); director.Tick(30); // 시간이 지나도 표시 끝 단계 전에는 유지
+                    NextLine();
+                }
+                Assert.IsTrue(director.Finished);
+            }
+            finally { Object.DestroyImmediate(steps); Object.DestroyImmediate(pose); }
+        }
         [Test] public void ScriptRunsLinesInputsAndConditionsInOrder()
         {
             director.Begin();

@@ -14,7 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: IBIIIS.Runtime::IBIIIS.TutorialScript
   scriptId: tutorial_1
   steps:
-  - type: 0
+  - id: 0dccc635caea41dba0bc09f6abd29b5b
+    type: 0
     line:
       speaker: {fileID: 0}
       expression: 
@@ -35,7 +36,10 @@ MonoBehaviour:
     motion: 0
     endMotion: 0
     untilAction: 0
-  - type: 1
+    untilEnd: 0
+    display: 0
+  - id: ac8b2dd7f0fe4b649bf9d9f9eb7d3284
+    type: 1
     line:
       speaker: {fileID: 0}
       expression: 
@@ -55,7 +59,10 @@ MonoBehaviour:
     motion: 0
     endMotion: 0
     untilAction: 0
-  - type: 0
+    untilEnd: 1
+    display: 0
+  - id: 2f923bfb715e45b69cf73aa37fd990aa
+    type: 0
     line:
       speaker: {fileID: 0}
       expression: 
@@ -76,7 +83,33 @@ MonoBehaviour:
     motion: 0
     endMotion: 0
     untilAction: 0
-  - type: 7
+    untilEnd: 0
+    display: 0
+  - id: 9fe446440b3b43978065af9d7a8204fc
+    type: 15
+    line:
+      speaker: {fileID: 0}
+      expression: 
+      nameOverride: 
+      text: 
+    actions: 0
+    direction: {x: 0, y: 0}
+    cell: {x: 0, y: 0}
+    seconds: 0
+    keys: 
+    target: player
+    text: 
+    active: 0
+    scenePath: 
+    prefab: {fileID: 0}
+    sprite: {fileID: 0}
+    motion: 0
+    endMotion: 0
+    untilAction: 0
+    untilEnd: 0
+    display: 0
+  - id: 41ff8c518ddb4872afb80cab092cc3f6
+    type: 7
     line:
       speaker: {fileID: 0}
       expression: 
@@ -96,7 +129,10 @@ MonoBehaviour:
     motion: 0
     endMotion: 0
     untilAction: 0
-  - type: 0
+    untilEnd: 0
+    display: 0
+  - id: 0b23d3d8ad58489f9b35a66b66a441ac
+    type: 0
     line:
       speaker: {fileID: 0}
       expression: 
@@ -117,7 +153,10 @@ MonoBehaviour:
     motion: 0
     endMotion: 0
     untilAction: 0
-  - type: 0
+    untilEnd: 0
+    display: 0
+  - id: 9a56244565c64d6683f3b1d0998e7726
+    type: 0
     line:
       speaker: {fileID: 11400000, guid: 62cbb598f2f40c249b3713c3d307662c, type: 2}
       expression: 
@@ -137,27 +176,10 @@ MonoBehaviour:
     motion: 0
     endMotion: 0
     untilAction: 0
-  - type: 1
-    line:
-      speaker: {fileID: 0}
-      expression: 
-      nameOverride: 
-      text: 
-    actions: 0
-    direction: {x: 0, y: 0}
-    cell: {x: 0, y: 0}
-    seconds: 0
-    keys: 
-    target: player
-    text: '!'
-    active: 0
-    scenePath: 
-    prefab: {fileID: 0}
-    sprite: {fileID: 0}
-    motion: 0
-    endMotion: 0
-    untilAction: 0
-  - type: 13
+    untilEnd: 0
+    display: 0
+  - id: f0c64e6e54c8485dadc248deb9d160a8
+    type: 13
     line:
       speaker: {fileID: 0}
       expression: 
@@ -177,7 +199,33 @@ MonoBehaviour:
     motion: 1
     endMotion: 1
     untilAction: 0
-  - type: 0
+    untilEnd: 1
+    display: 0
+  - id: 4c94ff0470674a12bbd9787f013618ad
+    type: 1
+    line:
+      speaker: {fileID: 0}
+      expression: 
+      nameOverride: 
+      text: 
+    actions: 0
+    direction: {x: 0, y: 0}
+    cell: {x: 0, y: 0}
+    seconds: 0
+    keys: 
+    target: player
+    text: '!'
+    active: 0
+    scenePath: 
+    prefab: {fileID: 0}
+    sprite: {fileID: 0}
+    motion: 0
+    endMotion: 0
+    untilAction: 0
+    untilEnd: 1
+    display: 0
+  - id: b20e4c2ab4ce49e0924ef2401350d700
+    type: 0
     line:
       speaker: {fileID: 0}
       expression: 
@@ -197,7 +245,10 @@ MonoBehaviour:
     motion: 0
     endMotion: 0
     untilAction: 0
-  - type: 0
+    untilEnd: 0
+    display: 0
+  - id: 53cf0ea7a8b44d10a888fabfcc3e3eda
+    type: 0
     line:
       speaker: {fileID: 11400000, guid: 62cbb598f2f40c249b3713c3d307662c, type: 2}
       expression: 
@@ -219,7 +270,10 @@ MonoBehaviour:
     motion: 0
     endMotion: 0
     untilAction: 0
-  - type: 0
+    untilEnd: 0
+    display: 0
+  - id: fa540dfba5a94dabbd08a85e1cde0b73
+    type: 0
     line:
       speaker: {fileID: 11400000, guid: 62cbb598f2f40c249b3713c3d307662c, type: 2}
       expression: 
@@ -240,7 +294,56 @@ MonoBehaviour:
     motion: 0
     endMotion: 0
     untilAction: 0
-  - type: 0
+    untilEnd: 0
+    display: 0
+  - id: 35bc7ccfb63243399bcc1fa303bc705d
+    type: 15
+    line:
+      speaker: {fileID: 0}
+      expression: 
+      nameOverride: 
+      text: 
+    actions: 0
+    direction: {x: 0, y: 0}
+    cell: {x: 0, y: 0}
+    seconds: 0
+    keys: 
+    target: player
+    text: 
+    active: 0
+    scenePath: 
+    prefab: {fileID: 0}
+    sprite: {fileID: 0}
+    motion: 0
+    endMotion: 0
+    untilAction: 0
+    untilEnd: 0
+    display: 1
+  - id: 50ec3680a7ef4c37a0b446f19c8650ef
+    type: 15
+    line:
+      speaker: {fileID: 0}
+      expression: 
+      nameOverride: 
+      text: 
+    actions: 0
+    direction: {x: 0, y: 0}
+    cell: {x: 0, y: 0}
+    seconds: 0
+    keys: 
+    target: player
+    text: 
+    active: 0
+    scenePath: 
+    prefab: {fileID: 0}
+    sprite: {fileID: 0}
+    motion: 0
+    endMotion: 0
+    untilAction: 0
+    untilEnd: 0
+    display: 0
+  - id: 5aa59364f78b49948c63701b1cd97462
+    type: 0
     line:
       speaker: {fileID: 0}
       expression: 
@@ -262,7 +365,10 @@ MonoBehaviour:
     motion: 0
     endMotion: 0
     untilAction: 0
-  - type: 6
+    untilEnd: 0
+    display: 0
+  - id: 1b7b54096d264c7e9cf38cb1a7129cd3
+    type: 6
     line:
       speaker: {fileID: 0}
       expression: 
@@ -283,7 +389,10 @@ MonoBehaviour:
     motion: 0
     endMotion: 0
     untilAction: 0
-  - type: 0
+    untilEnd: 0
+    display: 0
+  - id: 5400dea03d9f451b91d4c6d019a7b638
+    type: 0
     line:
       speaker: {fileID: 11400000, guid: bd9c43e83beda0543960025aa730ad98, type: 2}
       expression: 
@@ -303,7 +412,10 @@ MonoBehaviour:
     motion: 0
     endMotion: 0
     untilAction: 0
-  - type: 0
+    untilEnd: 0
+    display: 0
+  - id: 951cb4e6c8a04976afa927038b359d92
+    type: 0
     line:
       speaker: {fileID: 0}
       expression: 
@@ -324,7 +436,10 @@ MonoBehaviour:
     motion: 0
     endMotion: 0
     untilAction: 0
-  - type: 0
+    untilEnd: 0
+    display: 0
+  - id: 5ab8c9f36dad416da1669acf98cf75ed
+    type: 0
     line:
       speaker: {fileID: 11400000, guid: 62cbb598f2f40c249b3713c3d307662c, type: 2}
       expression: 
@@ -346,7 +461,10 @@ MonoBehaviour:
     motion: 0
     endMotion: 0
     untilAction: 0
-  - type: 1
+    untilEnd: 0
+    display: 0
+  - id: af1498072953460397b9fad2b878697e
+    type: 1
     line:
       speaker: {fileID: 0}
       expression: 
@@ -366,7 +484,10 @@ MonoBehaviour:
     motion: 0
     endMotion: 0
     untilAction: 0
-  - type: 0
+    untilEnd: 0
+    display: 0
+  - id: 58bb8bc1e3b94871a24a5702b2ae6f52
+    type: 0
     line:
       speaker: {fileID: 0}
       expression: 
@@ -386,7 +507,10 @@ MonoBehaviour:
     motion: 0
     endMotion: 0
     untilAction: 0
-  - type: 0
+    untilEnd: 0
+    display: 0
+  - id: 86f3a103b1484a0cb797e5b642d22af8
+    type: 0
     line:
       speaker: {fileID: 11400000, guid: 62cbb598f2f40c249b3713c3d307662c, type: 2}
       expression: 
@@ -409,7 +533,10 @@ MonoBehaviour:
     motion: 0
     endMotion: 0
     untilAction: 0
-  - type: 0
+    untilEnd: 0
+    display: 0
+  - id: 39678207fc1543e18f7f341c60c5e1a2
+    type: 0
     line:
       speaker: {fileID: 0}
       expression: 
@@ -429,7 +556,10 @@ MonoBehaviour:
     motion: 0
     endMotion: 0
     untilAction: 0
-  - type: 0
+    untilEnd: 0
+    display: 0
+  - id: 21f6871c972146f79802c92a8ee18bd8
+    type: 0
     line:
       speaker: {fileID: 11400000, guid: 62cbb598f2f40c249b3713c3d307662c, type: 2}
       expression: 
@@ -450,7 +580,10 @@ MonoBehaviour:
     motion: 0
     endMotion: 0
     untilAction: 0
-  - type: 1
+    untilEnd: 0
+    display: 0
+  - id: 8a1429ba84544b15824442bb1a2bb1f4
+    type: 1
     line:
       speaker: {fileID: 0}
       expression: 
@@ -470,7 +603,10 @@ MonoBehaviour:
     motion: 0
     endMotion: 0
     untilAction: 0
-  - type: 0
+    untilEnd: 0
+    display: 0
+  - id: 780c1f127c944e0686ad826600d97fee
+    type: 0
     line:
       speaker: {fileID: 0}
       expression: 
@@ -491,7 +627,10 @@ MonoBehaviour:
     motion: 0
     endMotion: 0
     untilAction: 0
-  - type: 0
+    untilEnd: 0
+    display: 0
+  - id: 3f75cb55d5934c0984832edd8c71a499
+    type: 0
     line:
       speaker: {fileID: 11400000, guid: 62cbb598f2f40c249b3713c3d307662c, type: 2}
       expression: 
@@ -511,7 +650,10 @@ MonoBehaviour:
     motion: 0
     endMotion: 0
     untilAction: 0
-  - type: 14
+    untilEnd: 0
+    display: 0
+  - id: 0234ceb457b74a1c8da024d5abe50db7
+    type: 14
     line:
       speaker: {fileID: 0}
       expression: 
@@ -531,7 +673,10 @@ MonoBehaviour:
     motion: 0
     endMotion: 0
     untilAction: 0
-  - type: 7
+    untilEnd: 0
+    display: 0
+  - id: 9f553509672242a381002da6efed2cb3
+    type: 7
     line:
       speaker: {fileID: 0}
       expression: 
@@ -551,7 +696,10 @@ MonoBehaviour:
     motion: 0
     endMotion: 0
     untilAction: 0
-  - type: 0
+    untilEnd: 0
+    display: 0
+  - id: d4e993516ca34410925eab562ecccfd4
+    type: 0
     line:
       speaker: {fileID: 11400000, guid: 62cbb598f2f40c249b3713c3d307662c, type: 2}
       expression: 
@@ -573,7 +721,10 @@ MonoBehaviour:
     motion: 0
     endMotion: 0
     untilAction: 0
-  - type: 0
+    untilEnd: 0
+    display: 0
+  - id: e9a2f4097342406db37b9489f7193071
+    type: 0
     line:
       speaker: {fileID: 11400000, guid: 62cbb598f2f40c249b3713c3d307662c, type: 2}
       expression: 
@@ -594,7 +745,10 @@ MonoBehaviour:
     motion: 0
     endMotion: 0
     untilAction: 0
-  - type: 0
+    untilEnd: 0
+    display: 0
+  - id: fd5df516dbef4ae5947b04b3c45047ef
+    type: 0
     line:
       speaker: {fileID: 0}
       expression: 
@@ -615,7 +769,10 @@ MonoBehaviour:
     motion: 0
     endMotion: 0
     untilAction: 0
-  - type: 4
+    untilEnd: 0
+    display: 0
+  - id: fe66e99d85354ac59c4cdd802a2f4d11
+    type: 4
     line:
       speaker: {fileID: 0}
       expression: 
@@ -635,7 +792,10 @@ MonoBehaviour:
     motion: 0
     endMotion: 0
     untilAction: 0
-  - type: 0
+    untilEnd: 0
+    display: 0
+  - id: cae1f8a323c340d2878f967911632af9
+    type: 0
     line:
       speaker: {fileID: 11400000, guid: 62cbb598f2f40c249b3713c3d307662c, type: 2}
       expression: 
@@ -656,7 +816,10 @@ MonoBehaviour:
     motion: 0
     endMotion: 0
     untilAction: 0
-  - type: 5
+    untilEnd: 0
+    display: 0
+  - id: 989ce16e65c34ec1a9c1a0670f111074
+    type: 5
     line:
       speaker: {fileID: 0}
       expression: 
@@ -676,7 +839,10 @@ MonoBehaviour:
     motion: 0
     endMotion: 0
     untilAction: 0
-  - type: 0
+    untilEnd: 0
+    display: 0
+  - id: 3b5b6bf42d9a429d9d215e04072b3eb3
+    type: 0
     line:
       speaker: {fileID: 0}
       expression: 
@@ -697,7 +863,10 @@ MonoBehaviour:
     motion: 0
     endMotion: 0
     untilAction: 0
-  - type: 0
+    untilEnd: 0
+    display: 0
+  - id: b1c5c8e3aeb5453f9a9458344306a55f
+    type: 0
     line:
       speaker: {fileID: 11400000, guid: 62cbb598f2f40c249b3713c3d307662c, type: 2}
       expression: 
@@ -717,7 +886,10 @@ MonoBehaviour:
     motion: 0
     endMotion: 0
     untilAction: 0
-  - type: 0
+    untilEnd: 0
+    display: 0
+  - id: e8a44a48062d41d38afdf03cb9e084f9
+    type: 0
     line:
       speaker: {fileID: 11400000, guid: bd9c43e83beda0543960025aa730ad98, type: 2}
       expression: 
@@ -737,7 +909,10 @@ MonoBehaviour:
     motion: 0
     endMotion: 0
     untilAction: 0
-  - type: 0
+    untilEnd: 0
+    display: 0
+  - id: bc124423c68f4a92b2d6b7083fda7fbd
+    type: 0
     line:
       speaker: {fileID: 11400000, guid: 68acced557beaed46ac3b08c3daedcdd, type: 2}
       expression: 
@@ -757,7 +932,10 @@ MonoBehaviour:
     motion: 0
     endMotion: 0
     untilAction: 0
-  - type: 0
+    untilEnd: 0
+    display: 0
+  - id: 6eae182b8d08445f85f28dddf6e8adb8
+    type: 0
     line:
       speaker: {fileID: 11400000, guid: bd9c43e83beda0543960025aa730ad98, type: 2}
       expression: 
@@ -777,7 +955,10 @@ MonoBehaviour:
     motion: 0
     endMotion: 0
     untilAction: 0
-  - type: 0
+    untilEnd: 0
+    display: 0
+  - id: 86f4ec3411c64d2f98dc9b2d640a7486
+    type: 0
     line:
       speaker: {fileID: 11400000, guid: 62cbb598f2f40c249b3713c3d307662c, type: 2}
       expression: 
@@ -798,7 +979,10 @@ MonoBehaviour:
     motion: 0
     endMotion: 0
     untilAction: 0
-  - type: 0
+    untilEnd: 0
+    display: 0
+  - id: 5ae305bc14514b5a92bd579f8dcf5e6a
+    type: 0
     line:
       speaker: {fileID: 11400000, guid: bd9c43e83beda0543960025aa730ad98, type: 2}
       expression: 
@@ -818,7 +1002,10 @@ MonoBehaviour:
     motion: 0
     endMotion: 0
     untilAction: 0
-  - type: 1
+    untilEnd: 0
+    display: 0
+  - id: 66d1b98b86c54928ada3a94c29f97110
+    type: 1
     line:
       speaker: {fileID: 0}
       expression: 
@@ -838,7 +1025,10 @@ MonoBehaviour:
     motion: 0
     endMotion: 0
     untilAction: 0
-  - type: 0
+    untilEnd: 0
+    display: 0
+  - id: 28e8613f978847e2aa56c31abdf0382c
+    type: 0
     line:
       speaker: {fileID: 0}
       expression: 
@@ -858,7 +1048,10 @@ MonoBehaviour:
     motion: 0
     endMotion: 0
     untilAction: 0
-  - type: 0
+    untilEnd: 0
+    display: 0
+  - id: c0e21ed2ebc5477d8486ee6abb9bb04b
+    type: 0
     line:
       speaker: {fileID: 11400000, guid: 62cbb598f2f40c249b3713c3d307662c, type: 2}
       expression: 
@@ -880,7 +1073,10 @@ MonoBehaviour:
     motion: 0
     endMotion: 0
     untilAction: 0
-  - type: 0
+    untilEnd: 0
+    display: 0
+  - id: 55090c8e30794b24b80cd47e449cf83d
+    type: 0
     line:
       speaker: {fileID: 11400000, guid: bd9c43e83beda0543960025aa730ad98, type: 2}
       expression: 
@@ -900,7 +1096,10 @@ MonoBehaviour:
     motion: 0
     endMotion: 0
     untilAction: 0
-  - type: 9
+    untilEnd: 0
+    display: 0
+  - id: 7abaaf7075ea46dc8856d98280c0691a
+    type: 9
     line:
       speaker: {fileID: 0}
       expression: 
@@ -920,3 +1119,5 @@ MonoBehaviour:
     motion: 0
     endMotion: 0
     untilAction: 0
+    untilEnd: 0
+    display: 0

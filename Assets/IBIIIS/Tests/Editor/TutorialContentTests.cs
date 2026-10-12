@@ -46,12 +46,13 @@ namespace IBIIIS.Tests
             Assert.IsTrue(battle.TryPlayerCommand(action, direction), $"대본이 허용한 행동 {action} {direction}"); Finish(battle);
         }
         // 대본 단계마다 플레이어가 할 법한 입력을 넣어 끝까지 진행한다. 진행한 단계 종류를 돌려준다.
-        private static void Play(GridMapPlayer battle, TutorialDirector director)
+        private static void Play(GridMapPlayer battle, TutorialDirector director, System.Action<int> onStep = null)
         {
             director.Begin();
             for (int guard = 0; guard < 400 && director.IsRunning; guard++)
             {
                 var step = director.Current;
+                onStep?.Invoke(director.StepIndex);
                 switch (step.type)
                 {
                     case TutorialStepType.Line: director.Dialogue.Runner.Advance(); director.Dialogue.Runner.Advance(); break;
@@ -96,6 +97,42 @@ namespace IBIIIS.Tests
             Assert.AreEqual(BattlePhase.Won, battle.Session.Phase, "피하기만 해서 몬스터끼리 부딪혀 전멸");
             Assert.IsTrue(ProgressStore.IsCleared(TutorialSetup.ClearId), "튜토리얼 클리어 기록");
             Assert.AreEqual(AssetPaths.OverworldScene, director.LoadedScene, "미니맵으로 돌아감");
+        }
+        // IBIIIS Dialogue Editor의 자세·감정 표시 범위(TutorialTimeline)가 실제 진행에서 보이는 것과 단계마다 같은지 두 대본으로 확인한다.
+        [TestCase(TutorialSetup.Stage1Map, TutorialSetup.Stage1Script)]
+        [TestCase(TutorialSetup.Stage2Map, TutorialSetup.Stage2Script)]
+        public void TimelineSpansMatchWhatTheDirectorShows(string mapPath, string scriptPath)
+        {
+            var (battle, director, _, _) = Build(mapPath, scriptPath);
+            var steps = AssetDatabase.LoadAssetAtPath<TutorialScript>(scriptPath).Steps;
+            int checkedSteps = 0, coveredSteps = 0;
+            Play(battle, director, index =>
+            {
+                Assert.IsFalse(TutorialTimeline.IsInstant(steps[index].type), $"{index}번: 바로 넘어가는 단계에서는 멈추지 않음(같은 세로줄 묶음 규칙)");
+                Sprite expectedPose = null; var expectedEmotes = new System.Collections.Generic.List<string>();
+                for (int i = 0; i < index; i++)
+                {
+                    var span = TutorialTimeline.SpanOf(steps, i);
+                    if (span == null || span.Value.EndKind == TutorialSpanEnd.Seconds || !span.Value.Covers(index)) continue;
+                    if (steps[i].type == TutorialStepType.Pose) expectedPose = steps[i].sprite; else expectedEmotes.Add(steps[i].text);
+                }
+                Assert.AreSame(expectedPose, battle.PoseSprite, $"{index}번 단계의 자세");
+                CollectionAssert.AreEquivalent(expectedEmotes, director.ActiveEmotes, $"{index}번 단계의 감정 표시");
+                checkedSteps++; if (expectedPose != null || expectedEmotes.Count > 0) coveredSteps++;
+            });
+            Assert.Greater(coveredSteps, 0, "표시가 있는 단계도 확인함"); Assert.Greater(checkedSteps, coveredSteps);
+        }
+        [Test] public void ScenesSplitAtInputWaitsAndSceneChanges()
+        {
+            var steps = AssetDatabase.LoadAssetAtPath<TutorialScript>(TutorialSetup.Stage2Script).Steps;
+            var scenes = TutorialTimeline.Scenes(steps);
+            Assert.AreEqual(0, scenes[0].start); Assert.AreEqual(steps.Length - 1, scenes[scenes.Count - 1].end);
+            for (int n = 0; n < scenes.Count; n++)
+            {
+                if (n > 0) Assert.AreEqual(scenes[n - 1].end + 1, scenes[n].start, "장면이 빈틈없이 이어짐");
+                for (int i = scenes[n].start; i < scenes[n].end; i++) Assert.IsFalse(TutorialTimeline.EndsScene(steps[i].type), "장면 중간에 끊는 단계 없음");
+            }
+            Assert.GreaterOrEqual(scenes.Count, 4, "A 입력·대시 입력·자유 진행·씬 전환으로 나뉨");
         }
         [Test] public void ScenesAreWiredForTitleAndBothStages()
         {
