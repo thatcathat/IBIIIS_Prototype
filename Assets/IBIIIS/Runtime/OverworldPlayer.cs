@@ -15,6 +15,10 @@ namespace IBIIIS
         private OverworldInput input;
         private OverworldInteractable target;
         private bool frozen;
+        // 대화 중 등 잠시 입력을 막는다(Freeze와 달리 풀 수 있음).
+        private bool inputLocked;
+        // 잠금을 푼 프레임. 대화를 닫은 키(F)가 같은 프레임에 다시 말 걸기로 읽히지 않게 그 프레임은 입력을 받지 않는다.
+        private int unlockedFrame = -1;
         // 걷기 손맛(표시 전용)과 먼지·발소리를 둘 월드 기준 부모
         private OverworldMotion motion;
         private Transform effectsRoot;
@@ -101,6 +105,15 @@ namespace IBIIIS
             facing = value; motion?.Reset(); evade.Reset();
             if (visual != null) { visual.Show(PlayerAction.Move, DirectionOf(value), 0, false, ViewCamera); visual.SetPose(MotionPose.Identity, ViewCamera); }
         }
+        /// <summary>대화 중 등 잠시 이동·상호작용 입력을 막거나 푼다. 막는 동안 제자리에 선다.</summary>
+        public void SetInputLocked(bool value)
+        {
+            inputLocked = value;
+            if (!value) { unlockedFrame = Time.frameCount; return; }
+            IsMoving = IsRunning = false; ShowVisual(Vector2Int.zero, false);
+            if (visual != null) visual.SetPose(MotionPose.Identity, ViewCamera);
+        }
+        public bool InputLocked => inputLocked;
         /// <summary>입력을 멈춘다(전투 씬으로 넘어가는 동안 중복 입력 방지).</summary>
         public void Freeze()
         {
@@ -109,7 +122,7 @@ namespace IBIIIS
         }
         private void Update()
         {
-            if (frozen || input == null) return;
+            if (frozen || inputLocked || Time.frameCount == unlockedFrame || input == null) return;
             if (evade.Recovering) { UpdateRecovery(); return; }
             var move = input.ReadMove();
             if (UpdateEvade(move)) { UpdateTarget(); return; }
@@ -195,7 +208,7 @@ namespace IBIIIS
             target = next;
         }
         /// <summary>상호작용 안내 문구("[F] 말 걸기" 등). 대상이 없거나 안내할 것이 없으면 null.</summary>
-        public string PromptLabel => frozen || target == null || target.PromptText == null ? null : $"[{interactKey}] {target.PromptText}";
+        public string PromptLabel => frozen || inputLocked || target == null || target.PromptText == null ? null : $"[{interactKey}] {target.PromptText}";
         /// <summary>정식 안내 화면을 쓰고 있으면 true(테스트·디버그용).</summary>
         public bool UsesGameUi => usesGameUi;
         // 카메라가 움직인 뒤 대상 위치에 안내를 붙인다(대상 기준점 바로 아래, 말풍선은 기준점 위).

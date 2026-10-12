@@ -17,5 +17,7 @@ MonoBehaviour:
   resultPopup: {fileID: 9197481963319205126, guid: ad9a351e883cecb43b55d7c7d0ad27ef, type: 3}
   overworldHud: {fileID: 9197481963319205126, guid: 413f480fa5f8e0b48971072bc81297ae, type: 3}
   speechBubble: {fileID: 9197481963319205126, guid: f3965c6b0f5e3ef478dc28552af0c1ca, type: 3}
+  dialogueBox: {fileID: 9197481963319205126, guid: 681977609fdaff045b2a007d10212b1f, type: 3}
+  dialogueTextSpeed: 30
   evasionIcon: {fileID: 21300000, guid: 02a54ff3cfc72cb4a9bcb5d5714d7859, type: 3}
   showDebugInfo: 0

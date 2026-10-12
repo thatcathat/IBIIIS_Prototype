@@ -62,6 +62,7 @@
 | `Runtime/GridSession.cs` | 실행 중 위치·적 상태, 이동·전투 판정, 되돌리기 기록, 게임 시간(`MovementWorldTime`) |
 | `Runtime/EnemyDefinition.cs`, `EnemyBehavior.cs` | 적 프리팹 설정과 행동 단위 |
 | `Runtime/GridMapPlayer.cs` | 맵·외형 생성, 입력 명령 실행, 카메라 맞춤, 임시 표시, 전투 HUD 값 제공 |
+| `Runtime/Dialogue*.cs`, `Assets/IBIIIS/Dialogue/` | 미연시 대화(인물·대화 에셋, 진행 로직, 대화창). 아래 미연시 대화창 항목 |
 | `Runtime/GameUiSettings.cs`, `BattleHud.cs`, `Assets/IBIIIS/UI/` | 게임 화면 UI(UI Toolkit): 공용 설정, 전투 HUD, 화면 구성(UXML)·스타일(USS)·테마·글꼴. 아래 게임 화면 UI 항목 |
 | `Runtime/BattleInput.cs` | 입력 에셋을 전투 명령으로 변환 |
 | `Runtime/PlayerVisual.cs`, `CollisionFeedback.cs` | 플레이어 스프라이트 선택, 충돌·패배 연출 |
@@ -241,6 +242,20 @@ Editor 코드는 런타임과 별도 어셈블리(`IBIIIS.Editor`)에 있고, �
 - 개발 검증: 컴파일 완료, EditMode 147/147 통과(신규: HUD 값·회피기 회색과 남은 턴·버튼이 대기 중에만 같은 기능 실행·빠진 요소 경고, 플레이어의 HUD 값이 행동·되돌리기·회피 쿨타임을 따름, 팝업·미니맵 화면 요소와 기본 설정 에셋, 팝업 내용·보이지 않을 때 확인 무시). Play에서 코드로 진행해 미니맵 안내·상호작용 안내 위치, 입구 진입 후 전투 HUD, 대시 뒤 회색 아이콘과 숫자 1, 패배 팝업이 한글 글꼴로 그려지는 것을 스크린샷으로 확인했다.
 - 사용자 확인 대기: 화면 크기별 배치·글자 크기, 버튼 마우스 클릭(되돌리기·다시 시작·범위 표시)과 키 입력 병행, 결과 팝업 `확인` 클릭·Enter, 상호작용 안내가 대상에 잘 붙는지.
 
+## 미연시 대화창 (대화 시스템 1단계, 2026-10-12)
+
+하단 대화 상자와 그 뒤 좌우 초상화로 대화를 보여 준다. 튜토리얼 대본 진행의 기반이며, 지금은 미니맵 NPC가 쓴다. 표시 전용이며 판정과 무관하다.
+
+- **인물** `DialogueCharacter`(`Assets > Create > IBIIIS > Dialogue Character`, 기본 `Assets/IBIIIS/Dialogue/Characters/`): `Character Id`(고정 ID), `Display Name`, `Name Color`, `Side`(왼쪽/오른쪽, 플레이어는 왼쪽), 기본 `Portrait`, 표정별 `Expressions`(ID와 초상화). 초상화 임시 규격 제안: 투명 PNG, 상반신, 높이 약 1024px, 기준점 아래 가운데(미정, 그림이 정해지면 확정). 기본 인물 3명(플레이어·어시 파리·마을 사람)은 코드로 그린 임시 실루엣을 쓴다.
+- **대화** `DialogueScript`(`Assets > Create > IBIIIS > Dialogue Script`, 기본 `Assets/IBIIIS/Dialogue/Scripts/`): `Script Id`(고정 ID)와 줄 목록. 줄마다 `Speaker`(비우면 지문 — 이름표 없이 기울어진 회색 글씨), `Expression`(선택, 표정 ID), `Name Override`(선택, 예: `???(어씨파리)`), `Text`.
+- **진행**: 글자가 초당 `Dialogue Text Speed`(Game UI 설정, 임시 30)자씩 나온다. F·Enter·Space 또는 대화 상자 클릭으로 넘기며, 글자가 나오는 중이면 전체를 바로 보이고 다 나왔으면 다음 줄, 마지막 줄 다음에 닫힌다. 다 나오면 오른쪽 아래 ▼가 깜빡인다. 대화를 연 프레임의 입력과 닫은 프레임의 말 걸기 입력은 무시해 F 한 번에 열리고 바로 넘어가거나 다시 열리지 않는다.
+- **좌우 초상화**: 인물은 처음 말할 때 자기 쪽에 서고 다른 인물이 그쪽에서 말하면 바뀐다. 말하는 쪽은 밝게, 듣는 쪽은 어둡게 조금 내려간다. 지문일 때는 둘 다 어둡다. 초상화가 없는 인물은 이름표만 보인다.
+- **모양**: `Assets/IBIIIS/UI/DialogueBox.uxml`(요소 이름 `portrait-left`·`portrait-right`·`box`·`name`·`text`·`next` 유지)과 `GameUi.uss`의 `dialogue-*`·`portrait` 스타일. Game UI 설정의 `Dialogue Box` 슬롯에 연결된다(`IBIIIS > Create Default Game UI`). 설정이 없으면 화면 아래 임시 IMGUI 상자로 대신한다.
+- **기본 에셋**: 메뉴 `IBIIIS > Create Default Dialogue`가 임시 초상화·기본 인물 3명·확인용 대화를 없을 때만 만들고, 미니맵 NPC 프리팹의 `Dialogue` 슬롯이 비어 있으면 확인용 대화를 연결한다.
+- **코드**: `Runtime/DialogueCharacter.cs`, `DialogueScript.cs`, `DialogueRunner.cs`(진행 로직), `DialogueView.cs`(화면), `DialogueController.cs`(씬에서 띄우기·입력), `NpcSpeaker`의 `Dialogue` 슬롯, `OverworldPlayer.SetInputLocked`, `Editor/DialogueSetup.cs`.
+- 개발 검증: 컴파일 완료, EditMode 154/154 통과(신규 5: 글자 진행·넘김·끝 알림 한 번, 인물이 자기 쪽에 서고 말하는 쪽 강조·표정 초상화와 없는 표정의 기본 초상화, 빈 대화는 바로 끝, 화면에 이름표·지문 표시·초상화 강조·표정 그림·끝나면 숨김, NPC 대화 시작·대화 중 다시 말 걸기 불가·끝나면 다시 가능).
+- 사용자 확인 대기: 미니맵 NPC에게 F → 대화창이 뜨고 플레이어가 멈추는지, 글자 속도·넘기기(F·Enter·Space·클릭), 초상화 위치·크기·강조, 마지막 줄 다음에 닫히고 다시 움직이는지.
+
 ## Scene 환경 장식 배치
 
 ### 만들기와 편집
@@ -305,7 +320,7 @@ Editor 코드는 런타임과 별도 어셈블리(`IBIIIS.Editor`)에 있고, �
   - 그림: 전투의 구르기 대각 그림을 쓴다. 구르기 방향에 좌우 성분이 없으면 바라보던 쪽(왼쪽이 아니면 오른쪽), 앞뒤 성분이 없으면 앞쪽 대각 그림이다.
   - 손맛: 전투와 같은 공용 값(시작 효과음, 낮은 뜀, 착지 납작함·먼지).
 - 상호작용 대상 범위에 들어가면 대상 위에 `[F] 말 걸기`, `[F] 프로토타입 스테이지 입장` 같은 안내가 나온다. 범위가 겹치면 가장 가까운 대상 하나만 고른다.
-- NPC: F를 누를 때마다 머리 위 말풍선에 대사가 한 줄씩 나오고 마지막 줄 다음에 닫힌다. 범위를 벗어나도 닫힌다. 말하는 동안에도 움직일 수 있다.
+- NPC: `Dialogue`(대화 에셋)를 연결한 NPC는 F를 누르면 미연시 대화창(아래 미연시 대화창 항목)으로 대화하고, 대화가 끝날 때까지 플레이어가 움직이지 않는다. 연결하지 않은 NPC는 이전처럼 F를 누를 때마다 머리 위 말풍선에 `Lines`를 한 줄씩 보이고 마지막 줄 다음·범위를 벗어나면 닫히며, 말하는 동안에도 움직일 수 있다. 기본 NPC 프리팹에는 확인용 대화(`Dialogue/Scripts/VillagerGreeting.asset`)를 연결해 두었다.
 - 스테이지 입구: F를 누르면 연결된 전투 씬으로 바뀐다. 전투는 기존 규칙·조작 그대로다.
   - 승리: 충돌 연출이 끝나면 클리어 기록을 저장하고 `클리어!` 팝업을 띄운다. 저장에 실패하면 팝업에 이유를 표시하고, 첫 `확인`에서 한 번 더 저장을 시도한다. 또 실패하면 안내 후 다음 `확인`에서 저장 없이 돌아간다.
   - 패배: 패배 연출이 끝나면 `패배` 팝업을 띄운다.

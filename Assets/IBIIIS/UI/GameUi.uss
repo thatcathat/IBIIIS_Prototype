@@ -70,6 +70,29 @@
 }
 .speech-bubble.player .speech-tail { background-color: rgb(255, 246, 205); }
 
+/* 미연시 대화창: 초상화는 대화 상자 뒤 좌우, 아래를 화면 하단에 맞춘다. 말하는 쪽 .speaking, 듣는 쪽 .listening */
+.dialogue-overlay { position: absolute; left: 0; top: 0; right: 0; bottom: 0; }
+.portrait {
+    position: absolute; bottom: 0; width: 38%; height: 82%;
+    background-size: contain;
+    background-position-y: bottom;
+    transition-property: -unity-background-image-tint-color, translate;
+    transition-duration: 0.15s;
+}
+.portrait.left { left: 3%; background-position-x: left; }
+.portrait.right { right: 3%; background-position-x: right; }
+.portrait.listening { -unity-background-image-tint-color: rgb(110, 112, 125); translate: 0 12px; }
+.portrait.speaking { -unity-background-image-tint-color: rgb(255, 255, 255); translate: 0 0; }
+.dialogue-box {
+    position: absolute; left: 6%; right: 6%; bottom: 28px; height: 210px;
+    padding: 18px 28px;
+    background-color: rgba(14, 18, 28, 0.9);
+}
+.dialogue-name { font-size: 26px; -unity-font-definition: url("Fonts/NotoSansKR-Bold.otf"); margin-bottom: 8px; }
+.dialogue-text { font-size: 26px; white-space: normal; }
+.dialogue-text.narration { -unity-font-style: italic; color: rgb(170, 175, 190); }
+.dialogue-next { position: absolute; right: 24px; bottom: 14px; font-size: 22px; color: rgb(255, 220, 120); }
+
 /* 결과 팝업 */
 .popup-overlay { position: absolute; left: 0; top: 0; right: 0; bottom: 0; background-color: rgba(0, 0, 0, 0.45); align-items: center; justify-content: center; }
 .popup { width: 560px; align-items: center; padding: 28px 32px; }

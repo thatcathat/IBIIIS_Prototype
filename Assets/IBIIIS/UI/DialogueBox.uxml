@@ -1,0 +1,14 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+  <!-- 미연시 대화창. 이름(name)은 DialogueView 코드가 찾는 키이므로 바꾸지 않는다. 배치·크기·색은 GameUi.uss의 dialogue-*·portrait 스타일에서 바꾼다.
+       초상화는 대화 상자보다 먼저(뒤에) 그린다. -->
+  <ui:Style src="GameUi.uss" />
+  <ui:VisualElement name="dialogue" class="game-ui dialogue-overlay" picking-mode="Ignore">
+    <ui:VisualElement name="portrait-left" class="portrait left" picking-mode="Ignore" />
+    <ui:VisualElement name="portrait-right" class="portrait right" picking-mode="Ignore" />
+    <ui:VisualElement name="box" class="panel dialogue-box">
+      <ui:Label name="name" class="dialogue-name" picking-mode="Ignore" />
+      <ui:Label name="text" class="dialogue-text" picking-mode="Ignore" />
+      <ui:Label name="next" text="▼" class="dialogue-next" picking-mode="Ignore" />
+    </ui:VisualElement>
+  </ui:VisualElement>
+</ui:UXML>

@@ -10,7 +10,7 @@ namespace IBIIIS.Editor
     {
         public const string Folder = AssetPaths.UI;
         public const string PanelSettingsPath = Folder + "/GamePanelSettings.asset", ThemePath = Folder + "/GameRuntimeTheme.tss";
-        public const string BattleHudPath = Folder + "/BattleHud.uxml", ResultPopupPath = Folder + "/ResultPopup.uxml", OverworldHudPath = Folder + "/OverworldHud.uxml", SpeechBubblePath = Folder + "/SpeechBubble.uxml";
+        public const string BattleHudPath = Folder + "/BattleHud.uxml", ResultPopupPath = Folder + "/ResultPopup.uxml", OverworldHudPath = Folder + "/OverworldHud.uxml", SpeechBubblePath = Folder + "/SpeechBubble.uxml", DialogueBoxPath = Folder + "/DialogueBox.uxml";
         public const string EvasionIconPath = Folder + "/EvasionIcon.png";
 
         [MenuItem("IBIIIS/Create Default Game UI")]
@@ -41,6 +41,7 @@ namespace IBIIIS.Editor
             Fill("resultPopup", AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(ResultPopupPath));
             Fill("overworldHud", AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(OverworldHudPath));
             Fill("speechBubble", AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(SpeechBubblePath));
+            Fill("dialogueBox", AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(DialogueBoxPath));
             Fill("evasionIcon", icon);
             if (filled) { so.ApplyModifiedPropertiesWithoutUndo(); EditorUtility.SetDirty(settings); }
             AssetDatabase.SaveAssetIfDirty(settings);

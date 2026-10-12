@@ -14,6 +14,8 @@ namespace IBIIIS
         [SerializeField, Tooltip("스테이지 결과(클리어·패배) 팝업 화면 구성.")] private VisualTreeAsset resultPopup;
         [SerializeField, Tooltip("미니맵 조작 안내·상호작용 안내 화면 구성.")] private VisualTreeAsset overworldHud;
         [SerializeField, Tooltip("전투 말풍선 하나의 화면 구성('bubble' 요소 안에 'text' 라벨). 전투 HUD의 'bubbles' 층에 복제해 붙입니다. 모양은 GameUi.uss의 speech-* 스타일.")] private VisualTreeAsset speechBubble;
+        [SerializeField, Tooltip("미연시 대화창 화면 구성(하단 대화 상자·이름표·본문·좌우 초상화).")] private VisualTreeAsset dialogueBox;
+        [SerializeField, Min(0), Tooltip("대화 글자가 나오는 속도(초당 글자 수). 0이면 바로 전체를 보입니다. 임시 30.")] private float dialogueTextSpeed = DefaultDialogueTextSpeed;
         [SerializeField, Tooltip("선택. 회피기(대시·구르기) 아이콘. 비우면 원형 표시만 보입니다. 쿨타임 중에는 회색으로 바뀌고 남은 턴 수가 표시됩니다.")] private Sprite evasionIcon;
         [SerializeField, Tooltip("개발용 정보(전투 단계·현재 칸 좌표)를 전투 HUD 왼쪽 아래에 함께 표시합니다.")] private bool showDebugInfo;
         public PanelSettings PanelSettings => panelSettings;
@@ -21,6 +23,9 @@ namespace IBIIIS
         public VisualTreeAsset ResultPopup => resultPopup;
         public VisualTreeAsset OverworldHud => overworldHud;
         public VisualTreeAsset SpeechBubble => speechBubble;
+        public VisualTreeAsset DialogueBox => dialogueBox;
+        public const float DefaultDialogueTextSpeed = 30;
+        public float DialogueTextSpeed => Mathf.Max(0, dialogueTextSpeed);
         public Sprite EvasionIcon => evasionIcon;
         public bool ShowDebugInfo => showDebugInfo;
 
