@@ -1,0 +1,5 @@
+# IBIIIS 편집기 공통 설정. 줄바꿈은 .gitattributes와 같게 LF로 저장한다(Docs 개발 및 사용 가이드의 버전 관리 규칙).
+root = true
+
+[*]
+end_of_line = lf
