@@ -76,12 +76,24 @@
 
 Editor 코드는 런타임과 별도 어셈블리(`IBIIIS.Editor`)에 있고, 테스트는 `IBIIIS.Tests`에 있다.
 
-### Assets 폴더 구조
+### Assets 폴더 구조와 규칙
+
+Unity의 프로젝트 구성 가이드(unity.com/kr/how-to/organizing-your-project)를 기준으로 2026-10-13에 정했다(사용자 결정: 추천안 적용).
+
+- **자체 에셋은 `Assets/IBIIIS/` 아래**에 둔다. 에셋 스토어·외부 플러그인을 들이면 `Assets/ThirdParty/<이름>/`처럼 따로 두고, 고친 부분은 문서에 적어 업데이트 때 다시 적용한다.
+- **공용 종류 폴더**: 여러 기능이 함께 쓰는 에셋은 종류별 폴더(`Audio`, `Effects`, `Materials`, `Tiles`, `UI`, `Settings`)에 둔다.
+- **개체·기능 폴더**: 한 개체·기능 전용 에셋은 그 폴더에 함께 둔다(`Characters/<개체>`, `Maps/<맵>`, `Dialogue`, `Overworld`, `Title`, `Tutorial`). 한 폴더에 종류가 섞여 늘어나면 종류별 하위 폴더(`Sprites`, `Scenarios`, `Prefabs` 등)로 나눈다. 대본(ScenarioScript)은 그 기능의 `Scenarios/`, 기능이 정해지지 않은 대본은 `Assets/IBIIIS/Scenarios/`.
+- **이름**: 파일·폴더 이름에 공백을 쓰지 않고 PascalCase로 쓴다(`Tutorial1Script`, `PlayerSpriteImport`). 고유 ID는 이름과 별개로 에셋 안에 둔다(적 ID, 대본 ID, 단계 ID).
+- **코드**: 네임스페이스 `IBIIIS`(Runtime)·`IBIIIS.Editor`·`IBIIIS.Tests`, 어셈블리 정의(asmdef)도 같은 세 덩어리. 코드 폴더 = 네임스페이스.
+- **실험**: 정식이 아닌 씬·에셋은 `Assets/Sandbox/`에 두고 빌드 씬 목록에 넣지 않는다.
+- **이동**: Unity Project 창(또는 AssetDatabase)에서 옮겨 GUID를 보존하고, 코드 속 경로 상수(`AssetPaths.cs`, 각 `*Setup.cs`)를 함께 고친다. 코드 파일 이름 변경처럼 밖에서 옮겨야 하면 `.meta`를 같은 이름으로 함께 옮기고(`git mv`), 옮긴 뒤 GUID·참조를 확인한다.
+- **빈 폴더**: git은 빈 폴더를 저장하지 않으므로 필요할 때만 만든다(다른 PC에서 `.meta`만 남는 경고가 날 수 있음).
 
 | 경로 | 내용 |
+
 |---|---|
 | `Assets/IBIIIS/Runtime`, `Editor`, `Tests/Editor` | 코드와 asmdef. 편집기 UXML/USS는 `Editor/UI` |
-| `Assets/IBIIIS/Settings` | GlobalPlayerSettings, GlobalCameraSettings, IBIIISInput, CollisionFeedback, MotionFeedback, EnemyAlert, OverworldSettings, OverworldInput |
+| `Assets/IBIIIS/Settings` | GlobalPlayerSettings, GlobalCameraSettings, IBIIISInput, CollisionFeedback, MotionFeedback, EnemyAlert, OverworldSettings, OverworldInput 등 공용 설정. `Presets/`에 그림 가져오기 프리셋(아래) |
 | `Assets/IBIIIS/Characters/Player` | PlayerVisual.prefab, OverworldPlayer.prefab, `Sprites/` |
 | `Assets/IBIIIS/Characters/Enemies/<적 ID>/` | 적별 프리팹·재질·스프라이트를 한 폴더에 둔다. 새 적은 폴더 단위로 추가한다 |
 | `Assets/IBIIIS/Characters/Shared` | 공용 GroundShadow·FacingArrow 프리팹 |
@@ -90,15 +102,28 @@ Editor 코드는 런타임과 별도 어셈블리(`IBIIIS.Editor`)에 있고, �
 | `Assets/IBIIIS/Environments` | 환경 장식 프리팹 |
 | `Assets/IBIIIS/Materials` | 공용 재질(PrototypeUnlit) |
 | `Assets/IBIIIS/Overworld` | 미니맵 테스트 씬(OverworldTest.unity)과 임시 재질 |
+| `Assets/IBIIIS/Tutorial` | 튜토리얼 전용: `Sprites/`(임시 그림), `Scenarios/`(대본 Tutorial1Script·Tutorial2Script) |
+| `Assets/IBIIIS/Scenarios` | 기능이 정해지지 않은 새 대본(IBIIIS Dialogue Editor의 새 대본 기본 위치, 처음 만들 때 생김) |
 | `Assets/IBIIIS/Maps/<맵 이름>/` | GridMap(.asset)과 연결 씬(.unity) 한 쌍. 샘플과 사용자 맵 모두 여기에 둔다 |
 | `Assets/IBIIIS/Resources/IBIIIS` | 이름으로 로드하는 기본 재질(DefaultGround). 이동 금지 |
 | `Assets/Settings` | URP 렌더 설정(템플릿) |
-| `Assets/Sandbox` | SampleScene 등 실험용. 빌드 씬 목록의 SampleScene도 이 경로를 가리킨다 |
+| `Assets/Sandbox` | SampleScene 등 실험용. 빌드 씬 목록에 넣지 않는다(2026-10-13 SampleScene을 빌드 목록에서 뺐다) |
 
 - 에디터 도구의 기본 생성·조회 경로는 `Assets/IBIIIS/Editor/AssetPaths.cs` 한 곳에서 관리한다. 폴더를 다시 바꿀 때는 Unity Project 창(또는 AssetDatabase)에서 이동해 GUID를 보존하고 이 파일의 경로를 함께 수정한다. 파일 탐색기·git으로 옮기지 않는다.
 - `새 맵`의 저장 대화상자는 `Maps`에서 열린다. `Maps` 바로 아래에 이름을 지정하면 `Maps/<이름>/` 폴더를 만들어 맵·씬 쌍을 넣는다. Play 중이거나 이름 없는 씬이 열려 있으면 폴더를 만들기 전에 거부하고, 생성이 실패하면 이번에 만든 빈 폴더를 지운다. 다른 폴더를 고르면 그 폴더에 생성한다. `새 바닥`은 `Tiles`, `새 환경 프리팹`은 `Environments`에서 열린다.
 - 2026-10-06 폴더 구조 정리 후 씬·프리팹·에셋·재질의 GUID 참조를 조사해 끊긴 참조가 없음을 확인했다. 삭제된 `Wall.asset`을 가리키던 팔레트 참조 3건(StarterMap·TestMap·TestMap3)은 이 맵들이 사용자에 의해 삭제되어(2026-10-09 작업 트리 기준) 남아 있지 않다. 삭제된 바닥 참조가 다시 생기면 아래 '삭제된 바닥 참조 정리'로 지운다.
-- `Assets/Logs/MapScenePreview.png`는 용도 미확인으로 이동·삭제하지 않았다.
+- `Assets/Logs/MapScenePreview.png`(어디서도 참조하지 않는 캡처)는 2026-10-13 프로젝트 정리 때 지웠다(사용자 승인, git 기록에서 되살릴 수 있음).
+- Unity 템플릿 기본 입력 `Assets/InputSystem_Actions.inputactions`도 2026-10-13 지웠다(사용자 결정). 게임은 쓰지 않았고 프로젝트 전역 입력(Project-wide Actions) 등록만 있어 등록을 풀고 지웠다. 게임 입력은 `Settings/IBIIISInput`(전투)·`OverworldInput`(미니맵)이다. Project Settings > Input System Package에 전역 입력이 없다는 안내가 보여도 정상이다.
+- **그림 가져오기 프리셋**: `Settings/Presets/PlayerSpriteImport.preset`(스프라이트, PPU 500, 발밑 기준점, 밉맵 없음)과 `EnemySpriteImport.preset`(같은 설정, PPU 600)을 Project Settings > Preset Manager의 TextureImporter 기본값에 폴더 조건으로 걸었다(`Characters/Player/Sprites/**`, `Characters/Enemies/**`). 이 폴더에 새 PNG를 넣으면 처음 가져올 때 자동으로 적용된다(이미 있는 그림은 바꾸지 않음). 그림마다 다른 값(스프라이트 이름·영역·내부 ID)은 프리셋에서 뺐다. 규격을 바꾸려면 프리셋 에셋을 고친다. `IBIIIS > Create Default Player Visual`의 그림 설정 맞추기는 그대로 남아 있다.
+- **버전 관리**: `.meta`는 모두 커밋하고 직렬화는 Force Text다. 루트의 `.gitattributes`가 텍스트 파일을 LF로(커밋 때 줄바꿈 경고 없음), 씬·프리팹·에셋·`.meta`를 Unity Smart Merge로, 그림·소리·글꼴·문서를 바이너리로 정한다. 새 C# 파일도 LF로 만든다(Project Settings > Editor > Line Endings For New Scripts = Unix). Smart Merge 도구 연결은 PC마다 한 번 git 설정에 해야 한다(이 PC는 2026-10-13 설정함):
+
+  ```
+  git config --local merge.unityyamlmerge.name "Unity SmartMerge (UnityYAMLMerge)"
+  git config --local merge.unityyamlmerge.driver "'<Unity 설치 경로>/Editor/Data/Tools/UnityYAMLMerge.exe' merge -h -p --force %O %B %A %A"
+  git config --local merge.unityyamlmerge.recursive binary
+  ```
+
+  Git LFS는 설치되어 있으나 쓰지 않는다(그림·소리 합계 약 4MB). 정식 아트·사운드가 늘면 도입을 검토한다.
 
 게임 규칙은 [기획서](IBIIIS_게임시스템_기획서.md)를 참조하고, 수치의 관리 위치와 데이터 반영 절차는 [데이터 관리 문서](IBIIIS_데이터_관리_문서.md)를 참조한다.
 

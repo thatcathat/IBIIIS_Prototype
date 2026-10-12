@@ -1,0 +1,31 @@
+# IBIIIS 줄바꿈·병합 규칙. 설명은 Docs/IBIIIS_개발_및_사용_가이드.md의 '프로젝트 폴더·이름·버전 관리 규칙'.
+
+# 텍스트 파일은 저장소와 작업 폴더 모두 LF로 둔다(커밋 때 줄바꿈 변환 경고를 없앤다).
+* text=auto eol=lf
+
+# Unity 씬·프리팹 등 YAML 파일은 Unity Smart Merge(UnityYAMLMerge)로 병합한다.
+# 병합 도구 연결은 PC마다 git 설정(.git/config)에 따로 해야 한다(문서 참고).
+*.unity     merge=unityyamlmerge eol=lf
+*.prefab    merge=unityyamlmerge eol=lf
+*.asset     merge=unityyamlmerge eol=lf
+*.mat       merge=unityyamlmerge eol=lf
+*.anim      merge=unityyamlmerge eol=lf
+*.controller merge=unityyamlmerge eol=lf
+*.physicMaterial merge=unityyamlmerge eol=lf
+*.meta      merge=unityyamlmerge eol=lf
+
+# 바이너리(줄바꿈 변환·텍스트 병합 안 함). 정식 아트·사운드가 늘면 Git LFS로 옮기는 것을 검토한다(현재 미사용).
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.psd  binary
+*.tga  binary
+*.wav  binary
+*.mp3  binary
+*.ogg  binary
+*.otf  binary
+*.ttf  binary
+*.fbx  binary
+*.xlsx binary
+*.docx binary
+*.pdf  binary

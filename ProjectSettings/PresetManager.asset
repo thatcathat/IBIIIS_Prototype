@@ -4,4 +4,15 @@
 PresetManager:
   m_ObjectHideFlags: 0
   serializedVersion: 2
-  m_DefaultPresets: {}
+  m_DefaultPresets:
+  - first:
+      m_NativeTypeID: 1006
+      m_ManagedTypePPtr: {fileID: 0}
+      m_ManagedTypeFallback: 
+    second:
+    - m_Preset: {fileID: 2655988077585873504, guid: 16dc9e61aee9e02438fbc6ae26a120f3, type: 2}
+      m_Filter: glob:"Assets/IBIIIS/Characters/Player/Sprites/**"
+      m_Disabled: 0
+    - m_Preset: {fileID: 2655988077585873504, guid: 5ad9ef1f900c5ae4fb60e1c104921a43, type: 2}
+      m_Filter: glob:"Assets/IBIIIS/Characters/Enemies/**"
+      m_Disabled: 0
