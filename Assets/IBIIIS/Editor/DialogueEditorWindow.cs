@@ -26,7 +26,8 @@ namespace IBIIIS.Editor
         private ObjectField scriptField;
         private Button issuesButton;
         private ScrollView issuesList, graph;
-        private Button duplicateButton;
+        private Button duplicateButton, connectButton;
+        private Label connectionLabel;
         private VisualElement createForm;
         private VisualElement detail;
         private bool rebuildQueued, showIssues;
@@ -68,9 +69,10 @@ namespace IBIIIS.Editor
             Open(target); return true;
         }
 
-        private void OnEnable() { Undo.undoRedoPerformed += OnUndoRedo; }
-        private void OnDisable() { Undo.undoRedoPerformed -= OnUndoRedo; }
-        private void OnUndoRedo() { if (serialized != null && serialized.targetObject != null) { serialized.Update(); RebuildAll(); Save(); } }
+        private void OnEnable() { Undo.undoRedoPerformed += OnUndoRedo; EditorApplication.hierarchyChanged += RefreshConnection; EditorApplication.playModeStateChanged += OnPlayMode; }
+        private void OnDisable() { Undo.undoRedoPerformed -= OnUndoRedo; EditorApplication.hierarchyChanged -= RefreshConnection; EditorApplication.playModeStateChanged -= OnPlayMode; }
+        private void OnPlayMode(PlayModeStateChange _) => RefreshConnection();
+        private void OnUndoRedo() { RefreshConnection(); if (serialized != null && serialized.targetObject != null) { serialized.Update(); RebuildAll(); Save(); } }
         // Dialogue Editor에서 고친 내용은 바로 파일에 저장한다(Ctrl+S를 잊어도 남게). 에셋이 아닌 대본(테스트용 임시)은 저장하지 않는다.
         private void Save() { if (script != null && EditorUtility.IsPersistent(script)) AssetDatabase.SaveAssetIfDirty(script); }
 
@@ -84,6 +86,8 @@ namespace IBIIIS.Editor
             toolbar.Add(scriptField);
             toolbar.Add(new Button(() => ShowCreateForm(false)) { text = "새 대본" });
             toolbar.Add(duplicateButton = new Button(() => ShowCreateForm(true)) { text = "대본 복제" });
+            toolbar.Add(connectButton = new Button(ConnectToScene) { text = "씬에 연결" });
+            toolbar.Add(connectionLabel = new Label { style = { color = new Color(.65f, .7f, .75f), fontSize = 10, marginRight = 6 } });
             issuesButton = new Button(() => { showIssues = !showIssues; RefreshIssues(); }) { text = "검사" };
             toolbar.Add(issuesButton);
             toolbar.Add(new Label("더블클릭: 대사 고치기 · 우클릭: 추가 · 끌기: 옮기기·범위 · 아래 빈 줄 끌기: 표시 추가 · Ctrl+C/V/D·Delete · Ctrl/Shift+클릭: 여러 개") { style = { color = new Color(.7f, .7f, .7f), unityFontStyleAndWeight = FontStyle.Italic, marginLeft = 8, fontSize = 10 } });
@@ -127,6 +131,7 @@ namespace IBIIIS.Editor
             serialized = script != null ? new SerializedObject(script) : null;
             if (scriptField != null) scriptField.SetValueWithoutNotify(script);
             duplicateButton?.SetEnabled(script != null);
+            RefreshConnection();
             if (rootVisualElement != null && serialized != null)
             {
                 rootVisualElement.Unbind();
@@ -660,6 +665,50 @@ namespace IBIIIS.Editor
         private void CloseCreateForm() { createForm?.RemoveFromHierarchy(); createForm = null; }
         // 복제 기본 이름: 끝의 Script 앞에 Copy를 넣는다(Tutorial1Script → Tutorial1CopyScript).
         private static string CopyName(string name) => name.EndsWith("Script") && name.Length > 6 ? name.Substring(0, name.Length - 6) + "CopyScript" : name + "Copy";
+
+        // ── 씬에 연결 ──
+        // 열린 씬의 대본 진행기(TutorialDirector)에 지금 대본을 꽂는다. 하나면 확인 후 연결, 여럿이면 목록에서 고르고, 없으면 안내한다.
+        // Ctrl+Z로 되돌릴 수 있고 씬은 변경 표시만 한다(저장은 Ctrl+S). Play 중에는 막는다(실행 중 값만 바뀌므로).
+        private void ConnectToScene()
+        {
+            if (script == null) return;
+            var directors = DialogueScriptScenes.DirectorsInOpenScenes();
+            if (directors.Count == 0)
+            {
+                EditorUtility.DisplayDialog("씬에 연결", "열린 씬에 대본 진행기(TutorialDirector)가 없습니다.\n전투 씬을 열고 Grid Map Player 오브젝트에 TutorialDirector를 추가한 뒤 다시 누르세요.", "확인");
+                return;
+            }
+            if (directors.Count == 1) { ConnectTo(directors[0]); return; }
+            var menu = new GenericMenu();
+            foreach (var director in directors)
+            {
+                var current = DialogueScriptScenes.ScriptOf(director);
+                var item = new GUIContent($"{DialogueScriptScenes.Describe(director).Replace("/", "∕")}  (지금: {(current != null ? current.name : "없음")})");
+                if (current == script) menu.AddDisabledItem(item, true); else menu.AddItem(item, false, () => ConnectTo(director));
+            }
+            menu.DropDown(connectButton.worldBound);
+        }
+        private void ConnectTo(TutorialDirector director)
+        {
+            var current = DialogueScriptScenes.ScriptOf(director);
+            if (current == script) { ShowNotification(new GUIContent("이미 이 대본이 연결되어 있습니다.")); return; }
+            if (current != null && !EditorUtility.DisplayDialog("씬에 연결", $"{DialogueScriptScenes.Describe(director)}의 대본을 '{current.name}'에서 '{script.name}'(으)로 바꿉니다.\nCtrl+Z로 되돌릴 수 있고, 씬은 직접 저장해야 합니다.", "바꾸기", "취소")) return;
+            if (!DialogueScriptScenes.Connect(director, script)) return;
+            EditorGUIUtility.PingObject(director);
+            ShowNotification(new GUIContent($"{director.gameObject.scene.name} 씬에 연결했습니다. 씬을 저장하세요(Ctrl+S)."));
+            RefreshConnection();
+        }
+        // 지금 대본이 열린 씬의 어느 진행기에 연결되어 있는지 막대에 적는다.
+        private void RefreshConnection()
+        {
+            if (connectButton == null || connectionLabel == null) return;
+            bool playing = EditorApplication.isPlayingOrWillChangePlaymode;
+            connectButton.SetEnabled(script != null && EditorUtility.IsPersistent(script) && !playing);
+            connectButton.tooltip = playing ? "Play 중에는 연결할 수 없습니다." : "열린 씬의 대본 진행기(TutorialDirector)에 이 대본을 연결합니다.";
+            if (script == null) { connectionLabel.text = ""; return; }
+            var linked = DialogueScriptScenes.DirectorsInOpenScenes().FindAll(d => DialogueScriptScenes.ScriptOf(d) == script);
+            connectionLabel.text = linked.Count == 0 ? "열린 씬에 연결 없음" : "연결: " + string.Join(", ", linked.ConvertAll(d => d.gameObject.scene.name));
+        }
 
         // ── 대사 바로 고치기 ──
         private void BeginInlineEdit(int index)
