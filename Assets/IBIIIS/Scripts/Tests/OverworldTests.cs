@@ -398,7 +398,7 @@ namespace IBIIIS.Tests
         [Test] public void EnteringAMissingBattleSceneDoesNothing()
         {
             LogAssert.Expect(LogType.Error, new System.Text.RegularExpressions.Regex("찾을 수 없습니다"));
-            Assert.IsFalse(StageFlow.Enter(new StageRun("stage-x", "X", "Assets/IBIIIS/Tests/NoSuchBattle.unity", "Assets/Overworld.unity", Vector3.zero, PlayerFacing.Front)));
+            Assert.IsFalse(StageFlow.Enter(new StageRun("stage-x", "X", "Assets/IBIIIS/Scripts/Tests/NoSuchBattle.unity", "Assets/Overworld.unity", Vector3.zero, PlayerFacing.Front)));
             Assert.IsNull(StageFlow.Current, "진행 정보를 남기지 않음");
             Assert.IsNull(Object.FindAnyObjectByType<StageResultPopup>(), "결과 팝업을 만들지 않음");
             LogAssert.Expect(LogType.Error, new System.Text.RegularExpressions.Regex("전투 씬이 지정되지"));

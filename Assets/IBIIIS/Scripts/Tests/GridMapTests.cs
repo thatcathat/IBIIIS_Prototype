@@ -84,7 +84,7 @@ namespace IBIIIS.Tests
         [Test] public void LegacyAndNewCellsCoexistAndRoundTripWithoutChangingStart()
         {
             map.SetWalkable(Vector2Int.right, true); map.SetWalkable(Vector2Int.up, false);
-            string path = AssetDatabase.GenerateUniqueAssetPath("Assets/IBIIIS/Tests/MixedCells.asset");
+            string path = AssetDatabase.GenerateUniqueAssetPath("Assets/IBIIIS/Scripts/Tests/MixedCells.asset");
             var copy = UnityEngine.Object.Instantiate(map);
             try
             {
@@ -178,7 +178,7 @@ namespace IBIIIS.Tests
         [Test] public void SavedMapRoundTripsIdsReferencesAndStart()
         {
             wall.Initialize("stone", "Stone", true, Color.gray); map.PaintFloor(Vector2Int.right, wall);
-            string path = AssetDatabase.GenerateUniqueAssetPath("Assets/IBIIIS/Tests/RoundTrip.asset");
+            string path = AssetDatabase.GenerateUniqueAssetPath("Assets/IBIIIS/Scripts/Tests/RoundTrip.asset");
             try
             {
                 var copy = UnityEngine.Object.Instantiate(map); AssetDatabase.CreateAsset(copy, path);

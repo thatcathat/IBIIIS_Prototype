@@ -60,41 +60,43 @@
 
 | 코드 | 책임 |
 |---|---|
-| `Runtime/GridMap.cs`, `TileDefinition.cs` | 맵 설정, 이동 바닥 종류별 외형 설정 |
-| `Runtime/GridSession.cs` | 실행 중 위치·적 상태, 이동·전투 판정, 되돌리기 기록, 게임 시간(`MovementWorldTime`) |
-| `Runtime/EnemyDefinition.cs`, `EnemyBehavior.cs` | 적 프리팹 설정과 행동 단위 |
-| `Runtime/GridMapPlayer.cs` | 맵·외형 생성, 입력 명령 실행, 카메라 맞춤, 임시 표시, 전투 HUD 값 제공 |
-| `Runtime/Dialogue*.cs`, `Assets/IBIIIS/Dialogue/` | 미연시 대화(인물·대화 에셋, 진행 로직, 대화창). 아래 미연시 대화창 항목 |
-| `Runtime/GameUiSettings.cs`, `BattleHud.cs`, `Assets/IBIIIS/UI/` | 게임 화면 UI(UI Toolkit): 공용 설정, 전투 HUD, 화면 구성(UXML)·스타일(USS)·테마·글꼴. 아래 게임 화면 UI 항목 |
-| `Runtime/BattleInput.cs` | 입력 에셋을 전투 명령으로 변환 |
-| `Runtime/PlayerVisual.cs`, `CollisionFeedback.cs` | 플레이어 스프라이트 선택(상황별 그림 포함), 적 충돌 연출 |
-| `Runtime/EnemyAlert.cs`, `EnemyAlertSettings.cs`, `BattleDialogue.cs` | 적 인식 말풍선(플레이어 말 → 적 대답, 적 혼잣말, 표시 전용) |
-| `Runtime/CameraFacingSprite.cs` | 캐릭터 그림을 카메라와 나란히 세우는 공통 규칙(플레이어·적·NPC) |
-| `Runtime/MapSolver.cs` | 맵 클리어 가능 여부 탐색 |
-| `Runtime/Overworld*.cs`, `NpcSpeaker.cs`, `StageEntrance.cs` | 미니맵 자유 이동·걷기 손맛(`OverworldMotion`)·따라가는 카메라·입력·상호작용 대상(NPC 말풍선, 스테이지 입구) |
-| `Runtime/MotionEffects.cs`, `BreathingSprite.cs` | 전투·미니맵 공용 손맛 자세 계산과 먼지·잔상·소리, NPC 숨쉬기 |
-| `Runtime/StageFlow.cs`, `StageResultPopup.cs`, `ProgressStore.cs` | 미니맵 ↔ 전투 씬 전환, 결과 팝업, 클리어 기록 저장 |
-| `Editor/` | MapEditorWindow·MapCanvas·UXML/USS(맵 편집기), MapEditorSetup(새 맵·씬 생성), GridMapPreview(Scene 미리보기), 각종 기본 에셋 생성 메뉴 |
+| `Scripts/Runtime/Core/GridMap.cs`, `TileDefinition.cs` | 맵 설정, 이동 바닥 종류별 외형 설정 |
+| `Scripts/Runtime/Core/GridSession.cs` | 실행 중 위치·적 상태, 이동·전투 판정, 되돌리기 기록, 게임 시간(`MovementWorldTime`) |
+| `Scripts/Runtime/Battle/EnemyDefinition.cs`, `EnemyBehavior.cs` | 적 프리팹 설정과 행동 단위 |
+| `Scripts/Runtime/Battle/GridMapPlayer.cs` | 맵·외형 생성, 입력 명령 실행, 카메라 맞춤, 임시 표시, 전투 HUD 값 제공 |
+| `Scripts/Runtime/Scenario/Dialogue*.cs`, `Assets/IBIIIS/Dialogue/` | 미연시 대화(인물·대화 에셋, 진행 로직, 대화창). 아래 미연시 대화창 항목 |
+| `Scripts/Runtime/UI/GameUiSettings.cs`, `BattleHud.cs`, `Assets/IBIIIS/UI/` | 게임 화면 UI(UI Toolkit): 공용 설정, 전투 HUD, 화면 구성(UXML)·스타일(USS)·테마·글꼴. 아래 게임 화면 UI 항목 |
+| `Scripts/Runtime/Battle/BattleInput.cs` | 입력 에셋을 전투 명령으로 변환 |
+| `Scripts/Runtime/Battle/PlayerVisual.cs`, `CollisionFeedback.cs` | 플레이어 스프라이트 선택(상황별 그림 포함), 적 충돌 연출 |
+| `Scripts/Runtime/Feedback/EnemyAlert.cs`, `EnemyAlertSettings.cs`, `BattleDialogue.cs` | 적 인식 말풍선(플레이어 말 → 적 대답, 적 혼잣말, 표시 전용) |
+| `Scripts/Runtime/Core/CameraFacingSprite.cs` | 캐릭터 그림을 카메라와 나란히 세우는 공통 규칙(플레이어·적·NPC) |
+| `Scripts/Runtime/Core/MapSolver.cs` | 맵 클리어 가능 여부 탐색 |
+| `Scripts/Runtime/Overworld/Overworld*.cs`, `NpcSpeaker.cs`, `StageEntrance.cs` | 미니맵 자유 이동·걷기 손맛(`OverworldMotion`)·따라가는 카메라·입력·상호작용 대상(NPC 말풍선, 스테이지 입구) |
+| `Scripts/Runtime/Feedback/MotionEffects.cs`, `BreathingSprite.cs` | 전투·미니맵 공용 손맛 자세 계산과 먼지·잔상·소리, NPC 숨쉬기 |
+| `Scripts/Runtime/Core/StageFlow.cs`, `StageResultPopup.cs`, `ProgressStore.cs` | 미니맵 ↔ 전투 씬 전환, 결과 팝업, 클리어 기록 저장 |
+| `Scripts/Editor/` | MapEditorWindow·MapCanvas·UXML/USS(맵 편집기), MapEditorSetup(새 맵·씬 생성), GridMapPreview(Scene 미리보기), 각종 기본 에셋 생성 메뉴 |
 
 Editor 코드는 런타임과 별도 어셈블리(`IBIIIS.Editor`)에 있고, 테스트는 `IBIIIS.Tests`에 있다.
 
 ### Assets 폴더 구조와 규칙
 
-Unity의 프로젝트 구성 가이드(unity.com/kr/how-to/organizing-your-project)를 기준으로 2026-10-13에 정했다(사용자 결정: 추천안 적용).
+Unity의 프로젝트 구성 가이드(unity.com/kr/how-to/organizing-your-project)와 위키독스 「부록 G. 프로젝트 폴더 구조 예시」(wikidocs.net/357510)를 참고해 2026-10-13에 정했다(사용자 결정: 에이전트 추천안).
 
-- **자체 에셋은 `Assets/IBIIIS/` 아래**에 둔다. 에셋 스토어·외부 플러그인을 들이면 `Assets/ThirdParty/<이름>/`처럼 따로 두고, 고친 부분은 문서에 적어 업데이트 때 다시 적용한다.
-- **공용 종류 폴더**: 여러 기능이 함께 쓰는 에셋은 종류별 폴더(`Audio`, `Effects`, `Materials`, `Tiles`, `UI`, `Settings`)에 둔다.
-- **개체·기능 폴더**: 한 개체·기능 전용 에셋은 그 폴더에 함께 둔다(`Characters/<개체>`, `Maps/<맵>`, `Dialogue`, `Overworld`, `Title`, `Tutorial`). 한 폴더에 종류가 섞여 늘어나면 종류별 하위 폴더(`Sprites`, `Scenarios`, `Prefabs` 등)로 나눈다. 대본(ScenarioScript)은 그 기능의 `Scenarios/`, 기능이 정해지지 않은 대본은 `Assets/IBIIIS/Scenarios/`.
-- **이름**: 파일·폴더 이름에 공백을 쓰지 않고 PascalCase로 쓴다(`Tutorial1Script`, `PlayerSpriteImport`). 고유 ID는 이름과 별개로 에셋 안에 둔다(적 ID, 대본 ID, 단계 ID).
-- **코드**: 네임스페이스 `IBIIIS`(Runtime)·`IBIIIS.Editor`·`IBIIIS.Tests`, 어셈블리 정의(asmdef)도 같은 세 덩어리. 코드 폴더 = 네임스페이스.
+- **최상위는 종류, 그 안은 기능**: `Assets/IBIIIS/` 바로 아래는 종류 폴더 — `Scripts`(코드), `Scenes`(씬), `Prefabs`, `ScriptableObjects`(설정·대본·맵 데이터 등 데이터 에셋), `Art`(그림), `Audio`, `VFX`, `UI`, `Materials`, `Resources`. 각 종류 폴더 안은 기능별 하위 폴더로 나눈다(예: `Scripts/Runtime/Battle`, `ScriptableObjects/Scenarios/Tutorial`, `Art/Sprites/Player`). 새 파일은 "무슨 종류인가 → 어느 기능인가" 순서로 자리를 정한다.
+- **예외 1 — 전투 맵**: 맵 데이터(GridMap `.asset`)와 연결 씬(`.unity`)은 항상 한 쌍으로 만들고 고치므로 한 폴더에 둔다.
+- **예외 2 — 최상위 이름**: 위키독스 예시의 `_Project` 역할은 `Assets/IBIIIS/`가 한다(이름은 바꾸지 않음). 에셋 스토어·외부 플러그인을 들이면 `Assets/ThirdParty/<이름>/`처럼 따로 두고, 고친 부분은 문서에 적어 업데이트 때 다시 적용한다.
+- **진행 상황**: 1단계 코드(`Scripts/`) 완료(2026-10-13). 2단계 데이터(`ScriptableObjects/`), 3단계 씬(`Scenes/`), 4단계 그림·프리팹·이펙트·소리(`Art/`·`Prefabs/`·`VFX/`·`Audio/`)는 예정 — 그전까지는 아래 표의 현재 위치를 따른다.
+- **코드**: `Scripts/Runtime`(어셈블리 `IBIIIS.Runtime`, 네임스페이스 `IBIIIS`), `Scripts/Editor`(`IBIIIS.Editor`), `Scripts/Tests`(`IBIIIS.Tests`). 하위 폴더는 기능별이며 네임스페이스는 바꾸지 않는다.
+  - Runtime: `Core`(격자 판정·맵 데이터·클리어 기록·씬 전환·카메라 정면 규칙), `Battle`(전투 화면·입력·플레이어·적·동반 캐릭터), `Feedback`(손맛·충돌 연출·적 인식 말풍선), `Scenario`(대본·진행기·대화창), `Overworld`(미니맵), `UI`(게임 UI 설정·HUD·결과 팝업·타이틀)
+  - Editor: `MapEditor`(맵 에디터·새 맵·미리보기·검증, 화면 파일 `UI/`), `DialogueEditor`(IBIIIS Dialogue Editor), `Inspectors`(Inspector·Drawer), `Setup`(기본 에셋 생성 메뉴와 경로 상수 `AssetPaths`)
+- **이름**: 파일·폴더 이름에 공백을 쓰지 않고 PascalCase로 쓴다(`Tutorial1Script`, `PlayerSpriteImport`). 시험용은 `Test`를 붙인다. 고유 ID는 이름과 별개로 에셋 안에 둔다(적 ID, 대본 ID, 단계 ID).
 - **실험**: 정식이 아닌 씬·에셋은 `Assets/Sandbox/`에 두고 빌드 씬 목록에 넣지 않는다.
-- **이동**: Unity Project 창(또는 AssetDatabase)에서 옮겨 GUID를 보존하고, 코드 속 경로 상수(`AssetPaths.cs`, 각 `*Setup.cs`)를 함께 고친다. 코드 파일 이름 변경처럼 밖에서 옮겨야 하면 `.meta`를 같은 이름으로 함께 옮기고(`git mv`), 옮긴 뒤 GUID·참조를 확인한다.
+- **이동**: Unity Project 창(또는 AssetDatabase)에서 옮겨 GUID를 보존하고, 코드 속 경로 상수(`Scripts/Editor/Setup/AssetPaths.cs`, 각 `*Setup.cs`)를 함께 고친다. 밖에서 옮겨야 하면 `.meta`를 같은 이름으로 함께 옮기고(`git mv`), 옮긴 뒤 GUID·참조를 확인한다.
 - **빈 폴더**: git은 빈 폴더를 저장하지 않으므로 필요할 때만 만든다(다른 PC에서 `.meta`만 남는 경고가 날 수 있음).
 
 | 경로 | 내용 |
-
 |---|---|
-| `Assets/IBIIIS/Runtime`, `Editor`, `Tests/Editor` | 코드와 asmdef. 편집기 UXML/USS는 `Editor/UI` |
+| `Assets/IBIIIS/Scripts/Runtime`, `Editor`, `Tests` | 코드와 asmdef(기능별 하위 폴더, 위 규칙). 맵 에디터 UXML/USS는 `Scripts/Editor/MapEditor/UI` |
 | `Assets/IBIIIS/Settings` | GlobalPlayerSettings, GlobalCameraSettings, IBIIISInput, CollisionFeedback, MotionFeedback, EnemyAlert, OverworldSettings, OverworldInput 등 공용 설정. `Presets/`에 그림 가져오기 프리셋(아래) |
 | `Assets/IBIIIS/Characters/Player` | PlayerVisual.prefab, OverworldPlayer.prefab, `Sprites/` |
 | `Assets/IBIIIS/Characters/Enemies/<적 ID>/` | 적별 프리팹·재질·스프라이트를 한 폴더에 둔다. 새 적은 폴더 단위로 추가한다 |
@@ -111,7 +113,7 @@ Unity의 프로젝트 구성 가이드(unity.com/kr/how-to/organizing-your-proje
 | `Assets/Settings` | URP 렌더 설정(템플릿) |
 | `Assets/Sandbox` | SampleScene 등 실험용. 빌드 씬 목록에 넣지 않는다(2026-10-13 SampleScene을 빌드 목록에서 뺐다) |
 
-- 에디터 도구의 기본 생성·조회 경로는 `Assets/IBIIIS/Editor/AssetPaths.cs` 한 곳에서 관리한다. 폴더를 다시 바꿀 때는 Unity Project 창(또는 AssetDatabase)에서 이동해 GUID를 보존하고 이 파일의 경로를 함께 수정한다. 파일 탐색기·git으로 옮기지 않는다.
+- 에디터 도구의 기본 생성·조회 경로는 `Assets/IBIIIS/Scripts/Editor/Setup/AssetPaths.cs` 한 곳에서 관리한다. 폴더를 다시 바꿀 때는 Unity Project 창(또는 AssetDatabase)에서 이동해 GUID를 보존하고 이 파일의 경로를 함께 수정한다. 파일 탐색기·git으로 옮기지 않는다.
 - `새 맵`의 저장 대화상자는 `Maps`에서 열린다. `Maps` 바로 아래에 이름을 지정하면 `Maps/<이름>/` 폴더를 만들어 맵·씬 쌍을 넣는다. Play 중이거나 이름 없는 씬이 열려 있으면 폴더를 만들기 전에 거부하고, 생성이 실패하면 이번에 만든 빈 폴더를 지운다. 다른 폴더를 고르면 그 폴더에 생성한다. `새 바닥`은 `Tiles`, `새 환경 프리팹`은 `Environments`에서 열린다.
 - 2026-10-06 폴더 구조 정리 후 씬·프리팹·에셋·재질의 GUID 참조를 조사해 끊긴 참조가 없음을 확인했다. 삭제된 `Wall.asset`을 가리키던 팔레트 참조 3건(StarterMap·TestMap·TestMap3)은 이 맵들이 사용자에 의해 삭제되어(2026-10-09 작업 트리 기준) 남아 있지 않다. 삭제된 바닥 참조가 다시 생기면 아래 '삭제된 바닥 참조 정리'로 지운다.
 - `Assets/Logs/MapScenePreview.png`(어디서도 참조하지 않는 캡처)는 2026-10-13 프로젝트 정리 때 지웠다(사용자 승인, git 기록에서 되살릴 수 있음).
@@ -158,7 +160,7 @@ Unity의 프로젝트 구성 가이드(unity.com/kr/how-to/organizing-your-proje
 - **아래 상태 표시줄**: 저장 상태, 크기, 적 수(홀수 표시), 플레이 준비/확인 필요 항목, 마우스 아래 칸 정보, 최근 메시지.
 - **적 타일 팔레트**: 프로젝트의 모든 프리팹 중 루트에 EnemyDefinition이 있는 것을 자동으로 찾아 바닥 견본처럼 타일로 보여 준다(이름순). 타일에는 프리팹 안 SpriteRenderer의 스프라이트(없으면 Editor Color 사각형)와 위쪽 Editor Color 띠가 표시되고, 마우스를 올리면 경로와 행동 목록이 나온다. 클릭하면 선택되고 `적 배치` 도구로 바뀐다. 설정이 올바르지 않은 적은 흐리게 표시되며 선택할 수 없다. 새 적 프리팹을 만들거나 지우면 목록이 자동으로 갱신된다.
 - 회전·삭제·배치는 모두 Unity 실행 취소로 되돌릴 수 있다. 색은 Unity 에디터 테마 변수를 써서 라이트·다크 스킨에서 함께 읽히게 했다(격자 캔버스는 어두운 배경 유지).
-- 코드: `Editor/MapEditorWindow.cs`(도구 `MapTool` enum, 상태·명령), `Editor/MapCanvas.cs`(그리기·입력), `Editor/UI/MapEditor.uxml`·`.uss`(배치·스타일). 도구는 문자열이 아닌 enum으로 구분한다.
+- 코드: `Scripts/Editor/MapEditor/MapEditorWindow.cs`(도구 `MapTool` enum, 상태·명령), `Scripts/Editor/MapEditor/MapCanvas.cs`(그리기·입력), `Scripts/Editor/MapEditor/UI/MapEditor.uxml`·`.uss`(배치·스타일). 도구는 문자열이 아닌 enum으로 구분한다.
 - 검증: 메모리 사본 맵으로 창을 열어 도구 레일 6개·탭·분할 영역 생성, 상태 칩 값, 칸 선택 정보, 적 회전·삭제와 각각의 실행 취소, 적 타일 3개의 스프라이트·툴팁과 클릭 시 선택 강조·`적 배치` 도구·적 탭 전환·요약 갱신, 시작 위치에 적 배치 불가 판정, 단축키(N·R·V·B)와 입력 칸에서 단축키 무시, 콘솔 오류 0을 확인했다. 원본 맵 에셋은 수정하지 않았다. 실제 화면과 조작감은 사용자 확인 대기([플레이 확인 목록](IBIIIS_플레이_확인_목록.md) E-01).
 
 ### 평면 바닥과 이동 영역
@@ -203,7 +205,7 @@ Unity의 프로젝트 구성 가이드(unity.com/kr/how-to/organizing-your-proje
 6. 미리보기에서는 입력·시간 진행과 실행 세션을 시작하지 않는다. 시작 위치가 미지정이어도 유효한 맵 타일은 표시하며 플레이어 표식만 생략한다. 타일 ID·참조 오류가 있는 맵은 미리보기를 제거하므로 맵 에디터의 오류 표시를 확인한다.
 7. Prefab Mode와 Unity 내부 Preview Scene에서는 자동 생성을 하지 않는다. 전투 HUD는 Play 전에는 만들지 않는다. 임시 외형 표시는 실행과 공통 생성 코드를 사용한다.
 
-코드: `Assets/IBIIIS/Editor/GridMapPreview.cs`가 자동 갱신·정리와 Grid Map Player Inspector를 담당한다. `GridMapPlayer.cs`의 공통 외형 생성·카메라 맞춤을 편집 미리보기와 실행에서 재사용한다. 맵이나 공유 타일 설정 원본은 미리보기가 수정하지 않는다.
+코드: `Assets/IBIIIS/Scripts/Editor/MapEditor/GridMapPreview.cs`가 자동 갱신·정리와 Grid Map Player Inspector를 담당한다. `GridMapPlayer.cs`의 공통 외형 생성·카메라 맞춤을 편집 미리보기와 실행에서 재사용한다. 맵이나 공유 타일 설정 원본은 미리보기가 수정하지 않는다.
 
 ### 공용 카메라 설정
 
@@ -238,7 +240,7 @@ Unity의 프로젝트 구성 가이드(unity.com/kr/how-to/organizing-your-proje
 1. 키 배치는 `Assets/IBIIIS/Settings/IBIIISInput.inputactions`의 액션 맵 `Battle`에서 관리하고 `IBIIIS > Player Settings`의 `Input Actions` 슬롯으로 연결한다. 메뉴 `IBIIIS > Create Default Input Actions`는 파일이 없을 때만 기본 배치를 만들고 설정 슬롯이 비어 있을 때만 연결한다(기존 파일·연결은 덮어쓰지 않음). 파일은 있는데 JSON 오류 등으로 가져오기에 실패했으면 기본 배치로 덮어쓰지 않고 Console에 `[IBIIIS] 입력 파일을 불러오지 못했습니다` 오류를 남긴다. Import 오류를 고친 뒤 다시 실행한다(미니맵 입력 파일도 같다).
 2. 에셋을 더블클릭해 열어 액션별 바인딩을 바꾸거나 추가한다. 액션: `MoveUp/Down/Left/Right`, `DashModifier`(누른 채 이동하면 대시), `RollUpLeft/UpRight/DownLeft/DownRight`(Q/E/Z/C), `Wait`, `Undo`, `Restart`, `ToggleRanges`. 모두 Button 타입이며 필수다. 이름을 바꾸거나 지우면 경고를 남기고 기본 배치로 동작한다.
 3. 현재 기본 바인딩은 키보드뿐이다. 게임패드 등은 같은 액션에 바인딩을 추가하면 된다(조합 배치는 미정이라 추가하지 않았다). 실행 시 에셋 사본을 만들어 쓰므로 원본에 실행 상태가 남지 않는다. 화면의 안내 문구는 각 액션의 첫 번째 바인딩을 표시한다. 미니맵 `Move`는 2D Vector Composite(WASD 등)로 연결해야 하며, 키 하나를 직접 연결하면 경고를 한 번 남기고 그 이동 입력을 무시한다.
-4. 코드: `Runtime/BattleInput.cs`(명령 변환·기본 배치), `Editor/InputSetup.cs`(에셋 생성). 입력 처리는 게임 규칙과 분리되어 `GridMapPlayer`가 명령만 받아 실행한다. 템플릿의 `Assets/InputSystem_Actions.inputactions`는 쓰지 않는다.
+4. 코드: `Scripts/Runtime/Battle/BattleInput.cs`(명령 변환·기본 배치), `Scripts/Editor/Setup/InputSetup.cs`(에셋 생성). 입력 처리는 게임 규칙과 분리되어 `GridMapPlayer`가 명령만 받아 실행한다. 템플릿의 `Assets/InputSystem_Actions.inputactions`는 쓰지 않는다.
 
 ### 맵 자동 검증
 
@@ -249,7 +251,7 @@ Unity의 프로젝트 구성 가이드(unity.com/kr/how-to/organizing-your-proje
 5. 결과: **클리어 가능 여부와 최단 행동 수·경로**, **가장 빠른 패배 행동 수·경로**, **승리 불가 상태 수**(그 상태에서는 어떤 순서로도 더는 승리할 수 없음 — 되돌리기·재시작으로만 복구). 경로는 정답이므로 플레이 전에 보지 않는 편이 좋다. 불완전해도 이미 찾은 최단 승리·패배 경로는 유효하다(너비 우선이라 처음 찾은 경로가 최단). 불완전한 결과에서는 "클리어 불가능"·"패배 없음"을 단정하지 않고 승리 불가 상태 수도 계산하지 않는다. 적이 없는 맵과 오류가 있는 맵(시작 위치 없음 등)은 탐색하지 않고 사유를 알려 준다.
 6. 이 도구는 숫자만 보여 준다. 기획 문서의 목표(예: 초반 몇 행동 이전 사망 금지, 몇 행동 이내 전멸)는 확정 규칙이 아니라서 합격·불합격으로 자동 판정하지 않는다. 확정되면 기준값을 추가할 수 있다.
 7. **경로 재생**: `최단 승리 경로 재생` 또는 `가장 빠른 패배 경로 재생`을 누르면 그 경로를 실제 `GridSession`으로 다시 실행해 캔버스에 단계별로 보여 준다. 흰 원=플레이어(승리 시 초록, 패배 시 빨강), 흰 선=이번 행동의 이동, 빨간 칸=이번 행동 뒤 판정에 쓰인 공격 칸(전투 화면 Tab 표시와 같게 이동 가능한 칸만), 흐린 ×=제거된 적이며 재생 중에는 맵의 정적 적 배치 대신 이 상태를 그린다. ⏮/◀/슬라이더/▶/⏭, 단계 버튼, 캔버스를 누른 뒤 ←/→/Home/End로 이동하고 Esc 또는 `재생 닫기`로 끝낸다. 재생 중에도 편집할 수 있으며 편집하면 결과와 재생이 함께 지워진다. 찾지 못한 경로의 버튼은 비활성이다.
-8. 코드: `Runtime/MapSolver.cs`(탐색), `Runtime/GridSession.cs`의 `SaveCore/LoadCore`(상태 저장·복원), `Editor/MapAnalysisRunner.cs`(진행 막대·메뉴), `Editor/MapEditorWindow.cs`(패널), `Editor/MapReplay.cs`(단계 기록), `MapCanvas.DrawReplay`(그리기).
+8. 코드: `Scripts/Runtime/Core/MapSolver.cs`(탐색), `Scripts/Runtime/Core/GridSession.cs`의 `SaveCore/LoadCore`(상태 저장·복원), `Scripts/Editor/MapEditor/MapAnalysisRunner.cs`(진행 막대·메뉴), `Scripts/Editor/MapEditor/MapEditorWindow.cs`(패널), `Scripts/Editor/MapEditor/MapReplay.cs`(단계 기록), `MapCanvas.DrawReplay`(그리기).
 9. 검증: 자동 테스트로 최단 승리 경로 재생, 승리 불가 맵, 가장 빠른 패배 경로 재생, 한도·취소·오류 맵, 재생 단계 기록과 분석 후 맵이 바뀐 경로의 재생 중단을 확인했다. 맵 에디터 창에서 `ProtoTypeMap`을 상태 한도 20,000으로 검증해 배지·수치·버튼 상태, 패배 경로 재생(시작 → 3행동 패배)·마지막 단계 이동·범례 전환·재생 닫기와 맵 미수정을 확인했다. 캔버스 표시의 가독성과 조작감은 사용자 확인 대기([플레이 확인 목록](IBIIIS_플레이_확인_목록.md) E-05).
 10. 알려진 결과(2026-10-09, 상태 중복 제거 후): `ProtoTypeMap`(11×11, 적 6)은 18초 동안 약 17만 상태·13행동 깊이까지 탐색해 최단 11행동 승리 경로(재생하면 승리)와 3행동 패배 경로를 찾았다. 끝까지 탐색하지는 못했다(불완전). 같은 20,000 상태 한도에서 중복 제거 전후를 비교하면 ProtoTypeMap 9.9초→1.7초(깊이 10→11), PrototypeMap2(13×13, 적 8) 10.8초→1.8초(깊이 8→10)이고 가장 빠른 패배와 그 경로는 같았다.
 12. 결과 일관성 검증(2026-10-09): 맵 에디터 창을 ProtoTypeMap·PrototypeMap2 사본과 임시 적으로 직접 조작해 확인했다 — 맵과 무관한 실행 취소는 결과 유지, 이미 시작 위치인 칸 클릭은 저장 표시 없이 결과 유지, 적 설정 변경 뒤 결과 지움, 시작 위치 이동은 결과 지움·실행 취소로 복구, 같은 맵 다시 열기는 결과 유지·다른 맵 열기는 결과와 재생 지움, 6단계 재생을 끝까지 넘긴 뒤 1단계 재생은 0단계부터 시작, 마우스 아래 칸 정보는 편집 뒤 갱신. 원본 맵·씬은 수정되지 않았다. EditMode 123/123 통과. 실제 창 조작감은 사용자 확인 대기([플레이 확인 목록](IBIIIS_플레이_확인_목록.md) E-05).
@@ -279,7 +281,7 @@ Unity의 프로젝트 구성 가이드(unity.com/kr/how-to/organizing-your-proje
 - **좌우 초상화**: 인물은 처음 말할 때 자기 쪽에 서고 다른 인물이 그쪽에서 말하면 바뀐다. 말하는 쪽은 밝게, 듣는 쪽은 어둡게 조금 내려간다. 지문일 때는 둘 다 어둡다. 초상화가 없는 인물은 이름표만 보인다.
 - **모양**: `Assets/IBIIIS/UI/DialogueBox.uxml`(요소 이름 `portrait-left`·`portrait-right`·`box`·`name`·`text`·`next` 유지)과 `GameUi.uss`의 `dialogue-*`·`portrait` 스타일. Game UI 설정의 `Dialogue Box` 슬롯에 연결된다(`IBIIIS > Create Default Game UI`). 설정이 없으면 화면 아래 임시 IMGUI 상자로 대신한다.
 - **기본 에셋**: 메뉴 `IBIIIS > Create Default Dialogue`가 임시 초상화·기본 인물 3명·확인용 대화를 없을 때만 만들고, 미니맵 NPC 프리팹의 `Dialogue` 슬롯이 비어 있으면 확인용 대화를 연결한다.
-- **코드**: `Runtime/DialogueCharacter.cs`, `DialogueScript.cs`, `DialogueRunner.cs`(진행 로직), `DialogueView.cs`(화면), `DialogueController.cs`(씬에서 띄우기·입력), `NpcSpeaker`의 `Dialogue` 슬롯, `OverworldPlayer.SetInputLocked`, `Editor/DialogueSetup.cs`.
+- **코드**: `Scripts/Runtime/Scenario/DialogueCharacter.cs`, `DialogueScript.cs`, `DialogueRunner.cs`(진행 로직), `DialogueView.cs`(화면), `DialogueController.cs`(씬에서 띄우기·입력), `NpcSpeaker`의 `Dialogue` 슬롯, `OverworldPlayer.SetInputLocked`, `Scripts/Editor/Setup/DialogueSetup.cs`.
 - 개발 검증: 컴파일 완료, EditMode 154/154 통과(신규 5: 글자 진행·넘김·끝 알림 한 번, 인물이 자기 쪽에 서고 말하는 쪽 강조·표정 초상화와 없는 표정의 기본 초상화, 빈 대화는 바로 끝, 화면에 이름표·지문 표시·초상화 강조·표정 그림·끝나면 숨김, NPC 대화 시작·대화 중 다시 말 걸기 불가·끝나면 다시 가능).
 - 사용자 확인 대기: [플레이 확인 목록](IBIIIS_플레이_확인_목록.md) O-02·G-10.
 
@@ -326,27 +328,27 @@ Unity의 프로젝트 구성 가이드(unity.com/kr/how-to/organizing-your-proje
   - 새 대본·대본 복제(2026-10-13): 위쪽 막대의 `새 대본` 또는 `대본 복제`를 누르면 막대 아래에 입력 칸이 뜬다. 파일 이름, 대본 ID(파일 이름에서 자동 제안: 끝의 Script를 떼고 단어·숫자 사이를 _로 나눠 소문자 — `Tutorial3Script` → `tutorial_3`, 직접 고치면 그 뒤로는 자동으로 바꾸지 않음), 시작 내용(`빈 대본(지문 한 줄)` 또는 `현재 대본 복제`)을 정하고 `만들기…`를 누르면 Unity 저장 창(기본 폴더 `Assets/IBIIIS/Scenarios/`, 없으면 만듦)이 뜬다. 만든 대본은 바로 열리고 빈 대본은 첫 지문을 바로 입력한다. 복제 기본 이름은 `Tutorial1Script` → `Tutorial1CopyScript`.
     - 대본 ID가 비었거나, 영어 소문자·숫자·`_`·`-` 외 글자가 있거나, 다른 대본과 겹치면 만들기가 막히고 이유가 보인다. 이미 있는 파일에는 덮어쓰지 않는다. 복제본의 단계 ID는 새로 받고 원본은 바뀌지 않는다.
     - 대본만 만들어서는 게임에 나오지 않는다. 전투 씬의 `ScenarioDirector` `Script` 슬롯에 연결해야 한다(아래 씬에 연결).
-    - 규칙 코드: `Editor/DialogueScriptAssets.cs`(ID 제안·검사·만들기, 자동 테스트 대상).
+    - 규칙 코드: `Scripts/Editor/DialogueEditor/DialogueScriptAssets.cs`(ID 제안·검사·만들기, 자동 테스트 대상).
   - 씬에 연결(2026-10-13): 위쪽 막대의 `씬에 연결`을 누르면 프로젝트(`Assets`)의 모든 씬에서 대본 진행기(`ScenarioDirector`)를 찾아 `열린 씬`·`닫힌 씬` 두 묶음의 목록(`씬 이름 · 오브젝트 이름 (지금: 연결된 대본)`)을 보이고, 고른 진행기에 지금 대본을 꽂는다. 이미 이 대본인 항목은 비활성. 진행기가 하나도 없으면 전투 씬의 Grid Map Player 오브젝트에 ScenarioDirector를 추가하라고 안내한다(사용자 요청: 현재 씬이 아닌 씬도 골라 연결).
     - 열린 씬(Hierarchy에 있는 씬, 꺼진 오브젝트 포함): 그 자리에서 연결한다. 다른 대본이 연결돼 있으면 바꿀지 확인한다. Ctrl+Z로 되돌릴 수 있고 **씬 저장(Ctrl+S)은 직접** 한다. 연결 뒤 그 오브젝트를 Hierarchy에서 깜빡여 보인다.
     - 닫힌 씬: 확인 창에서 `연결하고 저장`을 누르면 그 씬 파일을 잠깐 더해 열어 연결하고 **저장한 뒤 닫는다**. 이 경우 Ctrl+Z로 되돌릴 수 없다(되돌리려면 원래 대본으로 다시 연결). 지금 열린 씬의 저장 상태는 바꾸지 않는다. 연결 뒤 Project 창에서 그 씬 파일을 깜빡여 보인다.
     - 닫힌 씬은 씬 파일(텍스트)을 열지 않고 읽어 찾으며, 파일이 바뀌지 않았으면 다시 읽지 않는다.
     - Play 중과 파일로 저장되지 않은 대본은 버튼이 막힌다.
     - 버튼 옆에 지금 대본이 연결된 씬 이름(`연결: Tutorial1, Tutorial2(닫힘)`) 또는 `연결된 씬 없음`이 보인다(씬을 열고 닫거나 Hierarchy·프로젝트 파일이 바뀌면 갱신).
-    - 새 맵·씬을 만드는 기능은 없다. 규칙 코드: `Editor/DialogueScriptScenes.cs`(진행기 찾기·씬 파일 읽기·연결·닫힌 씬 연결, 자동 테스트 대상).
+    - 새 맵·씬을 만드는 기능은 없다. 규칙 코드: `Scripts/Editor/DialogueEditor/DialogueScriptScenes.cs`(진행기 찾기·씬 파일 읽기·연결·닫힌 씬 연결, 자동 테스트 대상).
   - 단계 ID: 대본의 단계마다 고유 ID(`id`, Inspector에 숨김)가 있다. 선택·복사가 번호 대신 ID를 써서 단계를 넣거나 빼도 선택이 따라간다. 비었거나 겹치면(예전 대본, Inspector에서 복제) 대본이 새로 채우고, 편집기로 열 때 저장한다. 진행에는 쓰지 않는다.
-  - 규칙 코드: `Editor/DialogueScriptEdits.cs`(세로줄 계산, 시작·끝·통째 옮기기, 세로줄 옮기기, 추가, 표시 그려 넣기, 삭제, 붙여넣기, 검사 — 창과 분리된 정적 함수, 자동 테스트 대상).
+  - 규칙 코드: `Scripts/Editor/DialogueEditor/DialogueScriptEdits.cs`(세로줄 계산, 시작·끝·통째 옮기기, 세로줄 옮기기, 추가, 표시 그려 넣기, 삭제, 붙여넣기, 검사 — 창과 분리된 정적 함수, 자동 테스트 대상).
   - 저장: IBIIIS Dialogue Editor에서 고친 내용(끌기·순서·추가·삭제·아래 칸 편집·되돌리기)은 바로 대본 파일에 저장된다(사용자 요청, 2026-10-13). Inspector에서 직접 고친 내용은 Unity 규칙대로 Ctrl+S가 필요하다. 저장 여부와 관계없이 에디터 Play는 열려 있는 대본을 그대로 쓴다.
   - 노드나 막대를 누르면 아래 칸에서 Inspector와 같은 항목으로 편집하고, 앞으로·뒤로(바로 옆 단계와 순서 바꾸기), 복제, 삭제를 할 수 있다. 여러 개를 고르면 복사·복제·삭제 버튼이 보인다. 바로 대본 에셋에 저장되며 Ctrl+Z로 되돌린다. 자세·감정 표시를 고르면 그 범위의 노드가 밝게 표시된다.
-  - 데이터는 대본 에셋(`ScenarioScript`) 그대로다. 범위 계산은 `Runtime/ScenarioTimeline.cs` 한 곳에 있고, 실제 두 튜토리얼 대본을 진행해 단계마다 보이는 자세·감정 표시가 이 계산과 같은지 자동 테스트로 확인한다. 진행 규칙을 바꾸면 이 파일도 함께 고친다.
-  - 코드: `Editor/DialogueEditorWindow.cs`(창과 Inspector 버튼), `Editor/DialogueScriptEdits.cs`(편집 규칙). 선택지·분기는 없다(대본이 일직선). 대화창 미리 보기·여기부터 실행은 아직 없다(필요할 때 추가). 화면의 보기 편함과 마우스 조작감은 사용자 확인 대기([플레이 확인 목록](IBIIIS_플레이_확인_목록.md) E-08~E-12).
+  - 데이터는 대본 에셋(`ScenarioScript`) 그대로다. 범위 계산은 `Scripts/Runtime/Scenario/ScenarioTimeline.cs` 한 곳에 있고, 실제 두 튜토리얼 대본을 진행해 단계마다 보이는 자세·감정 표시가 이 계산과 같은지 자동 테스트로 확인한다. 진행 규칙을 바꾸면 이 파일도 함께 고친다.
+  - 코드: `Scripts/Editor/DialogueEditor/DialogueEditorWindow.cs`(창과 Inspector 버튼), `Scripts/Editor/DialogueEditor/DialogueScriptEdits.cs`(편집 규칙). 선택지·분기는 없다(대본이 일직선). 대화창 미리 보기·여기부터 실행은 아직 없다(필요할 때 추가). 화면의 보기 편함과 마우스 조작감은 사용자 확인 대기([플레이 확인 목록](IBIIIS_플레이_확인_목록.md) E-08~E-12).
 - **좌표**: 칸은 맵 좌표(열, 행), (0,0)이 맵 왼쪽 아래다. 기획서는 행 0이 맨 위이므로 옮길 때 행을 뒤집는다(행 = 맵 높이 − 1 − 기획서 행).
 - **진행기** `ScenarioDirector`(전투 씬 오브젝트에 붙임): `Battle`(Grid Map Player), `Script`, `Actors`(대본이 ID로 부르는 등장 오브젝트와 감정 표시 높이. `Blocks Cell`을 체크하면 켤 때 `Cell` 칸으로 옮기고 그 칸을 막으며 끄면 푼다 — 허수아비처럼 공격하지 않고 칸만 막는 오브젝트), `Player Emote Height`(임시 1.6칸), `Hide Enemy Alerts`, `Script Controls Danger`(체크하면 대본 중 인식 범위 안의 위험 그림을 자동으로 보이지 않고 Pose 단계로만 보임), `Play On Start`. 대본이 도는 동안 되돌리기·다시 시작·범위 표시(키·HUD 버튼)를 막고 버튼을 숨기며, 끝나면 푼다. 대사를 닫은 프레임에는 전투 입력을 받지 않아 대사를 넘긴 Space·Enter가 대기 등으로 읽히지 않는다.
 - **대화창 확장**: 입력을 기다리는 안내 줄은 넘길 수 없고(▼ 없음) 아래에 키 표시(예: `Shift` + `W`)가 깜빡인다. 대본의 대사는 한 줄씩 이어 보여도 좌우에 선 인물이 유지된다. 이름 입력 칸은 대화 상자 안에 나오며 확인 버튼·Enter로 확정한다.
 - **전투 쪽 확장**(`GridMapPlayer`): `CommandFilter`(허용 판정, 키 입력과 `TryPlayerCommand`가 거침), `AllowUndoRestart`·`AllowRangeToggle`, `CommandRejected` 알림, `SetGuideCells`(0.5초마다 깜빡이는 노란 테두리), `TryGetCell`(화면 좌표 → 칸), `PlayPose`·`EndPose`(자세 그림, `PlayerVisual.OverrideSprite` 사용. 논리 위치·판정은 바뀌지 않음).
 - **전투 판정 확장**(3단계, `GridSession`): `TryAddEnemy`(입력 대기 중 적 합류, 다음 행동부터 움직이고 판정에 참여, 합류 전 행동을 되돌리면 빠짐), `SetBlocked`(실행 중 막힌 칸, 플레이어·적 모두 못 들어가고 적은 벽처럼 돌아섬), `Predict`(행동 결과를 상태 복사본으로 미리 계산, 현재 상태는 바뀌지 않음). 규칙 요약은 [전투 및 적 배치 가이드](IBIIIS_전투_및_적배치_가이드.md)에 있다. `GridMapPlayer.SpawnEnemy`·`SetCellBlocked`·`CellWorldPosition`이 외형과 함께 처리한다.
 - **기획서 2단계 경로 확인**: 기획서 배치(맵 좌표로 옮김)에서 대본대로 왼쪽 이동 → 2마리 합류 → 위로 대시 → 대기만 하면 4턴에 적이 모두 부딪혀 사라지고 피격이 없음을 실제 Enemy003 프리팹으로 자동 테스트했다. 이 시점 자유 진행에서 아래·왼쪽 이동은 패배로 계산되어 막힌다.
-- **코드**: `Runtime/ScenarioScript.cs`, `Runtime/ScenarioDirector.cs`, `Editor/ScenarioStepDrawer.cs`, `DialogueRunner.Locked`·`DialogueController.Prompt/AskName`.
+- **코드**: `Scripts/Runtime/Scenario/ScenarioScript.cs`, `Scripts/Runtime/Scenario/ScenarioDirector.cs`, `Scripts/Editor/DialogueEditor/ScenarioStepDrawer.cs`, `DialogueRunner.Locked`·`DialogueController.Prompt/AskName`.
 - **대본 초기화**: 메뉴 `IBIIIS > Reset Scenario Scripts`가 두 튜토리얼 대본을 코드의 기본 대본으로 덮어쓴다(확인 창). Inspector에서 고친 내용은 사라진다. `Create Tutorial Content`는 있는 대본을 덮어쓰지 않는다.
 - 개발 검증(2026-10-13): 컴파일 완료, EditMode 168/168 통과(IBIIIS Dialogue Editor: 두 대본의 단계별 자세·감정 표시가 범위 계산과 같음, 장면 나누기. 에디터에서 창을 열어 1단계 44단계→36세로줄·5장면·막대 6개·쌓인 노드 2개, 2단계 46단계→40세로줄·4장면·막대 3개·쌓인 노드 3개로 그려지고 감정 표시·자세 노드는 없으며, 그림 없는 자세가 빨간 경고로 보이는 것 확인. 표시 끝(2026-10-13, EditMode 171/171): 진행기가 표시 끝 단계에서 감정 표시·자세를 끝내고 그 전에는 시간이 지나도 유지하며 범위 계산과 같음, 막대 뒤쪽을 끌면 표시 끝 단계를 만들고 다시 끌면 옮김·시작보다 앞으로 못 당김, 앞쪽을 끌면 단계를 옮기고 끝보다 뒤로 못 감. 창에서 표시 끝이 있는 막대에 손잡이 2개, 짝 없는 표시 끝의 경고를 확인. 실제 마우스 끌기·미리 보기는 사용자 확인 대기(플레이 확인 목록 E-09). 편집 기능 확장(2026-10-13, EditMode 178/178): 막대 통째 옮기기(길이 유지·처음과 끝에서 멈춤), 세로줄 옮기기(쌓인 단계는 함께·표시 끝은 제자리·맨 앞/끝), 세로줄 안·뒤에 추가, 표시 그려 넣기(거꾸로 끌기 포함), 표시 삭제 시 표시 끝 함께 삭제, 붙여 넣은 단계의 새 ID와 겹친 ID 수정, 검사 항목. 확인용 창을 따로 만들어 실제 두 대본의 복사본이 문제 없음·장면별 그려 넣기 줄로 그려지는 것 확인. 씬에 연결(2026-10-13, EditMode 189/189): 씬 안 진행기 찾기(꺼진 오브젝트 포함)·이름 표시, 연결·같은 대본이면 그대로·Ctrl+Z로 이전 대본(미리보기 씬으로 테스트), 씬 파일 읽기(튜토리얼 2단계 씬의 진행기 하나와 연결된 대본, 진행기 없는 타이틀 씬), 닫힌 씬 연결(튜토리얼 2단계 씬의 임시 복사본에 임시 대본을 연결 → 파일에 저장되고 씬은 닫힘, 같은 대본·파일 아닌 대본은 거부, 원본 씬은 그대로). 확인용 창에서 대본 없음·파일 아닌 대본은 버튼 막힘, `Tutorial1Script` → `연결: Tutorial1`, `Tutorial2Script` → `연결: Tutorial2(닫힘)` 표시 확인. 실제 버튼으로 연결해 보기는 사용자 확인 대기(플레이 확인 목록 E-12). 새 대본·복제(2026-10-13, EditMode 185/185): ID 제안 4가지, 빈·형식 오류·겹친 ID 거부와 자기 자신 제외, 빈 대본 만들기·파일 저장·덮어쓰기 거부·겹친 ID 거부, 복제본 내용 동일·단계 ID 새로·원본 유지(테스트용 대본은 임시 폴더에 만들고 지움). 확인용 창을 띄워 입력 칸의 기본값(복제: `Tutorial1CopyScript`·`tutorial_1_copy`·현재 대본 복제)과 ID 자동 제안·오류 문구·만들기 버튼 막힘을 확인(저장 창은 사람이 고르는 창이라 띄우지 않음). 끌기 수정(2026-10-13): 손을 뗄 때 끌던 종류를 먼저 지워 막대·작은 노드 끌기가 항상 "바뀌지 않음"으로 끝나던 문제를 고쳤다. 확인용 창(복사본 대본)에 마우스 입력을 흉내 내 막대 통째 옮기기(7~11 → 9~13), 끝 손잡이(19~20 → 19~21), 대사 노드를 세로줄 3·바로 옆 세로줄로 옮기기를 확인. 사용자가 끌어 늘린 1단계 대본(`!`·놀람 자세를 11번 대사까지)으로 실제 진행해도 범위대로 유지됨을 자동 테스트로 확인). 튜토리얼 피드백 반영분: 네 방향을 모두 눌러야 넘어감·누른 키가 표시에서 빠짐·대시는 세지 않음, 자세 단계가 그림을 바꾸고 다음 대사가 끝나면 되돌리며 돌아올 때 움직임을 줌, 그림 아이콘 감정 표시, 경고가 떠 있는 동안 대기 입력 거부·위치 그대로·넘기면 닫히고 자유 진행 유지. 이전(3단계 4: 적 합류 규칙·다음 행동부터 이동·되돌리면 빠짐과 외형 정리, 칸 막는 오브젝트 배치·이동 차단·미리 계산이 상태를 바꾸지 않음, 칸 누르기의 날아가는 그림이 연출 뒤 지워짐, 기획서 2단계 경로 전멸·위험 이동 차단과 경고. 2단계: 대사·감정 표시(다음 대사가 끝나면 사라짐)·이름 입력·허용 방향 한 번·첫 이동 뒤 시간·칸 도착·등장 오브젝트 켜기·칸 누르기(다른 칸 무시·연출 시간)·끝나면 제한 해제를 한 대본으로 확인, 대본이 막으면 HUD 버튼 숨김·무시).
 - 사용자 확인 대기: 실제 튜토리얼 콘텐츠로 확인한다([플레이 확인 목록](IBIIIS_플레이_확인_목록.md) G-01~G-10). 내용은 [튜토리얼 문서](IBIIIS_튜토리얼_문서.md).
@@ -378,7 +380,7 @@ Unity의 프로젝트 구성 가이드(unity.com/kr/how-to/organizing-your-proje
 ### 판정과 검증 범위
 
 - 환경은 장식 전용이다. Collider·크기·위치가 격자 이동 판정을 바꾸지 않는다. 이동을 막으려면 맵 에디터에서 해당 칸을 지운다. 여러 칸 점유·문·상자·파괴 기능은 미구현이다.
-- 코드: `GridMap.environmentPrefab`, `GridMapPlayer`의 환경 인스턴스/소스 참조, `Assets/IBIIIS/Editor/MapEnvironmentEditor.cs`. 편집 환경은 Scene에 저장하고, 타일 미리보기와 별도로 유지한다.
+- 코드: `GridMap.environmentPrefab`, `GridMapPlayer`의 환경 인스턴스/소스 참조, `Assets/IBIIIS/Scripts/Editor/MapEditor/MapEnvironmentEditor.cs`. 편집 환경은 Scene에 저장하고, 타일 미리보기와 별도로 유지한다.
 - 자동 테스트로 환경 재생성 보존·중복 방지, 미적용 변경의 교체/해제 차단, 프리팹 적용 후 다른 인스턴스 재현·이동 판정 유지, 선택적 환경·루트 보정 보호, 새 테스트 씬의 환경 참조 저장, 슬롯 변경과 Scene 교체의 한 번 실행 취소·다시 실행, 루트 크기 2 프리팹 거부와 이유 표시, 직접 삭제 후 남은 연결 기록의 버튼 정리를 확인했다. 이 확인 중 Scene 교체를 실행 취소해도 Grid Map Player의 환경 참조가 되돌아가지 않던 문제(참조 기록 시점)를 함께 고쳤다.
 - 사용자 확인: 환경 아래 소품 배치 → 타일 수정 후 위치 유지 확인 → 프리팹 적용 → 새 테스트 씬 생성 → 같은 배치 확인 → Play에서 환경 중복 생성 및 이동 판정 변화가 없는지 확인. 맵 Inspector에서 환경 슬롯을 다른 프리팹으로 바꾼 뒤 Ctrl+Z 한 번으로 슬롯과 Scene 환경이 함께 원래대로 돌아오는지, 루트 Scale을 2로 바꾼 프리팹을 연결하면 이유가 담긴 거부 대화상자가 뜨는지 확인. **사용자 확인 대기**([플레이 확인 목록](IBIIIS_플레이_확인_목록.md) E-06).
 
@@ -443,7 +445,7 @@ Unity의 프로젝트 구성 가이드(unity.com/kr/how-to/organizing-your-proje
 - 미니맵 전용 값(`OverworldSettings`의 걷기 손맛): `Motion Feedback`(공용 에셋 연결), `Stride Length`, `Walk Hop Scale`(전투 1칸 뜀 대비 배율, 임시 0.5, 0이면 걸음 뜀 끔), `Footsteps`(걸음·멈춤 발소리. 구르기 착지 발소리는 이 설정과 무관하게 난다), `Dust Every Steps`(0이면 걸음 먼지 끔), `Stop Squash Scale`(임시 0.6, 0이면 멈춤 반응·먼지 끔), `Breathing`, `Wall Bump`. 값은 Play 시작 시 읽지 않고 매 프레임 읽으므로 Play 중에도 바로 반영된다.
 - 미니맵 플레이어의 바라보는 방향은 `OverworldPlayer`가 직접 관리한다. 자식에 `PlayerVisual`이 없어도 구르기 방향·전투 복귀 방향은 맞고, 먼지·발소리도 그대로 나며 그림 방향과 손맛 자세만 표시하지 않는다(시작 시 경고). 카메라에 Overworld Settings가 없으면 시작 시 경고하고 카메라 현재 각도·화각과 기본 범위를 쓴다.
 - 표시 전용이다. 이동·충돌·말 걸기 범위에 영향을 주지 않는다. 미니맵은 일반 게임 시간(`Time.deltaTime`)으로 움직인다.
-- 코드: `Runtime/OverworldMotion.cs`(걸은 거리 → 걸음·자세), `Runtime/MotionEffects.cs`(전투와 공유하는 `MotionPoses`·`MotionEffects`), `Runtime/BreathingSprite.cs`, `OverworldPlayer.Update`에서 `PlayerVisual.SetPose`로 적용. 기존 NPC 프리팹에는 `IBIIIS > Overworld > Create NPC Prefab`이 숨쉬기가 없을 때만 붙인다.
+- 코드: `Scripts/Runtime/Overworld/OverworldMotion.cs`(걸은 거리 → 걸음·자세), `Scripts/Runtime/Feedback/MotionEffects.cs`(전투와 공유하는 `MotionPoses`·`MotionEffects`), `Scripts/Runtime/Feedback/BreathingSprite.cs`, `OverworldPlayer.Update`에서 `PlayerVisual.SetPose`로 적용. 기존 NPC 프리팹에는 `IBIIIS > Overworld > Create NPC Prefab`이 숨쉬기가 없을 때만 붙인다.
 
 ### 구조와 시간 분리
 

@@ -12,7 +12,7 @@ namespace IBIIIS.Tests
         private readonly List<string> paths = new List<string>();
         private string NewPath()
         {
-            var path = AssetDatabase.GenerateUniqueAssetPath("Assets/IBIIIS/Tests/SetupCheck.inputactions"); paths.Add(path);
+            var path = AssetDatabase.GenerateUniqueAssetPath("Assets/IBIIIS/Scripts/Tests/SetupCheck.inputactions"); paths.Add(path);
             return path;
         }
         [TearDown] public void TearDown()
@@ -30,7 +30,7 @@ namespace IBIIIS.Tests
         }
         [Test] public void DefaultEnemiesUseSpriteVisualsAndLeaveExistingPrefabsAlone()
         {
-            var folder = AssetDatabase.GenerateUniqueAssetPath("Assets/IBIIIS/Tests/GeneratedEnemies"); paths.Add(folder);
+            var folder = AssetDatabase.GenerateUniqueAssetPath("Assets/IBIIIS/Scripts/Tests/GeneratedEnemies"); paths.Add(folder);
             var created = EnemyPrefabSetup.EnsureDefaults(folder);
             Assert.AreEqual(3, created.Count);
             foreach (var path in created)

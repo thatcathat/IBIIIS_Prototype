@@ -60,8 +60,8 @@ namespace IBIIIS.Tests
         }
         [Test] public void ConnectsIntoAClosedSceneFileAndClosesIt()
         {
-            string folder = "Assets/IBIIIS/Tests/Temp_" + System.Guid.NewGuid().ToString("N").Substring(0, 8);
-            AssetDatabase.CreateFolder("Assets/IBIIIS/Tests", folder.Substring(folder.LastIndexOf('/') + 1));
+            string folder = "Assets/IBIIIS/Scripts/Tests/Temp_" + System.Guid.NewGuid().ToString("N").Substring(0, 8);
+            AssetDatabase.CreateFolder("Assets/IBIIIS/Scripts/Tests", folder.Substring(folder.LastIndexOf('/') + 1));
             try
             {
                 string scenePath = folder + "/Copy.unity";

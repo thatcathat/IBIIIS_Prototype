@@ -37,7 +37,9 @@ namespace IBIIIS.Editor
         public const string Maps = Root + "/Maps";
         public const string StarterMap = Maps + "/StarterMap/StarterMap.asset";
         public const string DefaultResources = Root + "/Resources/IBIIIS";
-        public const string MapEditorLayout = Root + "/Editor/UI/MapEditor.uxml";
+        // 코드와 편집기 화면 파일은 Scripts/ 아래(Docs 개발 및 사용 가이드의 Assets 폴더 구조와 규칙).
+        public const string Scripts = Root + "/Scripts";
+        public const string MapEditorLayout = Scripts + "/Editor/MapEditor/UI/MapEditor.uxml";
         // 미니맵(Overworld): 테스트 씬과 임시 재질은 Overworld 폴더, 설정은 Settings, 플레이어 프리팹은 Characters/Player.
         public const string Overworld = Root + "/Overworld";
         public const string OverworldScene = Overworld + "/OverworldTest.unity";

@@ -353,8 +353,8 @@ namespace IBIIIS.Tests
         [Test] public void PrefabPlacementRoundTripAndScenePreviewUseSelectedAsset()
         {
             var source=Enemy(1,3,Vector2Int.right);
-            string prefabPath=AssetDatabase.GenerateUniqueAssetPath("Assets/IBIIIS/Tests/CombatEnemy.prefab");
-            string mapPath=AssetDatabase.GenerateUniqueAssetPath("Assets/IBIIIS/Tests/CombatMap.asset");
+            string prefabPath=AssetDatabase.GenerateUniqueAssetPath("Assets/IBIIIS/Scripts/Tests/CombatEnemy.prefab");
+            string mapPath=AssetDatabase.GenerateUniqueAssetPath("Assets/IBIIIS/Scripts/Tests/CombatMap.asset");
             GridMap saved=null;
             try
             {

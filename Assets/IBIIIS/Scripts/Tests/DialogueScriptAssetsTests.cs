@@ -12,8 +12,8 @@ namespace IBIIIS.Tests
         private string folder;
         [SetUp] public void Setup()
         {
-            folder = "Assets/IBIIIS/Tests/Temp_" + System.Guid.NewGuid().ToString("N").Substring(0, 8);
-            AssetDatabase.CreateFolder("Assets/IBIIIS/Tests", folder.Substring(folder.LastIndexOf('/') + 1));
+            folder = "Assets/IBIIIS/Scripts/Tests/Temp_" + System.Guid.NewGuid().ToString("N").Substring(0, 8);
+            AssetDatabase.CreateFolder("Assets/IBIIIS/Scripts/Tests", folder.Substring(folder.LastIndexOf('/') + 1));
         }
         [TearDown] public void Cleanup() { AssetDatabase.DeleteAsset(folder); }
 

@@ -34,7 +34,7 @@ namespace IBIIIS.Tests
         }
         private GameObject CreatePrefab()
         {
-            var path = AssetDatabase.GenerateUniqueAssetPath("Assets/IBIIIS/Tests/EnvironmentCheck.prefab"); paths.Add(path);
+            var path = AssetDatabase.GenerateUniqueAssetPath("Assets/IBIIIS/Scripts/Tests/EnvironmentCheck.prefab"); paths.Add(path);
             return MapEnvironmentEditor.CreateEnvironment(map, path);
         }
         [Test] public void PreviewRebuildAndRuntimeReuseEnvironmentWithLocalChanges()
@@ -115,14 +115,14 @@ namespace IBIIIS.Tests
                 foreach (var root in runnerScene.GetRootGameObjects())
                     Assert.True(root.GetComponent<Camera>() != null || root.GetComponent<Light>() != null,
                         "Only the test runner's default camera/light scene may be temporarily saved.");
-                var runnerPath = AssetDatabase.GenerateUniqueAssetPath("Assets/IBIIIS/Tests/EmptyRunnerScene.unity"); paths.Add(runnerPath);
+                var runnerPath = AssetDatabase.GenerateUniqueAssetPath("Assets/IBIIIS/Scripts/Tests/EmptyRunnerScene.unity"); paths.Add(runnerPath);
                 Assert.True(EditorSceneManager.SaveScene(runnerScene, runnerPath));
             }
         }
         [Test] public void NewMapCreatesLinkedSceneAndAvoidsOverwritingEitherFile()
         {
             PrepareRunnerScene();
-            var requested = AssetDatabase.GenerateUniqueAssetPath("Assets/IBIIIS/Tests/NewMapPair.asset");
+            var requested = AssetDatabase.GenerateUniqueAssetPath("Assets/IBIIIS/Scripts/Tests/NewMapPair.asset");
             var first = MapEditorSetup.CreateMapWithScene(requested, out var firstScene);
             paths.Add(AssetDatabase.GetAssetPath(first)); paths.Add(firstScene);
             var firstGuid = AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(first));
@@ -146,11 +146,11 @@ namespace IBIIIS.Tests
         {
             PrepareRunnerScene();
             var prefab = CreatePrefab();
-            var mapPath = AssetDatabase.GenerateUniqueAssetPath("Assets/IBIIIS/Tests/EnvironmentMapCheck.asset"); paths.Add(mapPath);
+            var mapPath = AssetDatabase.GenerateUniqueAssetPath("Assets/IBIIIS/Scripts/Tests/EnvironmentMapCheck.asset"); paths.Add(mapPath);
             var copy = Object.Instantiate(map); AssetDatabase.CreateAsset(copy, mapPath);
             var tileCopy = Object.Instantiate(tile); AssetDatabase.AddObjectToAsset(tileCopy, copy);
             var serialized = new SerializedObject(copy); serialized.FindProperty("palette").GetArrayElementAtIndex(0).objectReferenceValue = tileCopy; serialized.ApplyModifiedPropertiesWithoutUndo(); AssetDatabase.SaveAssetIfDirty(copy);
-            var path = MapEditorSetup.CreateTestScene(copy, "Assets/IBIIIS/Tests/EnvironmentSceneCheck.unity"); paths.Add(path);
+            var path = MapEditorSetup.CreateTestScene(copy, "Assets/IBIIIS/Scripts/Tests/EnvironmentSceneCheck.unity"); paths.Add(path);
             var loaded = EditorSceneManager.OpenPreviewScene(path);
             try
             {
