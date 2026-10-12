@@ -26,6 +26,8 @@ namespace IBIIIS.Editor
         private ObjectField scriptField;
         private Button issuesButton;
         private ScrollView issuesList, graph;
+        private Button duplicateButton;
+        private VisualElement createForm;
         private VisualElement detail;
         private bool rebuildQueued, showIssues;
         // 세로줄 목록(전체 대본 순서, DialogueScriptEdits.Columns와 같은 순서). 끌어 놓을 자리를 찾는 데 쓴다.
@@ -80,6 +82,8 @@ namespace IBIIIS.Editor
             scriptField = new ObjectField("대본") { objectType = typeof(TutorialScript), allowSceneObjects = false, style = { flexGrow = 1, maxWidth = 380 } };
             scriptField.RegisterValueChangedCallback(e => SetScript(e.newValue as TutorialScript));
             toolbar.Add(scriptField);
+            toolbar.Add(new Button(() => ShowCreateForm(false)) { text = "새 대본" });
+            toolbar.Add(duplicateButton = new Button(() => ShowCreateForm(true)) { text = "대본 복제" });
             issuesButton = new Button(() => { showIssues = !showIssues; RefreshIssues(); }) { text = "검사" };
             toolbar.Add(issuesButton);
             toolbar.Add(new Label("더블클릭: 대사 고치기 · 우클릭: 추가 · 끌기: 옮기기·범위 · 아래 빈 줄 끌기: 표시 추가 · Ctrl+C/V/D·Delete · Ctrl/Shift+클릭: 여러 개") { style = { color = new Color(.7f, .7f, .7f), unityFontStyleAndWeight = FontStyle.Italic, marginLeft = 8, fontSize = 10 } });
@@ -122,6 +126,7 @@ namespace IBIIIS.Editor
             if (script != null && script.EnsureStepIds()) { EditorUtility.SetDirty(script); Save(); }
             serialized = script != null ? new SerializedObject(script) : null;
             if (scriptField != null) scriptField.SetValueWithoutNotify(script);
+            duplicateButton?.SetEnabled(script != null);
             if (rootVisualElement != null && serialized != null)
             {
                 rootVisualElement.Unbind();
@@ -606,6 +611,55 @@ namespace IBIIIS.Editor
             if (!EditorUtility.DisplayDialog("세로줄 삭제", $"{c.from}번 ~ {c.to}번 단계 {indices.Count}개를 지웁니다(표시 끝 단계는 앞 표시의 끝이라 남김).", "삭제", "취소")) return;
             Commit(DialogueScriptEdits.Delete(script.Steps, indices), "세로줄 삭제", Mathf.Min(c.from, script.Steps.Length - indices.Count - 1));
         }
+
+        // ── 새 대본 만들기 ──
+        // 위쪽 막대 아래에 입력 칸을 띄운다: 파일 이름, 대본 ID(파일 이름에서 자동, 고칠 수 있음), 시작 내용(빈 대본·현재 대본 복제).
+        // 만들기를 누르면 Unity 저장 창으로 위치를 고르고, 만든 대본을 바로 연다. ID가 비었거나 겹치면 만들기를 막는다.
+        private void ShowCreateForm(bool duplicate)
+        {
+            CloseCreateForm();
+            bool copyable = script != null;
+            createForm = new VisualElement { style = { flexDirection = FlexDirection.Row, flexWrap = Wrap.Wrap, alignItems = Align.Center, paddingLeft = 8, paddingRight = 8, paddingTop = 4, paddingBottom = 6, backgroundColor = new Color(.2f, .22f, .27f), borderBottomWidth = 1, borderBottomColor = new Color(.35f, .35f, .4f) } };
+            createForm.Add(new Label(duplicate ? "대본 복제" : "새 대본") { style = { unityFontStyleAndWeight = FontStyle.Bold, marginRight = 8 } });
+            var nameField = new TextField("파일 이름") { value = duplicate && copyable ? CopyName(script.name) : "NewScript", style = { minWidth = 240 } };
+            var idField = new TextField("대본 ID") { value = DialogueScriptAssets.SuggestId(nameField.value), style = { minWidth = 220 } };
+            var start = new DropdownField("시작 내용", new List<string> { "빈 대본(지문 한 줄)", "현재 대본 복제" }, duplicate && copyable ? 1 : 0) { style = { minWidth = 260 } };
+            start.SetEnabled(copyable);
+            foreach (var field in new VisualElement[] { nameField, idField, start }) field.Q<Label>().style.minWidth = 56;
+            var error = new Label { style = { color = new Color(1f, .55f, .5f), marginLeft = 8 } };
+            var create = new Button { text = "만들기…" };
+            bool idEdited = false;
+            void Check()
+            {
+                string problem = string.IsNullOrWhiteSpace(nameField.value) ? "파일 이름을 입력하세요." : DialogueScriptAssets.IdProblem(idField.value);
+                error.text = problem ?? ""; create.SetEnabled(problem == null);
+            }
+            nameField.RegisterValueChangedCallback(e => { if (!idEdited) idField.SetValueWithoutNotify(DialogueScriptAssets.SuggestId(e.newValue)); Check(); });
+            idField.RegisterValueChangedCallback(_ => { idEdited = true; Check(); });
+            create.clicked += () =>
+            {
+                string path = EditorUtility.SaveFilePanelInProject(duplicate ? "대본 복제 저장" : "새 대본 저장", nameField.value.Trim(), "asset", "대본 파일을 저장할 위치를 고르세요.", DialogueScriptAssets.DefaultFolder);
+                if (string.IsNullOrEmpty(path)) return;
+                bool blank = start.index != 1 || !copyable;
+                var created = DialogueScriptAssets.Create(path, idField.value.Trim(), blank ? DialogueScriptAssets.BlankSteps() : script.Steps, out string problem);
+                if (created == null) { error.text = problem; return; }
+                CloseCreateForm();
+                SetScript(created);
+                selection = new List<string> { created.Steps[0].id };
+                RebuildAll();
+                EditorGUIUtility.PingObject(created);
+                if (blank) graph.schedule.Execute(() => BeginInlineEdit(0)); // 빈 대본은 첫 지문을 바로 입력
+            };
+            createForm.Add(nameField); createForm.Add(idField); createForm.Add(start); createForm.Add(create);
+            createForm.Add(new Button(CloseCreateForm) { text = "취소" });
+            createForm.Add(error);
+            rootVisualElement.Insert(1, createForm);
+            Check();
+            nameField.schedule.Execute(() => nameField.Focus());
+        }
+        private void CloseCreateForm() { createForm?.RemoveFromHierarchy(); createForm = null; }
+        // 복제 기본 이름: 끝의 Script 앞에 Copy를 넣는다(Tutorial1Script → Tutorial1CopyScript).
+        private static string CopyName(string name) => name.EndsWith("Script") && name.Length > 6 ? name.Substring(0, name.Length - 6) + "CopyScript" : name + "Copy";
 
         // ── 대사 바로 고치기 ──
         private void BeginInlineEdit(int index)

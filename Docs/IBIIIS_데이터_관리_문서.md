@@ -25,6 +25,7 @@
 | 플레이어 외형·이동 시간·표시·입력·연출 설정 | 게임 시스템 기획서 | `Assets/IBIIIS/Settings/GlobalPlayerSettings.asset`과 연결된 설정 에셋(아래) |
 | 이미지·애니메이션·효과음 참조 | 엑셀의 현재 열 구조에 없음 | 플레이어는 `PlayerVisual.prefab`의 슬롯, 적은 프리팹의 `Visual` 자식, 충돌 연출은 `CollisionFeedback.asset`. 절차는 [에셋 제작 가이드](IBIIIS_에셋_제작_가이드.md) |
 | 스테이지 클리어 기록 | 게임 시스템 기획서의 미니맵 항목 | `Application.persistentDataPath/IBIIIS_progress.json`(아래 클리어 기록). 스테이지 ID는 미니맵의 `StageEntrance`에서 정한다 |
+| 대본(튜토리얼 등 전투 씬 대본) | 튜토리얼 문서·기획서 대본 | 대본 에셋 `TutorialScript`(`Assets/IBIIIS/Tutorial/` 등)이 실행 기준. 편집은 IBIIIS Dialogue Editor·Inspector. **대본 ID**(`Script Id`)는 클리어 기록 등에 연결되는 고정값이라 정한 뒤 바꾸지 않고, 영어 소문자·숫자·`_`·`-`만 쓰며 다른 대본과 겹치지 않게 한다(Dialogue Editor의 새 대본·복제가 검사). 단계 ID는 편집기 전용이며 진행에 쓰지 않는다 |
 | 현재 위치·방향·생존·인식·회피기 쿨다운 | 개체별 실행 상태 | `GridSession`과 `EnemyState`에만 저장한다. 공유 설정·프리팹·맵 에셋에 기록하지 않으며 저장·불러오기 기능은 없다 |
 
 ## 맵 실행 데이터
