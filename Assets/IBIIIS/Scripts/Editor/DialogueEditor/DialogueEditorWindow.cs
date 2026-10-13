@@ -56,6 +56,11 @@ namespace IBIIIS.Editor
         // 같은 장면 안 노드 사이 연결선. 장면 사이는 선 대신 꼬리표(↓ 다음 장면·↳ 앞 장면에서)와 장면 사이 ▼로 보인다.
         private readonly List<(VisualElement from, VisualElement to)> links = new List<(VisualElement, VisualElement)>();
         private VisualElement linkLayer;
+        // 확대·축소: zoomContent(노드 화면 전체)를 배율만큼 줄이거나 키우고, zoomRoot의 크기를 맞춰 스크롤 범위가 따라오게 한다.
+        [SerializeField] private float zoom = 1;
+        private VisualElement zoomRoot, zoomContent;
+        private Button zoomLabel;
+        private readonly List<(int start, int end, VisualElement group)> sceneGroups = new List<(int, int, VisualElement)>();
 
         // ── 끌기 상태 ──
         private enum DragKind { None, SpanStart, SpanEnd, SpanBody, Column, Instant, Draw }
@@ -108,6 +113,13 @@ namespace IBIIIS.Editor
             toolbar.Add(connectionLabel = new Label { style = { color = new Color(.65f, .7f, .75f), fontSize = 10, marginRight = 6 } });
             issuesButton = new Button(() => { showIssues = !showIssues; RefreshIssues(); }) { text = "검사" };
             toolbar.Add(issuesButton);
+            var zoomBar = new VisualElement { style = { flexDirection = FlexDirection.Row, alignItems = Align.Center, marginLeft = 8 } };
+            zoomBar.Add(new Button(() => SetZoom(zoom / DialogueZoom.Step, null)) { text = "−", tooltip = "축소 (Ctrl+휠 아래)" });
+            zoomBar.Add(zoomLabel = new Button(() => SetZoom(1, null)) { tooltip = "눌러서 100%로", style = { minWidth = 44 } });
+            zoomBar.Add(new Button(() => SetZoom(zoom * DialogueZoom.Step, null)) { text = "+", tooltip = "확대 (Ctrl+휠 위)" });
+            zoomBar.Add(new Button(FitAll) { text = "전체 맞춤", tooltip = "대본 전체가 창에 들어오게" });
+            zoomBar.Add(new Button(FitScene) { text = "장면 맞춤", tooltip = "고른 단계의 장면(없으면 지금 보이는 장면)이 창에 들어오게" });
+            toolbar.Add(zoomBar);
             toolbar.Add(new Label("더블클릭: 대사 고치기 · 우클릭: 추가 · 끌기: 옮기기·범위 · 아래 빈 줄 끌기: 표시 추가 · Ctrl+C/V/D·Delete · Ctrl/Shift+클릭: 여러 개") { style = { color = new Color(.7f, .7f, .7f), unityFontStyleAndWeight = FontStyle.Italic, marginLeft = 8, fontSize = 10 } });
             root.Add(toolbar);
             issuesList = new ScrollView(ScrollViewMode.Vertical) { style = { maxHeight = 140, display = DisplayStyle.None, paddingLeft = 8, borderBottomWidth = 1, borderBottomColor = new Color(.35f, .35f, .4f) } };
@@ -117,6 +129,14 @@ namespace IBIIIS.Editor
             detail = new ScrollView(ScrollViewMode.Vertical) { style = { paddingLeft = 8, paddingRight = 8, paddingTop = 6, borderTopWidth = 1, borderTopColor = new Color(.35f, .35f, .4f) } };
             split.Add(graph); split.Add(detail);
             root.Add(split);
+            // Ctrl(⌘)+휠: 마우스가 가리키는 곳을 기준으로 확대·축소. 그냥 휠: 스크롤(아래 WheelScroll).
+            graph.RegisterCallback<WheelEvent>(e =>
+            {
+                if (zoomRoot == null || zoomContent == null) return;
+                if (e.actionKey) SetZoom(DialogueZoom.Wheel(zoom, e.delta.y), graph.contentViewport.WorldToLocal(e.mousePosition));
+                else WheelScroll(e.delta, e.shiftKey);
+                e.StopImmediatePropagation();
+            }, TrickleDown.TrickleDown);
             // 복사·붙여넣기·복제·삭제는 에디터 명령으로 온다(글자 입력 중에는 그 칸이 처리).
             root.RegisterCallback<ValidateCommandEvent>(e => { if (HandlesCommand(e.commandName) && !Typing(e.target)) e.StopPropagation(); });
             root.RegisterCallback<ExecuteCommandEvent>(e => { if (HandlesCommand(e.commandName) && !Typing(e.target)) { RunCommand(e.commandName); e.StopPropagation(); } });
@@ -213,12 +233,19 @@ namespace IBIIIS.Editor
         {
             if (graph == null) return;
             var scroll = graph.scrollOffset;
-            graph.Clear(); columns.Clear(); stepElements.Clear(); links.Clear(); linkLayer = null;
+            graph.Clear(); columns.Clear(); stepElements.Clear(); links.Clear(); linkLayer = null; sceneGroups.Clear(); zoomRoot = zoomContent = null;
             RefreshIssues();
+            if (zoomLabel != null) zoomLabel.text = $"{zoom * 100:0}%";
             if (script == null) { graph.Add(new Label("대본(Scenario Script)을 고르세요. Project 창에서 대본 에셋을 더블클릭해도 열립니다.") { style = { marginLeft = 10, marginTop = 10 } }); return; }
-            graph.Add(StartNode());
+            // 배율은 zoomContent에 걸고(왼쪽 위 기준), 바깥 zoomRoot는 배율을 곱한 크기로 맞춘다(배율은 배치 크기를 바꾸지 않으므로).
+            zoomRoot = new VisualElement { style = { overflow = Overflow.Hidden, flexShrink = 0 } };
+            zoomContent = new VisualElement { style = { position = Position.Absolute, left = 0, top = 0, alignItems = Align.FlexStart, transformOrigin = new TransformOrigin(0, 0, 0) } };
+            zoomContent.RegisterCallback<GeometryChangedEvent>(_ => ResizeZoomRoot());
+            zoomRoot.Add(zoomContent); graph.Add(zoomRoot);
+            ApplyZoom();
+            zoomContent.Add(StartNode());
             var steps = script.Steps;
-            if (steps.Length == 0) { graph.Add(new Button(() => Commit(new[] { NewLine(null) }, "대본 단계 추가", 0)) { text = "첫 대사 추가", style = { marginLeft = 10, marginTop = 10, alignSelf = Align.FlexStart } }); return; }
+            if (steps.Length == 0) { zoomContent.Add(new Button(() => Commit(new[] { NewLine(null) }, "대본 단계 추가", 0)) { text = "첫 대사 추가", style = { marginLeft = 10, marginTop = 10, alignSelf = Align.FlexStart } }); return; }
             var spans = new Dictionary<int, ScenarioSpan>(); var lanes = AssignLanes(steps, spans);
             int primary = Primary;
             var selectedSpan = primary >= 0 && spans.TryGetValue(primary, out var s) ? s : (ScenarioSpan?)null;
@@ -227,15 +254,80 @@ namespace IBIIIS.Editor
             for (int n = 0; n < scenes.Count; n++)
             {
                 if (n > 0) column.Add(new Label("▼") { pickingMode = PickingMode.Ignore, style = { fontSize = 9, color = new Color(.5f, .52f, .58f), marginLeft = 22, height = 12, unityTextAlign = TextAnchor.MiddleLeft } });
-                column.Add(Scene(n, scenes[n], steps, spans, lanes, selectedSpan, n < scenes.Count - 1));
+                var group = Scene(n, scenes[n], steps, spans, lanes, selectedSpan, n < scenes.Count - 1);
+                sceneGroups.Add((scenes[n].start, scenes[n].end, group));
+                column.Add(group);
             }
             // 연결선은 맨 위 층에 그린다(누르기는 아래 노드로 통과).
             linkLayer = new VisualElement { pickingMode = PickingMode.Ignore, style = { position = Position.Absolute, left = 0, top = 0, right = 0, bottom = 0 } };
             linkLayer.generateVisualContent += DrawLinks;
             column.Add(linkLayer);
             column.RegisterCallback<GeometryChangedEvent>(_ => linkLayer?.MarkDirtyRepaint());
-            graph.Add(column);
+            zoomContent.Add(column);
             graph.schedule.Execute(() => graph.scrollOffset = scroll);
+        }
+        // ── 확대·축소 ──
+        private void ApplyZoom()
+        {
+            zoom = DialogueZoom.Clamp(zoom);
+            if (zoomLabel != null) zoomLabel.text = $"{zoom * 100:0}%";
+            if (zoomContent == null) return;
+            zoomContent.style.scale = new Scale(new Vector3(zoom, zoom, 1));
+            ResizeZoomRoot();
+        }
+        private void ResizeZoomRoot()
+        {
+            if (zoomRoot == null || zoomContent == null) return;
+            var size = zoomContent.layout.size;
+            if (float.IsNaN(size.x) || float.IsNaN(size.y)) return;
+            zoomRoot.style.width = size.x * zoom; zoomRoot.style.height = size.y * zoom;
+        }
+        /// <summary>배율을 바꾼다. point(보이는 영역 기준 위치)를 주면 그곳이 가리키던 내용이 제자리에 남게 스크롤하고, 없으면 보이는 영역 가운데를 기준으로 한다.</summary>
+        private void SetZoom(float value, Vector2? point)
+        {
+            if (graph == null) return;
+            float before = zoom; zoom = DialogueZoom.Clamp(value);
+            if (Mathf.Approximately(before, zoom)) { ApplyZoom(); return; }
+            var anchor = point ?? graph.contentViewport.layout.size * .5f;
+            var scroll = DialogueZoom.ScrollKeeping(graph.scrollOffset, before, zoom, anchor);
+            ApplyZoom();
+            graph.schedule.Execute(() => graph.scrollOffset = scroll);
+        }
+        // 휠 스크롤: 세로로 넘칠 때는 세로로, 세로로 다 보이면(또는 Shift) 가로로 옮긴다. 범위는 배율을 곱한 실제 크기 기준.
+        // (기본 스크롤은 세로로만 움직이고, 배율을 건 내용의 크기를 원래 크기로 계산해 가로 스크롤이 안 되는 경우가 있다.)
+        private void WheelScroll(Vector3 delta, bool shift)
+        {
+            var view = graph.contentViewport.layout.size; var size = zoomRoot.layout.size;
+            if (float.IsNaN(view.x) || float.IsNaN(size.x)) return;
+            var max = Vector2.Max(Vector2.zero, size - view);
+            float step = graph.mouseWheelScrollSize;
+            var move = new Vector2(delta.x * step, 0);
+            if (max.y > 0 && !shift) move.y += delta.y * step; else move.x += delta.y * step;
+            var next = graph.scrollOffset + move;
+            graph.scrollOffset = new Vector2(Mathf.Clamp(next.x, 0, max.x), Mathf.Clamp(next.y, 0, max.y));
+        }
+        private void ZoomTo(Rect rect, Vector2 view)
+        {
+            if (graph == null || zoomContent == null) return;
+            var (value, scroll) = DialogueZoom.Fit(view, rect);
+            zoom = value; ApplyZoom();
+            graph.schedule.Execute(() => graph.scrollOffset = scroll);
+        }
+        // 전체가 들어오면 스크롤 막대가 사라지므로 막대를 뺀 영역이 아니라 노드 화면 전체 크기에 맞춘다.
+        private void FitAll() { if (zoomContent != null) ZoomTo(new Rect(Vector2.zero, zoomContent.layout.size), graph.layout.size); }
+        // 고른 단계가 있는 장면, 없으면 지금 화면 위쪽에 보이는 장면.
+        private void FitScene()
+        {
+            if (zoomContent == null || sceneGroups.Count == 0) return;
+            Rect Local(VisualElement element) { var b = element.worldBound; var min = zoomContent.WorldToLocal(b.min); var max = zoomContent.WorldToLocal(b.max); return Rect.MinMaxRect(min.x, min.y, max.x, max.y); }
+            int primary = Primary;
+            var target = sceneGroups.FirstOrDefault(s => primary >= s.start && primary <= s.end).group;
+            if (target == null)
+            {
+                float top = graph.scrollOffset.y / zoom;
+                target = sceneGroups.Select(s => s.group).FirstOrDefault(g => Local(g).yMax > top) ?? sceneGroups[sceneGroups.Count - 1].group;
+            }
+            ZoomTo(Local(target), graph.contentViewport.layout.size);
         }
         // 범위 막대마다 겹치지 않는 트랙 줄(레인)을 정한다.
         private static Dictionary<int, int> AssignLanes(ScenarioStep[] steps, Dictionary<int, ScenarioSpan> spans)
@@ -681,7 +773,7 @@ namespace IBIIIS.Editor
             var column = columns[Mathf.Min(gap, columns.Count - 1)];
             if (column.Hidden) { dropMarker?.RemoveFromHierarchy(); dropMarker = null; return; }
             var rect = column.Element.worldBound; var group = column.Group.worldBound;
-            float x = gap < columns.Count ? rect.xMin - Gap / 2 : rect.xMax + Gap / 2;
+            float x = gap < columns.Count ? rect.xMin - Gap * zoom / 2 : rect.xMax + Gap * zoom / 2;
             var local = rootVisualElement.WorldToLocal(new Vector2(x, group.yMin));
             if (dropMarker == null) { dropMarker = new VisualElement { pickingMode = PickingMode.Ignore, style = { position = Position.Absolute, width = 3, backgroundColor = new Color(.95f, .8f, .3f) } }; rootVisualElement.Add(dropMarker); }
             dropMarker.style.left = local.x - 1; dropMarker.style.top = local.y; dropMarker.style.height = group.height;
