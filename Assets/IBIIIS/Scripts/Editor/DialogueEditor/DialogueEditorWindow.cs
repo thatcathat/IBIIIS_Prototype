@@ -21,8 +21,8 @@ namespace IBIIIS.Editor
         private static readonly Color SelectedBorder = new Color(.45f, .7f, 1f), Highlight = new Color(.95f, .8f, .3f, .3f);
         private static readonly Color StartColor = new Color(.55f, .8f, .4f), WarnColor = new Color(.95f, .7f, .3f);
         private static readonly Color ErrorColor = new Color(1f, .4f, .35f), ArrowColor = new Color(.62f, .64f, .72f, .9f);
-        // 세로줄 배경: 번갈아 옅게 칠하고, 고른 단계가 있는 세로줄은 푸르게.
-        private static readonly Color StripeColor = new Color(1, 1, 1, .028f), SelectedColumnColor = new Color(.45f, .7f, 1f, .1f), BandTint = new Color(.95f, .8f, .3f, .18f);
+        // 세로줄 배경: 고른 단계가 있는 세로줄만 푸르게, 끄는 동안 놓을 범위는 노랗게.
+        private static readonly Color SelectedColumnColor = new Color(.45f, .7f, 1f, .1f), BandTint = new Color(.95f, .8f, .3f, .18f);
 
         [SerializeField] private ScenarioScript script;
         // 선택한 단계의 고유 ID(마지막이 기준 단계). 단계를 넣거나 빼도 선택이 따라간다.
@@ -53,8 +53,8 @@ namespace IBIIIS.Editor
         [SerializeField] private List<string> collapsedScenes = new List<string>();
         // 단계 번호 → 검사 문제(노드·막대에 배지로 보임).
         private readonly Dictionary<int, List<DialogueScriptEdits.Issue>> issuesAt = new Dictionary<int, List<DialogueScriptEdits.Issue>>();
-        // 노드 사이 연결선: 같은 장면이면 옆으로, 장면이 바뀌면 장면 아래로 돌아 다음 줄 처음으로 잇는다.
-        private readonly List<(VisualElement from, VisualElement to, VisualElement group)> links = new List<(VisualElement, VisualElement, VisualElement)>();
+        // 같은 장면 안 노드 사이 연결선. 장면 사이는 선 대신 꼬리표(↓ 다음 장면·↳ 앞 장면에서)와 장면 사이 ▼로 보인다.
+        private readonly List<(VisualElement from, VisualElement to)> links = new List<(VisualElement, VisualElement)>();
         private VisualElement linkLayer;
 
         // ── 끌기 상태 ──
@@ -224,13 +224,10 @@ namespace IBIIIS.Editor
             var selectedSpan = primary >= 0 && spans.TryGetValue(primary, out var s) ? s : (ScenarioSpan?)null;
             var column = new VisualElement { style = { paddingLeft = 8, paddingTop = 8, paddingBottom = 8, alignItems = Align.FlexStart } };
             var scenes = ScenarioTimeline.Scenes(steps);
-            (VisualElement last, VisualElement group) previous = (null, null);
             for (int n = 0; n < scenes.Count; n++)
             {
-                var scene = Scene(n, scenes[n], steps, spans, lanes, selectedSpan, out var first, out var last);
-                if (previous.last != null) links.Add((previous.last, first, previous.group));
-                previous = (last, scene);
-                column.Add(scene);
+                if (n > 0) column.Add(new Label("▼") { pickingMode = PickingMode.Ignore, style = { fontSize = 9, color = new Color(.5f, .52f, .58f), marginLeft = 22, height = 12, unityTextAlign = TextAnchor.MiddleLeft } });
+                column.Add(Scene(n, scenes[n], steps, spans, lanes, selectedSpan, n < scenes.Count - 1));
             }
             // 연결선은 맨 위 층에 그린다(누르기는 아래 노드로 통과).
             linkLayer = new VisualElement { pickingMode = PickingMode.Ignore, style = { position = Position.Absolute, left = 0, top = 0, right = 0, bottom = 0 } };
@@ -257,9 +254,9 @@ namespace IBIIIS.Editor
         // 노드 대신 트랙 막대로 보이는 단계.
         private static bool IsTrackStep(ScenarioStepType type) => type == ScenarioStepType.Emote || type == ScenarioStepType.Pose || type == ScenarioStepType.EndDisplay;
         private static float NodeWidth(ScenarioStep step) => step.type == ScenarioStepType.Line ? LineNodeWidth : SmallNodeWidth;
-        private VisualElement Scene(int number, (int start, int end) scene, ScenarioStep[] steps, Dictionary<int, ScenarioSpan> spans, Dictionary<int, int> lanes, ScenarioSpan? selectedSpan, out VisualElement firstElement, out VisualElement lastElement)
+        private VisualElement Scene(int number, (int start, int end) scene, ScenarioStep[] steps, Dictionary<int, ScenarioSpan> spans, Dictionary<int, int> lanes, ScenarioSpan? selectedSpan, bool hasNext)
         {
-            var group = new VisualElement { style = { marginBottom = 14, paddingLeft = 8, paddingRight = 8, paddingTop = 4, paddingBottom = 8, backgroundColor = new Color(1, 1, 1, .03f), borderTopLeftRadius = 8, borderTopRightRadius = 8, borderBottomLeftRadius = 8, borderBottomRightRadius = 8 } };
+            var group = new VisualElement { style = { marginBottom = 2, paddingLeft = 8, paddingRight = 8, paddingTop = 4, paddingBottom = 8, backgroundColor = new Color(1, 1, 1, .03f), borderTopLeftRadius = 8, borderTopRightRadius = 8, borderBottomLeftRadius = 8, borderBottomRightRadius = 8 } };
             SetBorder(group, new Color(.4f, .42f, .48f), 1);
             var last = steps[scene.end];
             bool collapsed = collapsedScenes.Contains(last.id);
@@ -278,7 +275,6 @@ namespace IBIIIS.Editor
             var columnOf = new Dictionary<int, int>(); var left = new List<float>(); var width = new List<float>(); float x = 0;
             var moments = ScenarioTimeline.Moments(steps, scene.start, scene.end);
             int primary = Primary; VisualElement previousMain = null;
-            firstElement = lastElement = header;
             for (int m = 0; m < moments.Count; m++)
             {
                 var (from, to) = moments[m];
@@ -304,19 +300,16 @@ namespace IBIIIS.Editor
                 bottom.Add(main);
                 stack.AddManipulator(new ContextualMenuManipulator(e => ColumnMenu(e, columnIndex)));
                 main.AddManipulator(new ContextualMenuManipulator(e => ColumnMenu(e, columnIndex)));
-                var bandColor = chosenColumn ? SelectedColumnColor : m % 2 == 1 ? StripeColor : new Color(0, 0, 0, 0);
+                var bandColor = chosenColumn ? SelectedColumnColor : new Color(0, 0, 0, 0);
                 var band = new VisualElement { pickingMode = PickingMode.Ignore, style = { position = Position.Absolute, left = x - 3, width = w + 6, top = 0, bottom = 0, backgroundColor = bandColor, borderTopLeftRadius = 4, borderTopRightRadius = 4, borderBottomLeftRadius = 4, borderBottomRightRadius = 4 } };
                 bands.Add(band);
                 columns.Add(new Column { From = from, To = to, HasMain = hasMain, Hidden = collapsed, Element = main, Group = group, Band = band, Background = main.style.backgroundColor, BandBackground = bandColor });
-                if (!collapsed)
-                {
-                    if (previousMain != null) links.Add((previousMain, main, null));
-                    if (m == 0) firstElement = main;
-                    lastElement = main;
-                }
+                if (!collapsed && previousMain != null) links.Add((previousMain, main));
                 previousMain = main;
                 left.Add(x); width.Add(w); x += w;
             }
+            // 마지막 노드 오른쪽: 다음 장면으로 이어짐(아래 줄).
+            if (hasNext) bottom.Add(new Label($"↓ 장면 {number + 2}") { tooltip = "다음 장면(아래 줄)으로 이어짐", style = { alignSelf = Align.Center, marginLeft = 8, fontSize = 10, color = new Color(.7f, .72f, .8f), paddingLeft = 6, paddingRight = 6, backgroundColor = new Color(1, 1, 1, .05f), borderTopLeftRadius = 7, borderTopRightRadius = 7, borderBottomLeftRadius = 7, borderBottomRightRadius = 7, flexShrink = 0 } });
             body.Add(ruler); body.Add(top); body.Add(bottom);
             // 트랙: 이 장면과 겹치는 범위를 세로줄 기준으로 그린다. 앞 장면에서 이어지면 «, 다음 장면으로 이어지면 »를 붙인다.
             int laneTop = -1;
@@ -362,6 +355,7 @@ namespace IBIIIS.Editor
             var fold = new Label(collapsed ? "▶" : "▼") { tooltip = collapsed ? "장면 펼치기" : "장면 접기", style = { width = 16, unityTextAlign = TextAnchor.MiddleCenter, color = new Color(.75f, .77f, .82f), fontSize = 10 } };
             header.Add(fold);
             header.Add(new Label($"장면 {number + 1}") { style = { unityFontStyleAndWeight = FontStyle.Bold, color = new Color(.85f, .87f, .92f), marginRight = 6 } });
+            if (number > 0) header.Add(new Label($"↳ 장면 {number}에서") { style = { fontSize = 10, color = new Color(.6f, .62f, .68f), marginRight = 6 } });
             bool ends = ScenarioTimeline.EndsScene(last.type);
             var endColor = ends ? CategoryColor(last.type) : FlowColor;
             header.Add(Pill(ends ? (last.type == ScenarioStepType.LoadScene ? "씬 전환" : TypeName(last.type)) : "대본 끝", endColor));
@@ -390,36 +384,22 @@ namespace IBIIIS.Editor
         {
             style = { fontSize = 10, color = new Color(.1f, .1f, .12f), backgroundColor = new Color(color.r, color.g, color.b, .85f), paddingLeft = 6, paddingRight = 6, marginLeft = 4, borderTopLeftRadius = 7, borderTopRightRadius = 7, borderBottomLeftRadius = 7, borderBottomRightRadius = 7 }
         };
-        // 연결선: 같은 장면은 노드 오른쪽에서 다음 노드 왼쪽으로 부드러운 곡선, 장면이 바뀌면 장면 아래 틈으로 돌아 다음 장면 첫 노드로.
+        // 연결선: 같은 장면 안에서 노드 오른쪽 가운데 → 다음 노드 왼쪽 가운데로 부드러운 곡선과 화살촉.
         private void DrawLinks(MeshGenerationContext context)
         {
             if (linkLayer == null) return;
             var painter = context.painter2D;
             painter.lineWidth = 1.5f; painter.strokeColor = ArrowColor; painter.fillColor = ArrowColor;
             Rect Local(VisualElement element) { var b = element.worldBound; var min = linkLayer.WorldToLocal(b.min); var max = linkLayer.WorldToLocal(b.max); return Rect.MinMaxRect(min.x, min.y, max.x, max.y); }
-            foreach (var (fromElement, toElement, group) in links)
+            foreach (var (fromElement, toElement) in links)
             {
                 if (fromElement.panel == null || toElement.panel == null) continue;
                 var a = Local(fromElement); var b = Local(toElement);
                 if (float.IsNaN(a.x) || float.IsNaN(b.x) || a.width <= 0 || b.width <= 0) continue;
                 var start = new Vector2(a.xMax + 1, a.center.y); var end = new Vector2(b.xMin - 2, b.center.y);
+                float bend = Mathf.Max(4, (end.x - start.x) * .5f);
                 painter.BeginPath(); painter.MoveTo(start);
-                if (group == null)
-                {
-                    float bend = Mathf.Max(4, (end.x - start.x) * .5f);
-                    painter.BezierCurveTo(start + new Vector2(bend, 0), end - new Vector2(bend, 0), end);
-                }
-                else
-                {
-                    // 장면 사이: 오른쪽으로 조금 → 장면 아래 틈까지 내려감 → 왼쪽으로 → 다음 줄 높이까지 내려감 → 첫 노드로.
-                    var g = Local(group);
-                    float gapY = g.yMax + 7, outX = Mathf.Max(start.x + 10, g.xMax - 2), inX = Mathf.Max(2, b.xMin - 10);
-                    painter.ArcTo(new Vector2(outX, start.y), new Vector2(outX, gapY), 6);
-                    painter.ArcTo(new Vector2(outX, gapY), new Vector2(inX, gapY), 6);
-                    painter.ArcTo(new Vector2(inX, gapY), new Vector2(inX, end.y), 6);
-                    painter.ArcTo(new Vector2(inX, end.y), end, 6);
-                    painter.LineTo(end);
-                }
+                painter.BezierCurveTo(start + new Vector2(bend, 0), end - new Vector2(bend, 0), end);
                 painter.Stroke();
                 painter.BeginPath(); painter.MoveTo(end + new Vector2(1, 0)); painter.LineTo(end + new Vector2(-5, -3.5f)); painter.LineTo(end + new Vector2(-5, 3.5f)); painter.ClosePath(); painter.Fill();
             }
@@ -529,7 +509,7 @@ namespace IBIIIS.Editor
             var color = step.type == ScenarioStepType.Pose ? PoseColor : EmoteColor;
             bool chosen = IsSelected(owner);
             string name = step.type == ScenarioStepType.Pose ? $"자세 {(step.sprite != null ? step.sprite.name : "")}" : $"{step.target} {(step.sprite != null ? step.sprite.name : step.text)}";
-            string label = (continuesBefore ? "« " : "▶ ") + name + (span.EndKind == ScenarioSpanEnd.Seconds ? $" ⏱{step.seconds:0.##}초" : "") + (continuesAfter ? "  »" : "  ■");
+            string label = (continuesBefore ? "« " : "") + name + (span.EndKind == ScenarioSpanEnd.Seconds ? $" ⏱{step.seconds:0.##}초" : "") + (continuesAfter ? "  »" : "");
             var bar = new Label(label)
             {
                 tooltip = $"{Summary(step)}\n{span.Start}번부터 {span.End}번까지 — {EndText(span)}\n가운데를 끌면 통째로, 양 끝을 끌면 시작·끝만 옮김",
