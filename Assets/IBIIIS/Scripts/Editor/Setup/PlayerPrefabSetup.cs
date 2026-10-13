@@ -30,21 +30,26 @@ namespace IBIIIS.Editor
             property.objectReferenceValue = prefab; so.ApplyModifiedPropertiesWithoutUndo();
             EditorUtility.SetDirty(settings); AssetDatabase.SaveAssetIfDirty(settings);
         }
-        /// <summary>플레이어 스프라이트 폴더의 그림을 스프라이트(PPU 500, 기준점 아래 중앙)로 맞춘다. 이미 맞으면 건드리지 않는다.</summary>
+        /// <summary>플레이어 스프라이트 폴더의 그림을 스프라이트(PPU 500, 기준점 아래 중앙)로 맞춘다. 이미 맞으면 건드리지 않는다.
+        /// 이미 스프라이트인 그림의 PPU(크기, 클수록 작게 보임)와 기준점(발 위치)은 그림별 조절이므로 바꾸지 않는다.</summary>
         public static void ImportSprites()
         {
             foreach (var guid in AssetDatabase.FindAssets("t:Texture2D", new[] { SpriteFolder }))
             {
                 string path = AssetDatabase.GUIDToAssetPath(guid);
                 var importer = (TextureImporter)AssetImporter.GetAtPath(path);
-                bool changed = importer.textureType != TextureImporterType.Sprite || importer.spritePixelsPerUnit != PixelsPerUnit || importer.mipmapEnabled;
-                var settings = new TextureImporterSettings(); importer.ReadTextureSettings(settings);
-                if (settings.spriteAlignment != (int)SpriteAlignment.BottomCenter) changed = true;
-                if (!changed) continue;
+                bool isNew = importer.textureType != TextureImporterType.Sprite;
+                if (!isNew && !importer.mipmapEnabled) continue;
                 importer.textureType = TextureImporterType.Sprite; importer.spriteImportMode = SpriteImportMode.Single;
-                importer.spritePixelsPerUnit = PixelsPerUnit; importer.mipmapEnabled = false; importer.alphaIsTransparency = true;
-                importer.ReadTextureSettings(settings); settings.spriteAlignment = (int)SpriteAlignment.BottomCenter; settings.spritePivot = new Vector2(.5f, 0);
-                importer.SetTextureSettings(settings); importer.SaveAndReimport();
+                importer.mipmapEnabled = false; importer.alphaIsTransparency = true;
+                if (isNew)
+                {
+                    importer.spritePixelsPerUnit = PixelsPerUnit;
+                    var settings = new TextureImporterSettings(); importer.ReadTextureSettings(settings);
+                    settings.spriteAlignment = (int)SpriteAlignment.BottomCenter; settings.spritePivot = new Vector2(.5f, 0);
+                    importer.SetTextureSettings(settings);
+                }
+                importer.SaveAndReimport();
             }
         }
         /// <summary>프리팹 PlayerVisual의 상황별 그림 슬롯 중 비어 있는 것만 기본 그림으로 채운다(사용자가 바꾼 슬롯은 그대로). 그림 파일이 없으면 비워 둔다.</summary>

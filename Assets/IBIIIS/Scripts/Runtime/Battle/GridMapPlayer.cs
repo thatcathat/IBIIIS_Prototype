@@ -54,6 +54,10 @@ namespace IBIIIS
         private Sprite[] reactionFrames;
         private float reactionTime;
         private bool reactionHold;
+        // 패배 그림은 피격 연출에서 맞는 순간부터 보인다.
+        private bool defeatPending;
+        // 플레이어 칸으로 들어와 이긴 적이 멈춰 선 위치(표시 전용, 행동마다 초기화). 한 칸에 겹쳐 보이지 않게 한다.
+        private readonly Dictionary<int, Vector3> enemyContacts = new Dictionary<int, Vector3>();
         /// <summary>충돌 연출이 재생 중이면 true. 이 동안 입력을 받지 않는다.</summary>
         public bool IsPresenting => feedback != null && feedback.IsPlaying;
         public CollisionFeedback Feedback => feedback;
@@ -258,9 +262,26 @@ namespace IBIIIS
             {
                 if (feedback != null && feedback.Owns(i)) continue;
                 var state = session.Enemies[i]; var view = enemyViews[i]; view.gameObject.SetActive(state.Alive);
-                view.transform.localPosition = session.IsEnemiesMoving ? Vector3.Lerp(LocalPosition(state.StepFrom), LocalPosition(state.StepTo), session.EnemyProgress) : LocalPosition(state.Position);
+                view.transform.localPosition = EnemyDisplayPosition(i, state);
                 view.transform.localRotation = Quaternion.LookRotation(new Vector3(state.Direction.x, 0, state.Direction.y)); view.FaceCamera(viewCamera);
             }
+        }
+        // 적 표시 위치. 플레이어의 도착 칸으로 들어오는 적(=패배)은 그 칸 중심에서 맞닿음 거리만큼 앞에서 멈춘다(판정은 그대로).
+        private Vector3 EnemyDisplayPosition(int index, EnemyState state)
+        {
+            var position = session.IsEnemiesMoving ? Vector3.Lerp(LocalPosition(state.StepFrom), LocalPosition(state.StepTo), session.EnemyProgress) : LocalPosition(state.Position);
+            if (feedback == null || !feedback.Settings.Enabled || !state.Alive || !(session.IsBusy || session.Phase == BattlePhase.Lost)) return position;
+            if (enemyContacts.TryGetValue(index, out var contact)) return contact;
+            var target = session.Destination;
+            bool entering = session.IsEnemiesMoving && state.StepTo == target && state.StepFrom != target;
+            if (!entering && !(state.Path.Contains(target) && !session.IsEnemiesMoving)) return position;
+            var center = LocalPosition(target); float stop = feedback.Settings.ContactDistance * cellSize;
+            var step = entering ? state.StepTo - state.StepFrom : state.Direction;
+            var direction = new Vector3(step.x, 0, step.y).normalized;
+            if (entering && Vector3.Distance(position, center) > stop) return position;
+            contact = center - direction * stop;
+            enemyContacts[index] = contact;
+            return contact;
         }
         private void CreateMoveHints()
         {
@@ -370,7 +391,7 @@ namespace IBIIIS
             if (!session.TryAct(action, direction, duration, playerSettings != null ? playerSettings.EnemyStepDuration : .25f)) return false;
             if (Application.IsPlaying(gameObject)) MovementWorldTime.SetMoving(this, true);
             shownCollisions = 0; motion?.BeginAction(action, session.Position, direction);
-            ClearReaction(); reactionPending = true; startedRecognized = recognized; startedThreatened = threatened;
+            ClearReaction(); enemyContacts.Clear(); reactionPending = true; startedRecognized = recognized; startedThreatened = threatened;
             if (poseUntilAction) EndPose();
             actionHistory.Push(new ActionMemo { Action = lastAction, Direction = lastDirection, Facing = playerView != null ? playerView.Facing : PlayerFacing.Front });
             lastAction = action; lastDirection = direction; ShowPlayerVisual();
@@ -383,7 +404,7 @@ namespace IBIIIS
         public bool TryUndo()
         {
             if (session == null || !session.TryUndo()) return false;
-            feedback?.Clear(); motion?.Clear(); shownCollisions = 0; ClearReaction();
+            feedback?.Clear(); motion?.Clear(); shownCollisions = 0; ClearReaction(); enemyContacts.Clear();
             if (playerView != null) playerView.SetPose(MotionPose.Identity, viewCamera);
             var previous = actionHistory.Count > 0 ? actionHistory.Pop() : new ActionMemo { Action = PlayerAction.Wait, Facing = PlayerFacing.Front };
             lastAction = previous.Action; lastDirection = previous.Direction;
@@ -414,7 +435,9 @@ namespace IBIIIS
             for (; feedback != null && shownCollisions < session.Collisions.Count; shownCollisions++)
                 feedback.Begin(session.Collisions[shownCollisions], enemyViews, session.Enemies);
             if (reactionPending && !session.IsBusy) { reactionPending = false; ChooseReaction(); }
-            player.localPosition = session.IsMoving ? Vector3.Lerp(LocalPosition(session.Position), LocalPosition(session.Destination), session.Progress) : LocalPosition(session.Position);
+            if (defeatPending && (feedback == null || feedback.PlayerHitLanded)) { defeatPending = false; ShowDefeat(); }
+            player.localPosition = (session.IsMoving ? Vector3.Lerp(LocalPosition(session.Position), LocalPosition(session.Destination), session.Progress) : LocalPosition(session.Position))
+                + (feedback != null ? feedback.PlayerOffset : Vector3.zero);
             ShowPlayerVisual(); UpdateEnemyViews();
             if (Application.IsPlaying(gameObject)) MovementWorldTime.SetMoving(this, session.IsBusy || IsPresenting);
             RefreshMoveHints();
@@ -427,12 +450,18 @@ namespace IBIIIS
         }
         /// <summary>지금 보이는 상황 반응 그림(없으면 null). 테스트·디버그용.</summary>
         public Sprite ReactionSprite => playerView != null ? playerView.ReactionSprite : null;
-        // 판정이 끝난 행동의 반응: 패배 → 패배 그림(유지)·떨림, 적에게 인식된 상태이거나 맞을 공격이 있을 때 대시·구르기를 씀 → 회피 그림들 차례로·으쓱,
+        // 판정이 끝난 행동의 반응: 패배 → 피격 연출(때린 적이 몸을 내밂·충격·밀림), 맞는 순간부터 패배 그림(유지)·떨림, 적에게 인식된 상태이거나 맞을 공격이 있을 때 대시·구르기를 씀 → 회피 그림들 차례로·으쓱,
         // 이동만으로 인식 범위를 벗어남 → 벗어남 그림·한숨. 그림이 비어 있으면 그 반응은 건너뛴다(진행에는 영향 없음).
         private void ChooseReaction()
         {
             if (playerView == null || session == null) return;
-            if (session.Phase == BattlePhase.Lost) { StartReaction(playerView.DefeatedSprite != null ? new[] { playerView.DefeatedSprite } : null, true, PoseMotion.Shake); return; }
+            if (session.Phase == BattlePhase.Lost)
+            {
+                UpdateEnemyViews(); // 때린 적을 최종(맞닿음) 위치에 둔 뒤 그 자리에서 몸을 내민다
+                feedback?.BeginPlayerHit(LocalPosition(session.Position), session.Attackers, enemyViews, session.Enemies);
+                if (feedback == null || feedback.PlayerHitLanded) ShowDefeat(); else defeatPending = true;
+                return;
+            }
             bool skill = lastAction == PlayerAction.Dash || lastAction == PlayerAction.Roll;
             if (skill && (startedThreatened || startedRecognized))
             {
@@ -442,6 +471,7 @@ namespace IBIIIS
             else if (lastAction == PlayerAction.Move && startedRecognized && !AnyRecognizing())
                 StartReaction(playerView.EscapedSprite != null ? new[] { playerView.EscapedSprite } : null, false, PoseMotion.Sigh);
         }
+        private void ShowDefeat() { if (playerView != null) StartReaction(playerView.DefeatedSprite != null ? new[] { playerView.DefeatedSprite } : null, true, PoseMotion.Shake); }
         private void StartReaction(Sprite[] frames, bool hold, PoseMotion motionKind)
         {
             if (frames == null || frames.Length == 0) return;
@@ -451,7 +481,7 @@ namespace IBIIIS
         }
         private void ClearReaction()
         {
-            reactionPending = false; reactionFrames = null; reactionTime = 0; reactionHold = false;
+            reactionPending = defeatPending = false; reactionFrames = null; reactionTime = 0; reactionHold = false;
             if (playerView != null) playerView.ReactionSprite = null;
         }
         // 반응 그림을 장마다 정한 시간씩 넘기고 끝나면 원래 그림으로 돌아간다. 패배 그림은 되돌리기·재시작까지 유지.

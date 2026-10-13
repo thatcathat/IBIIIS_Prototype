@@ -15,7 +15,7 @@ namespace IBIIIS
         public float Sample(float t) => Mathf.Lerp(Min, Max, Mathf.Clamp01(t));
         public float Sample() => Sample(UnityEngine.Random.value);
     }
-    /// <summary>적 충돌 연출의 공용 설정. 표시·소리 전용이며 판정 결과를 바꾸지 않는다. 슬롯이 비어 있으면 그 연출만 건너뛴다.</summary>
+    /// <summary>적 충돌·플레이어 피격 연출의 공용 설정. 표시·소리 전용이며 판정 결과를 바꾸지 않는다. 슬롯이 비어 있으면 그 연출만 건너뛴다.</summary>
     [CreateAssetMenu(menuName = "IBIIIS/Collision Feedback Settings")]
     public sealed class CollisionFeedbackSettings : ScriptableObject
     {
@@ -37,6 +37,15 @@ namespace IBIIIS
         [SerializeField, Tooltip("날아가는 수평 거리(칸). 적마다 최소~최대 사이에서 무작위로 고릅니다.")] private FloatRange flyDistance = new FloatRange(1f, 1.8f);
         [SerializeField, Tooltip("날아가는 최고 높이(칸). 적마다 최소~최대 사이에서 무작위로 고릅니다.")] private FloatRange flyHeight = new FloatRange(.5f, .9f);
         [SerializeField, Tooltip("날아가며 도는 바퀴 수. 적마다 최소~최대 사이에서 무작위로 고릅니다. 도는 방향은 충돌한 적마다 번갈아 바뀝니다.")] private FloatRange spinTurns = new FloatRange(1f, 2f);
+        [Header("플레이어 피격(패배)")]
+        [SerializeField, Tooltip("선택. 플레이어가 맞는 순간 플레이어와 때린 적 사이에 생성할 이펙트 프리팹. 크기·시간은 위 충격 이펙트 값을 씁니다.")] private GameObject playerHitPrefab;
+        [SerializeField, Tooltip("선택. 플레이어가 맞는 효과음.")] private AudioClip playerHitSound;
+        [SerializeField, Range(0, 1)] private float playerHitVolume = .9f;
+        [SerializeField, Min(0), Tooltip("때린 적이 플레이어 쪽으로 몸을 내미는 거리(칸). 0이면 내밀지 않고 바로 맞습니다.")] private float lungeDistance = .3f;
+        [SerializeField, Min(.01f), Tooltip("몸을 내밀었다 돌아오는 시간(초). 가장 많이 내민 순간(절반)에 맞습니다.")] private float lungeTime = .2f;
+        [SerializeField, Min(0), Tooltip("맞은 플레이어가 적 반대쪽으로 밀리는 거리(칸). 날아가지 않고 그 자리에 쓰러집니다.")] private float knockbackDistance = .25f;
+        [SerializeField, Min(.01f), Tooltip("밀리는 시간(초).")] private float knockbackTime = .18f;
+        [SerializeField, Range(.3f, 1f), Tooltip("적이 플레이어 칸으로 들어와 이길 때 적 그림이 멈추는 거리(칸, 두 캐릭터 중심 사이). 한 칸에 겹쳐 보이지 않게 합니다.")] private float contactDistance = .6f;
 
         public bool Enabled => enabledFeedback;
         public float SquashTime => squashTime;
@@ -55,6 +64,16 @@ namespace IBIIIS
         public FloatRange FlyDistance => flyDistance;
         public FloatRange FlyHeight => flyHeight;
         public FloatRange SpinTurns => spinTurns;
+        public GameObject PlayerHitPrefab => playerHitPrefab;
+        public AudioClip PlayerHitSound => playerHitSound;
+        public float PlayerHitVolume => playerHitVolume;
+        public float LungeDistance => lungeDistance;
+        public float LungeTime => lungeTime;
+        public float KnockbackDistance => knockbackDistance;
+        public float KnockbackTime => knockbackTime;
+        public float ContactDistance => contactDistance;
+        /// <summary>피격 연출을 시작해 맞는 순간까지의 시간(몸을 내밀지 않으면 0).</summary>
+        public float LungeImpactTime => lungeDistance > 0 ? lungeTime * .5f : 0;
         /// <summary>한 번의 충돌 연출이 끝날 때까지의 시간.</summary>
         public float TotalTime => Mathf.Max(HoldTime + flyTime, impactTime, shakeTime);
     }

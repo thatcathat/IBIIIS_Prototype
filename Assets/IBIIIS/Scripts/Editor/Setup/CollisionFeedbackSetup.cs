@@ -29,6 +29,7 @@ namespace IBIIIS.Editor
             var serialized = new SerializedObject(settings); bool filled = false;
             void Fill(string name, UnityEngine.Object value) { var slot = serialized.FindProperty(name); if (slot.objectReferenceValue == null && value != null) { slot.objectReferenceValue = value; filled = true; } }
             Fill("impactPrefab", burst); Fill("impactSound", sound);
+            Fill("playerHitPrefab", burst); Fill("playerHitSound", sound); // 임시: 플레이어 피격도 같은 충격 별·소리를 쓴다
             if (filled) { serialized.ApplyModifiedPropertiesWithoutUndo(); EditorUtility.SetDirty(settings); }
             AssetDatabase.SaveAssetIfDirty(settings);
             var player = AssetDatabase.LoadAssetAtPath<PlayerSettings>(AssetPaths.PlayerSettings);

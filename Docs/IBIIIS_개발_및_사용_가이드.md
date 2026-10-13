@@ -423,7 +423,7 @@ Unity Localization 패키지(`com.unity.localization` 1.5.13, 의존 패키지 A
 
 ## 플레이어 스프라이트 외형
 
-1. 원본: `Art/Sprites/Player`(500×500 PNG 17장, 임시 러프 스케치). 외형 프리팹: `Prefabs/Characters/Player/PlayerVisual.prefab`, `GlobalPlayerSettings > Visual Prefab`에 연결됨. 메뉴 `IBIIIS > Create Default Player Visual`은 스프라이트 가져오기 설정(Sprite, PPU 500, Pivot 아래 중앙)을 맞추고, 프리팹이 없을 때만 만들며, 외형 슬롯이 비어 있을 때만 연결한다. 이미 있는 프리팹·연결은 덮어쓰지 않는다.
+1. 원본: `Art/Sprites/Player`(500×500 PNG 17장, 임시 러프 스케치). 외형 프리팹: `Prefabs/Characters/Player/PlayerVisual.prefab`, `GlobalPlayerSettings > Visual Prefab`에 연결됨. 메뉴 `IBIIIS > Create Default Player Visual`은 스프라이트 가져오기 설정(Sprite, PPU 500, Pivot 아래 중앙)을 맞추고(이미 스프라이트인 그림의 PPU·기준점은 그림별 크기·발 위치 조절로 보고 바꾸지 않음), 프리팹이 없을 때만 만들며, 외형 슬롯이 비어 있을 때만 연결한다. 이미 있는 프리팹·연결은 덮어쓰지 않는다.
 2. 프리팹의 `PlayerVisual`에서 대기·이동·대시(뒤/오른쪽/앞/왼쪽)와 구르기(뒤왼쪽·뒤오른쪽·앞왼쪽·앞오른쪽, First/Second) 슬롯의 스프라이트를 교체한다. 외형·표시 크기를 바꿔도 이동 가능 칸·판정은 변하지 않는다(표시 전용).
 3. 방향은 카메라 Y 회전 0 기준 화면 방향이다: 격자 +Y=뒤(back), +X=오른쪽, -Y=앞(front), -X=왼쪽. 대기는 마지막 이동 방향을 유지한다. 구르기는 앞 절반에 First, 뒤 절반에 Second를 표시하고 이후 좌/우를 바라본다. 플레이어 표시는 Cell Size에 비례하고 카메라를 향한다. 크기는 프리팹의 `Sprite` 자식 Scale로 조정하며(현재 1.5, 사용자 확인 후 임시 확대) 발밑 기준점은 유지된다. 발 위치 보정은 [에셋 제작 가이드](IBIIIS_에셋_제작_가이드.md)를 따른다.
 4. 임시 대체: 정면 대기, 뒤·앞 대시는 해당 그림이 없어 `c_basic_right`를 쓴다. 그림이 제작되면 `PlayerVisual`의 해당 슬롯만 교체한다. 슬롯이 비면 이전 표시를 유지하고 콘솔에 경고를 남긴다.

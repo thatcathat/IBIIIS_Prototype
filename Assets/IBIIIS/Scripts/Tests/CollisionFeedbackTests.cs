@@ -51,6 +51,12 @@ namespace IBIIIS.Tests
         }
         private Transform EnemyView(int i) => player.Generated.Find("Enemies").GetChild(i);
         private Transform Impact => player.Generated.Find("Collision Impact");
+        private Transform HitImpact => player.Generated.Find("Player Hit Impact");
+        private void UsePlayerHitImpact()
+        {
+            var source = Add(new GameObject("Hit Source")); source.AddComponent<SpriteRenderer>();
+            var so = new SerializedObject(settings); so.FindProperty("playerHitPrefab").objectReferenceValue = source; so.ApplyModifiedPropertiesWithoutUndo();
+        }
 
         [Test] public void CollisionPlaysThenHidesEnemiesAndRestoresCameraAndLooks()
         {
@@ -135,17 +141,40 @@ namespace IBIIIS.Tests
         }
         private Sprite Shown => player.Generated.GetComponentInChildren<PlayerVisual>(true).Renderer.sprite;
         [TearDown] public void DestroyReactionSprites() { foreach (var s in new[] { idle, danger, cleared, cleared2, gone, defeated }) if (s != null) Object.DestroyImmediate(s); }
-        [Test] public void DefeatShowsTheDefeatedSpriteInPlaceWithoutFlyingUntilUndo()
+        [Test] public void DefeatPlaysAHitThenShowsTheDefeatedSpriteWithoutFlyingOrOverlapping()
+        {
+            UseReactionVisual(); UsePlayerHitImpact();
+            // 적이 플레이어 칸을 지나가며 이김(겹침 패배).
+            map.SetStart(new Vector2Int(1, 3)); Enemy(0, 3, Vector2Int.right, 2); Build();
+            var cameraBase = camera.transform.position;
+            Assert.True(player.TryBeginAction(PlayerAction.Wait, Vector2Int.zero)); player.AdvanceMovement(.5f);
+            Assert.AreEqual(BattlePhase.Lost, player.Session.Phase);
+            Assert.True(player.IsPresenting, "피격 연출 중에는 입력을 받지 않는다");
+            Assert.AreNotSame(defeated, Shown, "맞기 전에는 패배 그림이 아님"); Assert.Null(HitImpact);
+            Assert.That(EnemyView(0).localPosition.x, Is.EqualTo(1 - settings.ContactDistance).Within(1e-3f), "적은 플레이어 칸 앞에서 멈춤");
+            player.AdvanceMovement(settings.LungeImpactTime + .01f);
+            Assert.AreSame(defeated, Shown, "맞는 순간 패배 그림"); Assert.NotNull(HitImpact, "충격 이펙트");
+            Assert.Null(Impact, "적 충돌 이펙트와 구분");
+            for (int i = 0; i < 40 && player.IsPresenting; i++) { player.AdvanceMovement(.05f); player.UpdateMotion(.05f); }
+            Assert.False(player.IsPresenting); Assert.Null(HitImpact, "이펙트는 사라짐");
+            Assert.AreEqual(cameraBase, camera.transform.position, "흔들림 뒤 카메라 복원");
+            Assert.That(EnemyView(0).localPosition.x, Is.EqualTo(1 - settings.ContactDistance).Within(1e-3f), "내밀었다 제자리로");
+            Assert.True(PlayerAnchor.gameObject.activeSelf, "날아가지 않음");
+            Assert.That(PlayerAnchor.localPosition.x, Is.EqualTo(1 + settings.KnockbackDistance).Within(1e-3f), "적 반대쪽으로 조금 밀림");
+            Assert.That(PlayerAnchor.localPosition.z, Is.EqualTo(3).Within(1e-4f));
+            Assert.That(PlayerAnchor.localPosition.x - EnemyView(0).localPosition.x, Is.GreaterThan(settings.ContactDistance), "겹치지 않음");
+            player.UpdateMotion(5); Assert.AreSame(defeated, Shown, "되돌리기 전까지 유지");
+            Assert.True(player.TryUndo()); Assert.IsNull(player.ReactionSprite); Assert.AreSame(idle, Shown, "되돌리면 원래 그림");
+            Assert.That(PlayerAnchor.localPosition.x, Is.EqualTo(1).Within(1e-4f), "밀린 위치도 원래대로");
+            Assert.That(EnemyView(0).localPosition.x, Is.EqualTo(0).Within(1e-4f));
+        }
+        [Test] public void DefeatWithoutHitSlotsStillShowsTheDefeatedSpriteAfterTheLunge()
         {
             UseReactionVisual();
             map.SetStart(new Vector2Int(1, 3)); Enemy(0, 3, Vector2Int.right, 2); Build();
             Assert.True(player.TryBeginAction(PlayerAction.Wait, Vector2Int.zero)); player.AdvanceMovement(.5f);
-            Assert.AreEqual(BattlePhase.Lost, player.Session.Phase);
-            Assert.False(player.IsPresenting, "플레이어는 날아가지 않음"); Assert.Null(Impact);
-            Assert.AreSame(defeated, Shown, "패배 그림");
-            player.UpdateMotion(5); Assert.AreSame(defeated, Shown, "되돌리기 전까지 유지");
-            Assert.True(PlayerAnchor.gameObject.activeSelf); Assert.That(PlayerAnchor.localPosition.x, Is.EqualTo(1).Within(1e-4f)); Assert.That(PlayerAnchor.localPosition.z, Is.EqualTo(3).Within(1e-4f));
-            Assert.True(player.TryUndo()); Assert.IsNull(player.ReactionSprite); Assert.AreSame(idle, Shown, "되돌리면 원래 그림");
+            player.AdvanceMovement(settings.LungeImpactTime + .01f);
+            Assert.AreSame(defeated, Shown); Assert.Null(HitImpact, "이펙트 슬롯이 비면 이펙트만 건너뜀");
         }
         [Test] public void SkillEvasionShowsEvadedSpritesInOrderThenReturns()
         {

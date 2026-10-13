@@ -33,3 +33,11 @@ MonoBehaviour:
   spinTurns:
     min: 1
     max: 2
+  playerHitPrefab: {fileID: 1953720409002165113, guid: c6caf0bf3a19eec48baf749749150b98, type: 3}
+  playerHitSound: {fileID: 8300000, guid: 0553a09bfe9016543a415a77b678bfff, type: 3}
+  playerHitVolume: 0.9
+  lungeDistance: 0.3
+  lungeTime: 0.2
+  knockbackDistance: 0.25
+  knockbackTime: 0.18
+  contactDistance: 0.6
