@@ -57,9 +57,12 @@ namespace IBIIIS.Tests
 
         [Test] public void SkippingJumpsOverLinesAndStopsAtTheNextInputStep()
         {
+            Assert.AreEqual(-1, director.SkipHint, "대본 시작 전에는 안내 없음");
             director.Begin();
             Assert.AreEqual(0, director.StepIndex);
+            Assert.AreEqual(0, director.SkipHint, "대사가 보이면 건너뛰기 안내(누르기 전 0)");
             Assert.AreEqual(2, director.SkipLines(), "대사 두 줄을 건너뜀(사이의 감정 표시는 실행)");
+            Assert.AreEqual(-1, director.SkipHint, "입력 대기에서는 안내 숨김");
             Assert.AreEqual(3, director.StepIndex, "이름 입력에서 멈춤"); Assert.IsTrue(director.Dialogue.AskingName);
             Assert.IsEmpty(director.ActiveEmotes, "다음 대사까지 보이는 감정 표시는 함께 지움");
             Assert.AreEqual(0, director.SkipLines(), "입력 대기 중에는 건너뛰지 않음"); Assert.AreEqual(3, director.StepIndex);

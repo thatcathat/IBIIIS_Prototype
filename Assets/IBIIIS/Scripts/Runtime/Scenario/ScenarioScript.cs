@@ -39,6 +39,14 @@ namespace IBIIIS
         /// <summary>'표시 끝 단계까지 유지'로 띄운 감정 표시(Target 대상) 또는 자세를 끝낸다. 바로 다음 단계. IBIIIS Dialogue Editor에서는 막대의 끝으로 보인다.</summary>
         EndDisplay = 15,
     }
+    /// <summary>대본을 자동으로 시작하는 때. 값은 대본 에셋에 정수로 저장되므로 끝에만 추가한다.</summary>
+    public enum ScenarioStartTiming
+    {
+        /// <summary>전투가 준비되는 대로(튜토리얼처럼 전투 전체를 대본이 이끈다).</summary>
+        [InspectorName("전투 준비 시 (Battle Ready)")] BattleReady = 0,
+        /// <summary>적을 모두 물리치고 충돌 연출이 끝난 뒤. 그때까지 전투는 평소대로 진행되고, 결과 팝업은 대본이 끝난 뒤 뜬다.</summary>
+        [InspectorName("클리어 시 (Battle Won)")] BattleWon = 1,
+    }
     /// <summary>표시 끝 단계가 끝낼 표시 종류.</summary>
     public enum ScenarioDisplay { Emote = 0, Pose = 1 }
     /// <summary>자세 연출의 움직임. 표시 전용. 값은 에셋에 정수로 저장되므로 끝에만 추가한다.</summary>
@@ -82,10 +90,29 @@ namespace IBIIIS
     public sealed class ScenarioScript : ScriptableObject
     {
         [SerializeField, Tooltip("이 대본의 고정 ID. 기록 등이 이 값으로 연결되므로 정한 뒤 바꾸지 않습니다.")] private string scriptId = "tutorial";
+        [SerializeField, Tooltip("대본 전체 설정: 시작 시점·한 번만·건너뛰기·전투 연출. IBIIIS Dialogue Editor의 시작 노드에서 편집합니다.")] private Settings settings = Settings.Default;
         [SerializeField] private ScenarioStep[] steps = Array.Empty<ScenarioStep>();
         public string Id => scriptId;
+        public Settings Options => settings;
+        /// <summary>대본 전체 설정. 씬 연결(전투·등장 오브젝트)은 진행기(ScenarioDirector)에 있다.</summary>
+        [Serializable]
+        public struct Settings
+        {
+            [Tooltip("자동 시작 시점. Battle Ready: 전투가 준비되는 대로(튜토리얼). Battle Won: 적을 모두 물리친 뒤(클리어 대화, 그 전까지 전투는 평소대로, 결과 팝업은 대본이 끝난 뒤). 진행기의 Play On Start를 끄면 쓰지 않습니다.")] public ScenarioStartTiming startTiming;
+            [Tooltip("체크하면 이 대본을 끝까지 본 뒤로는 자동으로 시작하지 않습니다(같은 맵을 다시 깨도 대화가 다시 나오지 않음). 본 기록은 대본 ID로 클리어 기록 파일에 남습니다.")] public bool onlyOnce;
+            [Tooltip("체크하면 대사가 보이는 동안 Esc를 길게 눌러 다음 입력 대기 단계(행동·칸 누르기·이름 입력·자유 전투)나 대본 끝까지 대사를 건너뜁니다. 대화 상자에 안내가 보입니다.")] public bool allowSkip;
+            [Min(0.1f), Tooltip("건너뛰기에 필요한 Esc 누르는 시간(초). 임시 0.6.")] public float skipHoldSeconds;
+            [Tooltip("체크하면 대본이 도는 동안 적 인식 말풍선(대사)을 띄우지 않습니다. 대본 대사와 겹치지 않게 튜토리얼에서 켭니다.")] public bool hideEnemyAlerts;
+            [Tooltip("체크하면 대본이 도는 동안 적 인식 범위 안의 위험 그림을 자동으로 보이지 않습니다. 위험 자세는 대본의 Pose 단계로 정합니다.")] public bool scriptControlsDanger;
+            /// <summary>건너뛰기 누르는 시간(0 이하로 저장된 값은 0.1초).</summary>
+            public float SkipHold => Mathf.Max(.1f, skipHoldSeconds);
+            /// <summary>새 대본의 기본값(이전에 진행기에 있던 기본값과 같다).</summary>
+            public static Settings Default => new Settings { startTiming = ScenarioStartTiming.BattleReady, allowSkip = true, skipHoldSeconds = .6f, hideEnemyAlerts = true, scriptControlsDanger = true };
+        }
         public ScenarioStep[] Steps => steps ?? Array.Empty<ScenarioStep>();
         public void Set(string id, ScenarioStep[] value) { scriptId = id; steps = value ?? Array.Empty<ScenarioStep>(); EnsureStepIds(); }
+        /// <summary>대본 설정을 바꾼다(코드·테스트용. 편집기는 직렬화 속성으로 고친다).</summary>
+        public void SetOptions(Settings value) => settings = value;
         /// <summary>비었거나 앞 단계와 겹치는 단계 ID를 새로 채운다(복사·추가된 단계). 바뀌었으면 true. 진행에는 쓰지 않고 편집기만 쓴다.</summary>
         public bool EnsureStepIds()
         {

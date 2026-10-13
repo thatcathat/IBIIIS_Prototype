@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 using UnityEditor.Callbacks;
+using UnityEditor.SceneManagement;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -18,6 +19,7 @@ namespace IBIIIS.Editor
         private static readonly Color PoseColor = new Color(.95f, .45f, .65f), EmoteColor = new Color(.35f, .8f, .85f);
         private static readonly Color InputColor = new Color(.95f, .65f, .25f), WorldColor = new Color(.45f, .8f, .45f), FlowColor = new Color(.6f, .6f, .65f);
         private static readonly Color SelectedBorder = new Color(.45f, .7f, 1f), Highlight = new Color(.95f, .8f, .3f, .3f);
+        private static readonly Color StartColor = new Color(.55f, .8f, .4f), WarnColor = new Color(.95f, .7f, .3f);
 
         [SerializeField] private ScenarioScript script;
         // 선택한 단계의 고유 ID(마지막이 기준 단계). 단계를 넣거나 빼도 선택이 따라간다.
@@ -31,6 +33,11 @@ namespace IBIIIS.Editor
         private VisualElement createForm;
         private VisualElement detail;
         private bool rebuildQueued, showIssues;
+        // 시작 노드(대본 설정)를 고른 상태. 단계를 고르면 풀린다.
+        [SerializeField] private bool startSelected;
+        // 이 대본을 쓰는 진행기(열린·닫힌 씬). 씬이 바뀔 때 다시 찾는다.
+        private List<DialogueScriptScenes.Entry> linked = new List<DialogueScriptScenes.Entry>();
+        private string linkedKey = "";
         // 세로줄 목록(전체 대본 순서, DialogueScriptEdits.Columns와 같은 순서). 끌어 놓을 자리를 찾는 데 쓴다.
         private sealed class Column { public int From, To; public bool HasMain; public VisualElement Element, Group; public StyleColor Background; }
         private readonly List<Column> columns = new List<Column>();
@@ -102,7 +109,7 @@ namespace IBIIIS.Editor
             // 복사·붙여넣기·복제·삭제는 에디터 명령으로 온다(글자 입력 중에는 그 칸이 처리).
             root.RegisterCallback<ValidateCommandEvent>(e => { if (HandlesCommand(e.commandName) && !Typing(e.target)) e.StopPropagation(); });
             root.RegisterCallback<ExecuteCommandEvent>(e => { if (HandlesCommand(e.commandName) && !Typing(e.target)) { RunCommand(e.commandName); e.StopPropagation(); } });
-            root.RegisterCallback<KeyDownEvent>(e => { if (e.keyCode == KeyCode.Escape && !Typing(e.target)) { ClosePopup(); selection.Clear(); RebuildAll(); e.StopPropagation(); } });
+            root.RegisterCallback<KeyDownEvent>(e => { if (e.keyCode == KeyCode.Escape && !Typing(e.target)) { ClosePopup(); selection.Clear(); startSelected = false; RebuildAll(); e.StopPropagation(); } });
             // 표시 추가 창 밖을 누르면 닫는다.
             root.RegisterCallback<PointerDownEvent>(e => { if (popup != null && !(e.target is VisualElement v && (v == popup || popup.Contains(v)))) ClosePopup(); }, TrickleDown.TrickleDown);
             if (script == null) script = Selection.activeObject as ScenarioScript;
@@ -122,9 +129,11 @@ namespace IBIIIS.Editor
                 default: DeleteSelected(); break;
             }
         }
+        /// <summary>시작 노드를 골라 아래 칸에 대본 설정과 연결된 씬을 보인다(진행기 Inspector의 버튼).</summary>
+        public void SelectStart() { selection.Clear(); startSelected = true; RebuildAll(); }
         public void SetScript(ScenarioScript value)
         {
-            if (value != script) selection.Clear();
+            if (value != script) { selection.Clear(); startSelected = false; }
             script = value;
             // 단계 ID가 없는 예전 대본이면 채워 저장한다(선택·복사가 ID를 씀).
             if (script != null && script.EnsureStepIds()) { EditorUtility.SetDirty(script); Save(); }
@@ -161,6 +170,7 @@ namespace IBIIIS.Editor
         // 클릭: 하나만 선택. Ctrl(⌘)+클릭: 더하기·빼기. Shift+클릭: 기준 단계부터 범위.
         private void SelectIndex(int index, bool additive = false, bool range = false)
         {
+            startSelected = false;
             var steps = script.Steps;
             if (index < 0 || index >= steps.Length) selection.Clear();
             else if (range && Primary >= 0)
@@ -195,6 +205,7 @@ namespace IBIIIS.Editor
             graph.Clear(); columns.Clear(); stepElements.Clear();
             RefreshIssues();
             if (script == null) { graph.Add(new Label("대본(Scenario Script)을 고르세요. Project 창에서 대본 에셋을 더블클릭해도 열립니다.") { style = { marginLeft = 10, marginTop = 10 } }); return; }
+            graph.Add(StartNode());
             var steps = script.Steps;
             if (steps.Length == 0) { graph.Add(new Button(() => Commit(new[] { NewLine(null) }, "대본 단계 추가", 0)) { text = "첫 대사 추가", style = { marginLeft = 10, marginTop = 10, alignSelf = Align.FlexStart } }); return; }
             var spans = new Dictionary<int, ScenarioSpan>(); var lanes = AssignLanes(steps, spans);
@@ -296,6 +307,29 @@ namespace IBIIIS.Editor
             track.Add(draw);
             group.Add(track);
             return group;
+        }
+        // 맨 앞 시작 노드: 대본 설정(시작 시점·한 번만·건너뛰기·연출)과 연결된 씬 수·대상 ID 경고를 보인다. 누르면 아래에서 편집한다.
+        // 대본마다 하나이고 단계가 아니므로 옮기거나 지우거나 복사하지 않는다.
+        private VisualElement StartNode()
+        {
+            var o = script.Options;
+            var node = new VisualElement { style = { flexDirection = FlexDirection.Row, flexWrap = Wrap.Wrap, alignItems = Align.Center, alignSelf = Align.FlexStart, marginLeft = 16, marginTop = 8, paddingLeft = 8, paddingRight = 8, paddingTop = 4, paddingBottom = 4, backgroundColor = startSelected ? new Color(.25f, .33f, .45f) : new Color(.19f, .2f, .23f), borderTopLeftRadius = 12, borderTopRightRadius = 12, borderBottomLeftRadius = 12, borderBottomRightRadius = 12 } };
+            SetBorder(node, startSelected ? SelectedBorder : new Color(StartColor.r, StartColor.g, StartColor.b, .6f), startSelected ? 2 : 1);
+            node.style.borderLeftWidth = 4; node.style.borderLeftColor = StartColor;
+            node.Add(new Label("▶ 시작") { style = { unityFontStyleAndWeight = FontStyle.Bold, color = StartColor, marginRight = 8 } });
+            node.Add(new Label(o.startTiming == ScenarioStartTiming.BattleWon ? "클리어 시" : "전투 준비 시") { style = { color = new Color(.9f, .9f, .92f), marginRight = 6 } });
+            void Badge(string text, Color color) => node.Add(new Label(text) { style = { fontSize = 10, color = color, marginLeft = 4, paddingLeft = 5, paddingRight = 5, backgroundColor = new Color(1, 1, 1, .06f), borderTopLeftRadius = 6, borderTopRightRadius = 6, borderBottomLeftRadius = 6, borderBottomRightRadius = 6 } });
+            var plain = new Color(.75f, .77f, .82f);
+            if (o.onlyOnce) Badge("한 번만", plain);
+            Badge(o.allowSkip ? $"건너뛰기 {o.SkipHold:0.##}초" : "건너뛰기 끔", plain);
+            if (o.hideEnemyAlerts) Badge("적 말풍선 숨김", plain);
+            if (o.scriptControlsDanger) Badge("위험 그림 대본이", plain);
+            Badge(linked.Count == 0 ? "연결된 씬 없음" : $"연결 씬 {linked.Count}", linked.Count == 0 ? WarnColor : plain);
+            int missing = DialogueScriptScenes.ActorIssues(script.Steps, linked).Count;
+            if (missing > 0) Badge($"⚠ 없는 대상 ID {missing}", WarnColor);
+            node.tooltip = "누르면 아래에서 대본 설정(시작 시점·한 번만·건너뛰기·전투 연출)과 이 대본을 쓰는 씬을 봅니다.\n대본마다 하나이며 옮기거나 지울 수 없습니다.";
+            node.RegisterCallback<PointerDownEvent>(e => { if (e.button != 0) return; selection.Clear(); startSelected = true; graph?.Focus(); RebuildAll(); e.StopPropagation(); });
+            return node;
         }
         private int ColumnStart((int start, int end) scene, Dictionary<int, int> columnOf, int index) => columns.Count - (columnOf.Values.Max() + 1) + columnOf[index];
         // 바로 넘어가는 단계: 한 줄짜리 작은 노드(왼쪽 색 띠 = 종류). 끌어서 다른 세로줄로 옮긴다.
@@ -705,16 +739,21 @@ namespace IBIIIS.Editor
             else { EditorGUIUtility.PingObject(AssetDatabase.LoadAssetAtPath<SceneAsset>(entry.ScenePath)); ShowNotification(new GUIContent($"{entry.SceneName} 씬 파일에 연결하고 저장했습니다.")); }
             RefreshConnection();
         }
-        // 지금 대본이 연결된 씬(열린 씬·닫힌 씬 모두)을 막대에 적는다.
+        // 지금 대본이 연결된 씬(열린 씬·닫힌 씬 모두)을 막대에 적는다. 연결·등장 오브젝트가 바뀌었으면 시작 노드·검사·아래 칸을 다시 그린다.
         private void RefreshConnection()
         {
             if (connectButton == null || connectionLabel == null) return;
             bool playing = EditorApplication.isPlayingOrWillChangePlaymode;
             connectButton.SetEnabled(script != null && EditorUtility.IsPersistent(script) && !playing);
             connectButton.tooltip = playing ? "Play 중에는 연결할 수 없습니다." : "프로젝트 씬의 대본 진행기(ScenarioDirector)를 골라 이 대본을 연결합니다.";
-            if (script == null) { connectionLabel.text = ""; return; }
-            var linked = DialogueScriptScenes.DirectorsInProject().FindAll(entry => entry.Script == script);
+            linked = script != null ? DialogueScriptScenes.DirectorsInProject().FindAll(entry => entry.Script == script) : new List<DialogueScriptScenes.Entry>();
+            if (script == null) { connectionLabel.text = ""; linkedKey = ""; return; }
             connectionLabel.text = linked.Count == 0 ? "연결된 씬 없음" : "연결: " + string.Join(", ", linked.ConvertAll(entry => entry.SceneName + (entry.Open ? "" : "(닫힘)")));
+            string key = string.Join("|", linked.ConvertAll(entry => $"{entry.ScenePath}:{entry.ObjectName}:{entry.Open}:{entry.PlayOnStart}:{string.Join(",", entry.ActorIds)}"));
+            if (key == linkedKey) return;
+            linkedKey = key;
+            QueueRebuild();
+            if (startSelected) RebuildDetail();
         }
 
         // ── 대사 바로 고치기 ──
@@ -776,6 +815,7 @@ namespace IBIIIS.Editor
             if (issuesButton == null || issuesList == null) return;
             issuesList.Clear();
             var issues = script != null ? DialogueScriptEdits.Validate(script.Steps) : new List<DialogueScriptEdits.Issue>();
+            if (script != null) issues.AddRange(DialogueScriptScenes.ActorIssues(script.Steps, linked));
             int errors = issues.Count(i => i.Error), warnings = issues.Count - errors;
             issuesButton.text = issues.Count == 0 ? "검사: 문제 없음" : $"검사: 오류 {errors} · 주의 {warnings}";
             issuesButton.style.color = errors > 0 ? new Color(1f, .45f, .4f) : warnings > 0 ? new Color(.95f, .8f, .3f) : new Color(.5f, .85f, .5f);
@@ -901,6 +941,7 @@ namespace IBIIIS.Editor
             detail.Unbind(); detail.Clear();
             if (serialized == null) return;
             serialized.Update();
+            if (startSelected) { StartDetail(); return; }
             var steps = serialized.FindProperty("steps");
             var indices = SelectedIndices();
             if (indices.Count == 0)
@@ -935,6 +976,56 @@ namespace IBIIIS.Editor
             field.Bind(serialized);
             detail.Add(field);
             detail.Add(new Label("변경은 바로 대본 에셋에 저장되며 Ctrl+Z로 되돌릴 수 있습니다.") { style = { color = new Color(.6f, .6f, .6f), marginTop = 8, whiteSpace = WhiteSpace.Normal, fontSize = 10 } });
+        }
+        // 시작 노드를 골랐을 때: 대본 설정(바로 저장·Ctrl+Z)과 이 대본을 쓰는 진행기(씬·등장 오브젝트·없는 대상 ID).
+        private static readonly (string name, string label)[] SettingLabels =
+        {
+            ("startTiming", "시작 시점"), ("onlyOnce", "처음 한 번만"), ("allowSkip", "건너뛰기 허용"), ("skipHoldSeconds", "건너뛰기 누르는 시간(초)"),
+            ("hideEnemyAlerts", "적 인식 말풍선 숨김"), ("scriptControlsDanger", "위험 그림을 대본이 정함"),
+        };
+        private void StartDetail()
+        {
+            detail.Add(new Label("▶ 시작 · 대본 설정") { style = { unityFontStyleAndWeight = FontStyle.Bold, color = StartColor, marginBottom = 2 } });
+            detail.Add(new Label("이 대본을 쓰는 모든 씬에 적용됩니다. 변경은 바로 대본 에셋에 저장되며 Ctrl+Z로 되돌릴 수 있습니다. 항목에 마우스를 올리면 설명이 나옵니다.") { style = { color = new Color(.65f, .65f, .68f), fontSize = 10, whiteSpace = WhiteSpace.Normal, marginBottom = 4 } });
+            var settings = serialized.FindProperty("settings");
+            foreach (var (name, label) in SettingLabels)
+            {
+                var field = new PropertyField(settings.FindPropertyRelative(name), label);
+                field.Bind(serialized);
+                detail.Add(field);
+            }
+            detail.Add(new Label("연결된 씬") { style = { unityFontStyleAndWeight = FontStyle.Bold, marginTop = 10, marginBottom = 2 } });
+            if (linked.Count == 0)
+            {
+                detail.Add(new Label("이 대본을 쓰는 진행기(ScenarioDirector)가 없습니다. 위쪽 '씬에 연결'로 전투 씬의 진행기에 연결해야 게임에 나옵니다.") { style = { color = WarnColor, whiteSpace = WhiteSpace.Normal } });
+                return;
+            }
+            detail.Add(new Label("전투·등장 오브젝트(Actors)·자동 시작은 씬의 진행기 Inspector에서 고칩니다.") { style = { color = new Color(.65f, .65f, .68f), fontSize = 10, whiteSpace = WhiteSpace.Normal, marginBottom = 4 } });
+            var targets = DialogueScriptScenes.TargetIds(script.Steps).Select(t => t.id).ToList();
+            bool playing = EditorApplication.isPlayingOrWillChangePlaymode;
+            foreach (var entry in linked)
+            {
+                var box = new VisualElement { style = { marginBottom = 6, paddingLeft = 8, paddingRight = 8, paddingTop = 4, paddingBottom = 4, backgroundColor = new Color(1, 1, 1, .03f), borderTopLeftRadius = 6, borderTopRightRadius = 6, borderBottomLeftRadius = 6, borderBottomRightRadius = 6 } };
+                SetBorder(box, new Color(.4f, .42f, .48f), 1);
+                var head = new VisualElement { style = { flexDirection = FlexDirection.Row, alignItems = Align.Center, flexWrap = Wrap.Wrap } };
+                head.Add(new Label($"{entry.SceneName} · {entry.ObjectName}") { style = { unityFontStyleAndWeight = FontStyle.Bold, marginRight = 6 } });
+                head.Add(new Label(entry.Open ? "열린 씬" : "닫힌 씬") { style = { fontSize = 10, color = new Color(.6f, .6f, .65f), marginRight = 8 } });
+                var e2 = entry;
+                if (entry.Open) head.Add(new Button(() => { Selection.activeObject = e2.Director; EditorGUIUtility.PingObject(e2.Director); }) { text = "진행기 선택" });
+                else
+                {
+                    var open = new Button(() => { if (EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) EditorSceneManager.OpenScene(e2.ScenePath); }) { text = "씬 열기" };
+                    open.SetEnabled(!playing);
+                    head.Add(open);
+                }
+                box.Add(head);
+                if (!entry.PlayOnStart) box.Add(new Label("자동 시작 꺼짐(Play On Start) — 코드에서 Begin()을 불러야 시작합니다.") { style = { color = WarnColor, fontSize = 11, whiteSpace = WhiteSpace.Normal } });
+                var actors = entry.ActorIds;
+                box.Add(new Label("등장 오브젝트(Actors): " + (actors.Count == 0 ? "없음" : string.Join(", ", actors))) { style = { fontSize = 11, whiteSpace = WhiteSpace.Normal } });
+                var missing = targets.Where(id => !actors.Contains(id)).ToList();
+                if (missing.Count > 0) box.Add(new Label($"⚠ 대본이 부르지만 Actors에 없는 ID: {string.Join(", ", missing)} — 그 단계는 건너뜁니다. 진행기 Actors에 추가하거나 대본의 대상을 고치세요.") { style = { color = WarnColor, fontSize = 11, whiteSpace = WhiteSpace.Normal } });
+                detail.Add(box);
+            }
         }
         // 단계 하나를 바로 앞·뒤 단계와 바꾼다.
         private void Swap(int index, int delta)

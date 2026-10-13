@@ -411,10 +411,8 @@ namespace IBIIIS.Tests
         }
         private static ScenarioDirector ClearTalk(GridMapPlayer battle, ScenarioScript script, bool onlyOnce)
         {
+            var options = script.Options; options.startTiming = ScenarioStartTiming.BattleWon; options.onlyOnce = onlyOnce; script.SetOptions(options);
             var director = battle.gameObject.AddComponent<ScenarioDirector>(); director.Configure(battle, script);
-            var so = new SerializedObject(director);
-            so.FindProperty("startTiming").enumValueIndex = (int)ScenarioStartTiming.BattleWon; so.FindProperty("onlyOnce").boolValue = onlyOnce;
-            so.ApplyModifiedPropertiesWithoutUndo();
             return director;
         }
         private static void FinishLine(ScenarioDirector director) { var r = director.Dialogue.Runner; r.Advance(); r.Advance(); }

@@ -12,7 +12,7 @@ namespace IBIIIS.Editor
     /// 열린 씬은 그 자리에서 연결하고(Ctrl+Z 가능, 저장은 사용자), 닫힌 씬은 파일을 잠깐 더해 열어 연결·저장한 뒤 닫는다(되돌리기 없음).</summary>
     public static class DialogueScriptScenes
     {
-        /// <summary>진행기 하나. 열린 씬이면 Director가 있고, 닫힌 씬이면 파일에서 읽은 정보(오브젝트 이름·연결된 대본 GUID)만 있다.</summary>
+        /// <summary>진행기 하나. 열린 씬이면 Director가 있고, 닫힌 씬이면 파일에서 읽은 정보(오브젝트 이름·연결된 대본 GUID·등장 오브젝트 ID·자동 시작)만 있다.</summary>
         public sealed class Entry
         {
             public string ScenePath, SceneName, ObjectName, ScriptGuid;
@@ -20,6 +20,36 @@ namespace IBIIIS.Editor
             public ScenarioDirector Director;
             public bool Open => Director != null;
             public ScenarioScript Script => Open ? ScriptOf(Director) : string.IsNullOrEmpty(ScriptGuid) ? null : AssetDatabase.LoadAssetAtPath<ScenarioScript>(AssetDatabase.GUIDToAssetPath(ScriptGuid));
+            public List<string> FileActorIds = new List<string>();
+            public bool FilePlayOnStart = true;
+            /// <summary>등장 오브젝트(Actors) ID.</summary>
+            public List<string> ActorIds => Open ? new List<string>(Director.ActorIds) : new List<string>(FileActorIds);
+            public bool PlayOnStart => Open ? Director.PlayOnStart : FilePlayOnStart;
+        }
+
+        /// <summary>대본이 ID로 부르는 등장 오브젝트(감정 표시·켜고 끄기·감정 표시 끝의 Target). 예약된 "player"와 빈 칸은 뺀다. 처음 나온 단계 번호와 함께.</summary>
+        public static List<(string id, int index)> TargetIds(ScenarioStep[] steps)
+        {
+            var list = new List<(string, int)>(); var seen = new HashSet<string>();
+            for (int i = 0; i < steps.Length; i++)
+            {
+                var s = steps[i];
+                bool usesTarget = s.type == ScenarioStepType.Emote || s.type == ScenarioStepType.SetActive || (s.type == ScenarioStepType.EndDisplay && s.display == ScenarioDisplay.Emote);
+                if (usesTarget && !string.IsNullOrEmpty(s.target) && s.target != "player" && seen.Add(s.target)) list.Add((s.target, i));
+            }
+            return list;
+        }
+        /// <summary>연결된 진행기마다 Actors에 없는 대상 ID를 검사 항목(주의)으로 돌려준다. 진행기는 이런 단계를 경고만 남기고 건너뛴다.</summary>
+        public static List<DialogueScriptEdits.Issue> ActorIssues(ScenarioStep[] steps, IEnumerable<Entry> linked)
+        {
+            var issues = new List<DialogueScriptEdits.Issue>(); var targets = TargetIds(steps);
+            foreach (var entry in linked)
+            {
+                var actors = new HashSet<string>(entry.ActorIds);
+                foreach (var (id, index) in targets)
+                    if (!actors.Contains(id)) issues.Add(new DialogueScriptEdits.Issue(index, $"대상 '{id}'가 {entry.SceneName} 씬 진행기({entry.ObjectName})의 Actors에 없음 — 이 단계는 건너뜀", false));
+            }
+            return issues;
         }
 
         /// <summary>씬 하나에 있는 진행기(꺼진 오브젝트 포함).</summary>
@@ -97,7 +127,13 @@ namespace IBIIIS.Editor
                 var go = Regex.Match(body, @"m_GameObject: \{fileID: (\d+)\}");
                 if (go.Success && blocks.TryGetValue(ulong.Parse(go.Groups[1].Value), out var goBlock)) name = Regex.Match(goBlock.body, @"m_Name: (.*)").Groups[1].Value.Trim();
                 var script = Regex.Match(body, @"^  script: \{fileID: \d+(?:, guid: ([0-9a-f]+))?", RegexOptions.Multiline);
-                entries.Add(new Entry { ScenePath = path, SceneName = Path.GetFileNameWithoutExtension(path), ObjectName = name, FileId = pair.Key, ScriptGuid = script.Success ? script.Groups[1].Value : "" });
+                var entry = new Entry { ScenePath = path, SceneName = Path.GetFileNameWithoutExtension(path), ObjectName = name, FileId = pair.Key, ScriptGuid = script.Success ? script.Groups[1].Value : "" };
+                // 등장 오브젝트: "  actors:" 아래 "  - id: <ID>" 줄들(배열 항목은 두 칸 들여쓰기 "- ", 항목 안 칸은 네 칸).
+                var actors = Regex.Match(body, @"^  actors:[^\n]*\n((?:  [- ] .*\n?)*)", RegexOptions.Multiline);
+                if (actors.Success) foreach (Match id in Regex.Matches(actors.Groups[1].Value, @"^  - id: ?(.*)$", RegexOptions.Multiline)) entry.FileActorIds.Add(id.Groups[1].Value.Trim().Trim('"', '\''));
+                var play = Regex.Match(body, @"^  playOnStart: (\d)", RegexOptions.Multiline);
+                if (play.Success) entry.FilePlayOnStart = play.Groups[1].Value != "0";
+                entries.Add(entry);
             }
             return new List<Entry>(entries);
         }

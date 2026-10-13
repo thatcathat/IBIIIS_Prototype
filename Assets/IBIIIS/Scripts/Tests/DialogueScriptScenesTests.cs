@@ -57,6 +57,41 @@ namespace IBIIIS.Tests
             Assert.IsFalse(string.IsNullOrEmpty(entries[0].ObjectName)); Assert.IsFalse(entries[0].Open);
             Assert.AreSame(AssetDatabase.LoadAssetAtPath<ScenarioScript>(TutorialSetup.Stage2Script), entries[0].Script);
             Assert.IsEmpty(DialogueScriptScenes.ReadSceneFile(TutorialSetup.TitleScene), "진행기가 없는 씬");
+            CollectionAssert.AreEqual(new[] { "fly" }, entries[0].ActorIds, "등장 오브젝트 ID를 파일에서 읽음");
+            Assert.IsTrue(entries[0].PlayOnStart);
+        }
+        [Test] public void TargetIdsSkipThePlayerAndMissingActorsBecomeWarnings()
+        {
+            var steps = new[]
+            {
+                new ScenarioStep { type = ScenarioStepType.Emote, target = "player", text = "!" },
+                new ScenarioStep { type = ScenarioStepType.Emote, target = "fly", text = "?" },
+                new ScenarioStep { type = ScenarioStepType.SetActive, target = "scarecrow", active = true },
+                new ScenarioStep { type = ScenarioStepType.EndDisplay, display = ScenarioDisplay.Emote, target = "fly" },
+                new ScenarioStep { type = ScenarioStepType.EndDisplay, display = ScenarioDisplay.Pose, target = "ignored" },
+                new ScenarioStep { type = ScenarioStepType.Line, target = "not-a-target" },
+            };
+            var ids = DialogueScriptScenes.TargetIds(steps);
+            CollectionAssert.AreEqual(new[] { ("fly", 1), ("scarecrow", 2) }, ids, "player·자세 끝·대사는 빼고 처음 나온 단계 번호");
+            var entry = new DialogueScriptScenes.Entry { SceneName = "Test", ObjectName = "Director", FileActorIds = { "fly" } };
+            var issues = DialogueScriptScenes.ActorIssues(steps, new[] { entry });
+            Assert.AreEqual(1, issues.Count); Assert.AreEqual(2, issues[0].Index); StringAssert.Contains("scarecrow", issues[0].Message); Assert.IsFalse(issues[0].Error);
+        }
+        [Test] public void TutorialScriptsFindAllTheirActorsAndKeepThePreviousSettings()
+        {
+            foreach (var (scene, path) in new[] { (TutorialSetup.Stage1Scene, TutorialSetup.Stage1Script), (TutorialSetup.Stage2Scene, TutorialSetup.Stage2Script) })
+            {
+                var script = AssetDatabase.LoadAssetAtPath<ScenarioScript>(path);
+                CollectionAssert.IsEmpty(DialogueScriptScenes.ActorIssues(script.Steps, DialogueScriptScenes.ReadSceneFile(scene)), path);
+                // 진행기에서 대본으로 옮긴 설정: 두 튜토리얼 씬의 진행기 값(전투 준비 시 시작, 적 말풍선 숨김, 위험 그림은 대본이)과 같아야 한다.
+                var o = script.Options;
+                Assert.AreEqual(ScenarioStartTiming.BattleReady, o.startTiming, path); Assert.IsFalse(o.onlyOnce, path);
+                Assert.IsTrue(o.hideEnemyAlerts, path); Assert.IsTrue(o.scriptControlsDanger, path);
+                Assert.IsTrue(o.allowSkip, path); Assert.AreEqual(.6f, o.SkipHold, 1e-4f, path);
+            }
+            var fresh = ScriptableObject.CreateInstance<ScenarioScript>();
+            try { Assert.IsTrue(fresh.Options.allowSkip); Assert.IsTrue(fresh.Options.hideEnemyAlerts); Assert.AreEqual(ScenarioStartTiming.BattleReady, fresh.Options.startTiming); }
+            finally { Object.DestroyImmediate(fresh); }
         }
         [Test] public void ConnectsIntoAClosedSceneFileAndClosesIt()
         {
