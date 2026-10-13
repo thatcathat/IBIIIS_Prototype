@@ -1040,11 +1040,12 @@ namespace IBIIIS.Editor
     [CustomEditor(typeof(ScenarioScript))]
     public sealed class ScenarioScriptEditor : UnityEditor.Editor
     {
-        public override void OnInspectorGUI()
+        public override VisualElement CreateInspectorGUI()
         {
-            if (GUILayout.Button("IBIIIS Dialogue Editor로 열기", GUILayout.Height(26))) DialogueEditorWindow.Open((ScenarioScript)target);
-            EditorGUILayout.Space(4);
-            DrawDefaultInspector();
+            var root = new VisualElement();
+            root.Add(new Button(() => DialogueEditorWindow.Open((ScenarioScript)target)) { text = "IBIIIS Dialogue Editor로 열기", style = { height = 26, marginBottom = 4 } });
+            InspectorElement.FillDefaultInspector(root, serializedObject, this);
+            return root;
         }
     }
 }

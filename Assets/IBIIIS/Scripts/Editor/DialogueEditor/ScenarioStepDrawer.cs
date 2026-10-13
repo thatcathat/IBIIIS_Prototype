@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEditor;
-using UnityEngine;
+using UnityEditor.UIElements;
+using UnityEngine.UIElements;
 
 namespace IBIIIS.Editor
 {
@@ -32,29 +33,28 @@ namespace IBIIIS.Editor
             var type = (ScenarioStepType)property.FindPropertyRelative("type").intValue;
             return Fields.TryGetValue(type, out var list) ? list : new (string, string)[0];
         }
-        public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
+        public override VisualElement CreatePropertyGUI(SerializedProperty property)
         {
-            EditorGUI.BeginProperty(position, label, property);
-            float line = EditorGUIUtility.singleLineHeight, gap = EditorGUIUtility.standardVerticalSpacing;
-            var rect = new Rect(position.x, position.y, position.width, line);
-            EditorGUI.PropertyField(rect, property.FindPropertyRelative("type"), new GUIContent(label.text + " 종류"));
-            rect.y += line + gap;
-            EditorGUI.indentLevel++;
-            foreach (var (field, text) in For(property))
+            var root = new VisualElement();
+            var type = property.FindPropertyRelative("type");
+            var typeField = new PropertyField(type, preferredLabel + " 종류");
+            typeField.BindProperty(type);
+            var fields = new VisualElement { style = { marginLeft = 15 } };
+            root.Add(typeField); root.Add(fields);
+            void Rebuild()
             {
-                var child = property.FindPropertyRelative(field);
-                rect.height = EditorGUI.GetPropertyHeight(child, true);
-                EditorGUI.PropertyField(rect, child, new GUIContent(text, child.tooltip), true);
-                rect.y += rect.height + gap;
+                fields.Clear();
+                foreach (var (field, text) in For(property))
+                {
+                    var child = property.FindPropertyRelative(field);
+                    var element = new PropertyField(child, text) { tooltip = child.tooltip };
+                    element.BindProperty(child);
+                    fields.Add(element);
+                }
             }
-            EditorGUI.indentLevel--;
-            EditorGUI.EndProperty();
-        }
-        public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
-        {
-            float gap = EditorGUIUtility.standardVerticalSpacing, height = EditorGUIUtility.singleLineHeight + gap;
-            foreach (var (field, _) in For(property)) height += EditorGUI.GetPropertyHeight(property.FindPropertyRelative(field), true) + gap;
-            return height;
+            root.TrackPropertyValue(type, _ => Rebuild());
+            Rebuild();
+            return root;
         }
     }
 }

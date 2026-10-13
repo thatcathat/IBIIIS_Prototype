@@ -117,6 +117,7 @@ Unity의 프로젝트 구성 가이드(unity.com/kr/how-to/organizing-your-proje
 | `Assets/Settings` | URP 렌더 설정(템플릿) |
 | `Assets/Sandbox` | SampleScene 등 실험용. 빌드 씬 목록에 넣지 않는다(2026-10-13 SampleScene을 빌드 목록에서 뺐다) |
 
+- **에디터 도구 UI 방식**(사용자 결정 2026-10-13): 새 에디터 창·Inspector·PropertyDrawer는 UI Toolkit(`CreateGUI`·`CreateInspectorGUI`)으로 만든다. 현재 `Scripts/Editor`의 창·Inspector·Drawer는 모두 UI Toolkit이다(2026-10-13 `EnemyDefinitionEditor`·`EnemyActionStepDrawer`·`ScenarioDirectorEditor`·`StageEntranceEditor`·`FloatRangeDrawer`·`ScenarioStepDrawer`·`ScenarioScriptEditor`를 IMGUI에서 옮김). Drawer에는 IMGUI `OnGUI`가 없으므로 이 타입들을 IMGUI 코드(`EditorGUILayout.PropertyField`)로 그리지 않는다. Inspector가 다른 에셋·빌드 목록 등 바깥 상태를 보여 줄 때는 `TrackSerializedObjectValue`나 짧은 주기 확인으로 다시 그린다(IMGUI처럼 매 프레임 다시 그리지 않음). 화면 확인은 사용자 확인 대기([플레이 확인 목록](IBIIIS_플레이_확인_목록.md) E-14).
 - 에디터 도구의 기본 생성·조회 경로는 `Assets/IBIIIS/Scripts/Editor/Setup/AssetPaths.cs` 한 곳에서 관리한다. 폴더를 다시 바꿀 때는 Unity Project 창(또는 AssetDatabase)에서 이동해 GUID를 보존하고 이 파일의 경로를 함께 수정한다. 파일 탐색기·git으로 옮기지 않는다.
 - `새 맵`의 저장 대화상자는 `Scenes/Battle`에서 열린다. `Scenes/Battle` 바로 아래에 이름을 지정하면 `Scenes/Battle/<이름>/` 폴더를 만들어 맵·씬 쌍을 넣는다. Play 중이거나 이름 없는 씬이 열려 있으면 폴더를 만들기 전에 거부하고, 생성이 실패하면 이번에 만든 빈 폴더를 지운다. 다른 폴더를 고르면 그 폴더에 생성한다. `새 바닥`은 `Tiles`, `새 환경 프리팹`은 `Prefabs/Environments`에서 열린다.
 - 2026-10-06 폴더 구조 정리 후 씬·프리팹·에셋·재질의 GUID 참조를 조사해 끊긴 참조가 없음을 확인했다. 삭제된 `Wall.asset`을 가리키던 팔레트 참조 3건(StarterMap·TestMap·TestMap3)은 이 맵들이 사용자에 의해 삭제되어(2026-10-09 작업 트리 기준) 남아 있지 않다. 삭제된 바닥 참조가 다시 생기면 아래 '삭제된 바닥 참조 정리'로 지운다.

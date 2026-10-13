@@ -1,5 +1,7 @@
 using UnityEditor;
+using UnityEditor.UIElements;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace IBIIIS.Editor
 {
@@ -7,33 +9,40 @@ namespace IBIIIS.Editor
     [CustomPropertyDrawer(typeof(FloatRange))]
     public sealed class FloatRangeDrawer : PropertyDrawer
     {
-        public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
+        private static readonly Color WarnColor = new Color(1f, .75f, .4f);
+
+        public override VisualElement CreatePropertyGUI(SerializedProperty property)
         {
-            EditorGUI.BeginProperty(position, label, property);
-            var field = EditorGUI.PrefixLabel(position, label);
             var min = property.FindPropertyRelative("min"); var max = property.FindPropertyRelative("max");
-            int indent = EditorGUI.indentLevel; EditorGUI.indentLevel = 0;
-            float labelWidth = EditorGUIUtility.labelWidth; EditorGUIUtility.labelWidth = 28;
-            float half = (field.width - 14) / 2;
-            var minRect = new Rect(field.x, field.y, half, EditorGUIUtility.singleLineHeight);
-            var dashRect = new Rect(minRect.xMax, field.y, 14, EditorGUIUtility.singleLineHeight);
-            var maxRect = new Rect(dashRect.xMax, field.y, half, EditorGUIUtility.singleLineHeight);
-            var previous = GUI.color; if (min.floatValue > max.floatValue) GUI.color = new Color(1f, .75f, .4f);
-            Field(minRect, "최소", min);
-            EditorGUI.LabelField(dashRect, "~");
-            Field(maxRect, "최대", max);
-            GUI.color = previous; EditorGUIUtility.labelWidth = labelWidth; EditorGUI.indentLevel = indent;
-            EditorGUI.EndProperty();
+            var minField = Field("최소", min); var maxField = Field("최대", max);
+            var input = new VisualElement { style = { flexDirection = FlexDirection.Row, flexGrow = 1 } };
+            input.Add(minField);
+            input.Add(new Label("~") { style = { unityTextAlign = TextAnchor.MiddleCenter, width = 14 } });
+            input.Add(maxField);
+            var row = new RangeField(preferredLabel, input);
+            void Refresh()
+            {
+                bool swapped = min.floatValue > max.floatValue;
+                foreach (var field in new[] { minField, maxField })
+                    field.Q(className: FloatField.inputUssClassName).style.color = swapped ? WarnColor : StyleKeyword.Null;
+            }
+            row.TrackPropertyValue(min, _ => Refresh()); row.TrackPropertyValue(max, _ => Refresh());
+            row.RegisterCallback<AttachToPanelEvent>(_ => Refresh());
+            return row;
         }
-        // 값을 실제로 바꿨을 때만 쓴다. 여러 에셋을 함께 선택해도 건드리지 않은 칸은 각 에셋 값을 유지한다.
-        private static void Field(Rect rect, string label, SerializedProperty value)
+        // 바인딩된 칸은 값을 실제로 바꿨을 때만 쓴다. 여러 에셋을 함께 선택해도 건드리지 않은 칸은 각 에셋 값을 유지한다.
+        private static FloatField Field(string label, SerializedProperty value)
         {
-            EditorGUI.showMixedValue = value.hasMultipleDifferentValues;
-            EditorGUI.BeginChangeCheck();
-            float next = EditorGUI.FloatField(rect, new GUIContent(label), value.floatValue);
-            if (EditorGUI.EndChangeCheck()) value.floatValue = Mathf.Max(0, next);
-            EditorGUI.showMixedValue = false;
+            var field = new FloatField(label) { style = { flexGrow = 1, flexBasis = 0, marginLeft = 0, marginRight = 0 } };
+            field.labelElement.style.minWidth = 28; field.labelElement.style.width = 28;
+            field.BindProperty(value);
+            field.RegisterValueChangedCallback(evt => { if (evt.newValue < 0) field.value = 0; });
+            return field;
         }
-        public override float GetPropertyHeight(SerializedProperty property, GUIContent label) => EditorGUIUtility.singleLineHeight;
+        // Inspector의 이름 칸 너비 맞춤은 BaseField에만 적용되므로 두 칸을 BaseField 하나로 감싼다. 값은 안쪽 칸이 각각 바인딩한다.
+        private sealed class RangeField : BaseField<Vector2>
+        {
+            public RangeField(string label, VisualElement input) : base(label, input) { AddToClassList(alignedFieldUssClassName); }
+        }
     }
 }
