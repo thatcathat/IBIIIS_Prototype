@@ -634,8 +634,11 @@ namespace IBIIIS
         private string ControlsHint()
         {
             if (input == null) return "";
-            return $"이동 {input.Key(BattleInput.MoveUp)}{input.Key(BattleInput.MoveLeft)}{input.Key(BattleInput.MoveDown)}{input.Key(BattleInput.MoveRight)} · 대시 {input.Key(BattleInput.DashModifier)}+이동 · " +
-                $"구르기 {input.Key(BattleInput.RollUpLeft)}/{input.Key(BattleInput.RollUpRight)}/{input.Key(BattleInput.RollDownLeft)}/{input.Key(BattleInput.RollDownRight)} · 대기 {input.Key(BattleInput.Wait)} · 되돌리기 {input.Key(BattleInput.Undo)} · 범위 {input.Key(BattleInput.ToggleRanges)} · 다시 시작 {input.Key(BattleInput.Restart)}";
+            return UiText.BattleControls.Format(
+                ("move", $"{input.Key(BattleInput.MoveUp)}{input.Key(BattleInput.MoveLeft)}{input.Key(BattleInput.MoveDown)}{input.Key(BattleInput.MoveRight)}"),
+                ("dash", input.Key(BattleInput.DashModifier)),
+                ("roll", $"{input.Key(BattleInput.RollUpLeft)}/{input.Key(BattleInput.RollUpRight)}/{input.Key(BattleInput.RollDownLeft)}/{input.Key(BattleInput.RollDownRight)}"),
+                ("wait", input.Key(BattleInput.Wait)), ("undo", input.Key(BattleInput.Undo)), ("ranges", input.Key(BattleInput.ToggleRanges)), ("restart", input.Key(BattleInput.Restart)));
         }
         private void CreateHud()
         {

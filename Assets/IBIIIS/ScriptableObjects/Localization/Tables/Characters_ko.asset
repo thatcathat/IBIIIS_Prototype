@@ -1,0 +1,47 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e9620f8c34305754d8cc9a7e49e852d9, type: 3}
+  m_Name: Characters_ko
+  m_EditorClassIdentifier: Unity.Localization::UnityEngine.Localization.Tables.StringTable
+  m_LocaleId:
+    m_Code: ko
+  m_SharedData: {fileID: 11400000, guid: 91f0e69e805a5674a80348de5f42b4cf, type: 2}
+  m_Metadata:
+    m_Items: []
+  m_TableData:
+  - m_Id: 1355702272
+    m_Localized: "\uC5B4\uC2DC\uD30C\uB9AC"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1439588352
+    m_Localized: Enemy_00
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1439588353
+    m_Localized: Enemy_01
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1439588354
+    m_Localized: "\uC8FC\uC778\uACF5"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1439588355
+    m_Localized: "\uD5C8\uC218\uC544\uBE44"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1439588356
+    m_Localized: "\uB9C8\uC744 \uC0AC\uB78C"
+    m_Metadata:
+      m_Items: []
+  references:
+    version: 2
+    RefIds: []

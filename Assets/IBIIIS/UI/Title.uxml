@@ -1,8 +1,9 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements">
-  <!-- 타이틀 화면(임시 디자인). 'start' 버튼 이름은 TitleScreen 코드가 찾는 키이므로 바꾸지 않는다. 모양은 GameUi.uss의 title-* 스타일. -->
+  <!-- 타이틀 화면(임시 디자인). 'start'·'language' 버튼 이름은 TitleScreen 코드가 찾는 키이므로 바꾸지 않는다. 버튼 글자는 코드가 지금 언어로 채운다. 모양은 GameUi.uss의 title-* 스타일. -->
   <ui:Style src="GameUi.uss" />
   <ui:VisualElement name="title" class="game-ui title-screen">
     <ui:Label text="IBIIIS" class="title-logo" />
     <ui:Button name="start" text="게임 시작" class="hud-button title-button" />
+    <ui:Button name="language" text="언어: 한국어" class="hud-button title-language" />
   </ui:VisualElement>
 </ui:UXML>

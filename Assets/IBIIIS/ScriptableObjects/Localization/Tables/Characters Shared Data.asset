@@ -1,0 +1,52 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5b11a58205ec3474ca216360e9fa74a8, type: 3}
+  m_Name: Characters Shared Data
+  m_EditorClassIdentifier: Unity.Localization::UnityEngine.Localization.Tables.SharedTableData
+  m_TableCollectionName: Characters
+  m_TableCollectionNameGuidString: 91f0e69e805a5674a80348de5f42b4cf
+  m_Entries:
+  - m_Id: 1355702272
+    m_Key: assi_fly
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1439588352
+    m_Key: enemy_00
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1439588353
+    m_Key: enemy_01
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1439588354
+    m_Key: player
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1439588355
+    m_Key: scarecrow
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1439588356
+    m_Key: villager
+    m_Metadata:
+      m_Items: []
+  m_Metadata:
+    m_Items: []
+  m_KeyGenerator:
+    rid: 4242813358360232098
+  references:
+    version: 2
+    RefIds:
+    - rid: 4242813358360232098
+      type: {class: DistributedUIDGenerator, ns: UnityEngine.Localization.Tables, asm: Unity.Localization}
+      data:
+        m_CustomEpoch: 1791859999617

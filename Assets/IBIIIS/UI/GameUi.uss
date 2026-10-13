@@ -110,6 +110,7 @@
 .title-screen { position: absolute; left: 0; top: 0; right: 0; bottom: 0; background-color: rgb(14, 18, 28); align-items: center; justify-content: center; }
 .title-logo { font-size: 120px; -unity-font-definition: url("Fonts/NotoSansKR-Bold.otf"); color: rgb(255, 220, 120); margin-bottom: 60px; }
 .title-button { font-size: 32px; width: 320px; height: 76px; }
+.title-language { font-size: 20px; width: 220px; height: 44px; margin-top: 24px; }
 
 /* 결과 팝업 */
 .popup-overlay { position: absolute; left: 0; top: 0; right: 0; bottom: 0; background-color: rgba(0, 0, 0, 0.45); align-items: center; justify-content: center; }

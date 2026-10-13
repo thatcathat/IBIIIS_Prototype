@@ -22,7 +22,7 @@ namespace IBIIIS
         public string ShownText => Text.Substring(0, Math.Min(Visible, Text.Length));
         /// <summary>지문이면 true(말하는 인물 없음).</summary>
         public bool IsNarration => IsOpen && Current.speaker == null;
-        public string SpeakerName => !IsOpen || IsNarration ? "" : !string.IsNullOrEmpty(Current.nameOverride) ? Current.nameOverride : Current.speaker.DisplayName;
+        public string SpeakerName => !IsOpen || IsNarration ? "" : !string.IsNullOrEmpty(Current.nameOverride) ? Current.nameOverride : Current.speaker.LocalizedName;
         /// <summary>좌우에 서 있는 인물과 표정. 인물은 처음 말할 때 자기 쪽에 서고, 다른 인물이 그쪽에서 말하면 바뀐다.</summary>
         public DialogueCharacter Left { get; private set; }
         public DialogueCharacter Right { get; private set; }

@@ -36,7 +36,7 @@ namespace IBIIIS
             title = GameUiSettings.Find<Label>(root, "title", screen);
             message = GameUiSettings.Find<Label>(root, "message", screen);
             var confirm = GameUiSettings.Find<Button>(root, "confirm", screen);
-            if (confirm != null) confirm.clicked += Confirm;
+            if (confirm != null) { confirm.text = UiText.Confirm.Text; confirm.clicked += Confirm; }
             view.style.display = DisplayStyle.None;
         }
         /// <summary>지금 보여 줄 팝업 내용. 보일 것이 없으면(결과 전, 닫는 중) false.</summary>
@@ -46,8 +46,9 @@ namespace IBIIIS
             if (run == null || closing) return false;
             var shown = Problem;
             if (shown == null && result != BattlePhase.Won && result != BattlePhase.Lost) return false;
-            heading = result == BattlePhase.Won ? "클리어!" : result == BattlePhase.Lost ? "패배" : "확인 필요";
-            text = result == BattlePhase.Won ? $"{run.DisplayName}을(를) 클리어했습니다." : result == BattlePhase.Lost ? $"{run.DisplayName}에서 패배했습니다." : "";
+            heading = (result == BattlePhase.Won ? UiText.ResultCleared : result == BattlePhase.Lost ? UiText.ResultDefeated : UiText.ResultCheck).Text;
+            // 본문은 스테이지 이름만 보인다(이름 뒤 조사가 언어·이름마다 달라지는 문장을 만들지 않음).
+            text = result == BattlePhase.Won || result == BattlePhase.Lost ? run.DisplayName : "";
             if (shown != null) text = (text.Length > 0 ? text + "\n" : "") + shown;
             return true;
         }
@@ -66,14 +67,14 @@ namespace IBIIIS
                 found = root.GetComponentInChildren<GridMapPlayer>(true);
                 if (found != null) break;
             }
-            if (found == null) problem = $"전투 씬 '{scene.path}'에 Grid Map Player가 없습니다.";
+            if (found == null) { problem = UiText.ResultNoBattle.Text; Debug.LogError($"[IBIIIS] 전투 씬 '{scene.path}'에 Grid Map Player가 없습니다."); }
             else Watch(found);
         }
         /// <summary>결과를 지켜볼 전투를 정한다(씬을 불러온 뒤 자동으로 호출).</summary>
         public void Watch(GridMapPlayer value) { battle = value; }
         /// <summary>팝업에 보여 줄 문제. 맵 설정 오류 등으로 전투를 시작하지 못했으면(GridMapPlayer가 꺼지고 세션 없음) 복귀를 안내한다.</summary>
         public string Problem => problem ?? (battle != null && battle.Session == null && !battle.enabled
-            ? "전투를 시작하지 못했습니다. Console의 [IBIIIS] 오류(맵 설정)를 확인하세요." : null);
+            ? UiText.ResultBattleFailed.Text : null);
         /// <summary>표시할 결과. 충돌·패배 연출이 끝난 뒤에만 Won/Lost를 돌려준다. 되돌리기·재시작하면 다시 Waiting이 된다.</summary>
         public BattlePhase Result => battle != null && battle.Session != null && !battle.IsPresenting ? battle.Session.Phase : BattlePhase.Waiting;
         private void Update()
@@ -98,7 +99,7 @@ namespace IBIIIS
         private bool TrySaveClear()
         {
             try { ProgressStore.MarkCleared(run.StageId); saveFailed = false; return true; }
-            catch (Exception e) { saveFailed = true; problem = $"클리어 기록을 저장하지 못했습니다: {e.Message}"; Debug.LogException(e); return false; }
+            catch (Exception e) { saveFailed = true; problem = UiText.ResultSaveFailed.Text; Debug.LogException(e); return false; }
         }
         // Game UI 설정이 없을 때만 쓰는 임시 표시(IMGUI).
         private void OnGUI()
@@ -109,7 +110,7 @@ namespace IBIIIS
             GUI.Box(rect, GUIContent.none); GUI.Box(rect, GUIContent.none);
             GUI.Label(new Rect(rect.x, rect.y + 20, width, 44), heading, OverworldGui.Title);
             GUI.Label(new Rect(rect.x + 20, rect.y + 70, width - 40, 80), message, OverworldGui.Body);
-            bool confirm = GUI.Button(new Rect(rect.x + (width - 160) / 2, rect.yMax - 60, 160, 40), "확인", OverworldGui.Button);
+            bool confirm = GUI.Button(new Rect(rect.x + (width - 160) / 2, rect.yMax - 60, 160, 40), UiText.Confirm.Text, OverworldGui.Button);
             var e = Event.current;
             if (e.type == EventType.KeyDown && (e.keyCode == KeyCode.Return || e.keyCode == KeyCode.KeypadEnter)) { confirm = true; e.Use(); }
             if (confirm) Confirm();
@@ -121,7 +122,7 @@ namespace IBIIIS
             if (saveFailed && !retried)
             {
                 retried = true;
-                if (!TrySaveClear()) { problem += "\n다시 시도했지만 실패했습니다. 확인을 누르면 저장하지 않고 미니맵으로 돌아갑니다."; return; }
+                if (!TrySaveClear()) { problem += "\n" + UiText.ResultSaveRetryFailed.Text; return; }
                 problem = null;
             }
             Close();
@@ -130,7 +131,7 @@ namespace IBIIIS
         {
             closing = true;
             try { StageFlow.Return(); }
-            catch (Exception e) { closing = false; problem = $"미니맵 씬을 불러오지 못했습니다: {e.Message}"; Debug.LogException(e); }
+            catch (Exception e) { closing = false; problem = UiText.ResultReturnFailed.Text; Debug.LogException(e); }
         }
     }
 }

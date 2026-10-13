@@ -1,0 +1,128 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e9620f8c34305754d8cc9a7e49e852d9, type: 3}
+  m_Name: UI_en
+  m_EditorClassIdentifier: Unity.Localization::UnityEngine.Localization.Tables.StringTable
+  m_LocaleId:
+    m_Code: en
+  m_SharedData: {fileID: 11400000, guid: 20c9ead0860d1e642a3cc4b7dd5172c8, type: 2}
+  m_Metadata:
+    m_Items: []
+  m_TableData:
+  - m_Id: 6464364544
+    m_Localized: OK
+    m_Metadata:
+      m_Items: []
+  - m_Id: 6674079744
+    m_Localized: Start Game
+    m_Metadata:
+      m_Items: []
+  - m_Id: 6686662656
+    m_Localized: 'Language: {language}'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 6686662657
+    m_Localized: Evade
+    m_Metadata:
+      m_Items: []
+  - m_Id: 6686662658
+    m_Localized: Undo
+    m_Metadata:
+      m_Items: []
+  - m_Id: 6686662659
+    m_Localized: Restart
+    m_Metadata:
+      m_Items: []
+  - m_Id: 6686662660
+    m_Localized: Enemies {alive}/{total}
+    m_Metadata:
+      m_Items: []
+  - m_Id: 6686662661
+    m_Localized: Moves {count}
+    m_Metadata:
+      m_Items: []
+  - m_Id: 6686662662
+    m_Localized: 'Ranges: On'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 6686662663
+    m_Localized: 'Ranges: Off'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 6686662664
+    m_Localized: "Move {move} \xB7 Dash {dash}+Move \xB7 Roll {roll} \xB7 Wait {wait}
+      \xB7 Undo {undo} \xB7 Ranges {ranges} \xB7 Restart {restart}"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 6686662665
+    m_Localized: Clear!
+    m_Metadata:
+      m_Items: []
+  - m_Id: 6686662666
+    m_Localized: Defeat
+    m_Metadata:
+      m_Items: []
+  - m_Id: 6686662667
+    m_Localized: Check needed
+    m_Metadata:
+      m_Items: []
+  - m_Id: 6686662668
+    m_Localized: The battle scene has no battle (Grid Map Player).
+    m_Metadata:
+      m_Items: []
+  - m_Id: 6686662669
+    m_Localized: Couldn't start the battle. Check the [IBIIIS] errors in the Console.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 6686662670
+    m_Localized: Couldn't save the clear record.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 6686662671
+    m_Localized: Retry failed. Press OK to return to the map without saving.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 6686662672
+    m_Localized: Couldn't load the map scene.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 6686662673
+    m_Localized: Map | Move {move} | Run {dash} (hold) | Roll {roll} | Interact {interact}
+    m_Metadata:
+      m_Items: []
+  - m_Id: 6686662674
+    m_Localized: Cleared {count}
+    m_Metadata:
+      m_Items: []
+  - m_Id: 6686662675
+    m_Localized: Enter {stage}
+    m_Metadata:
+      m_Items: []
+  - m_Id: 6686662676
+    m_Localized: Enter {stage} (cleared)
+    m_Metadata:
+      m_Items: []
+  - m_Id: 6686662677
+    m_Localized: Talk
+    m_Metadata:
+      m_Items: []
+  - m_Id: 6686662678
+    m_Localized: Next
+    m_Metadata:
+      m_Items: []
+  - m_Id: 6686662679
+    m_Localized: Close
+    m_Metadata:
+      m_Items: []
+  references:
+    version: 2
+    RefIds: []

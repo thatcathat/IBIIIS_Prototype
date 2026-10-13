@@ -1,1 +1,8 @@
-{"name":"IBIIIS.Runtime","references":["Unity.InputSystem"]}
+{
+    "name": "IBIIIS.Runtime",
+    "references": [
+        "Unity.InputSystem",
+        "Unity.Localization",
+        "Unity.ResourceManager"
+    ]
+}

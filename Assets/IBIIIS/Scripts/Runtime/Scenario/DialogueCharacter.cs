@@ -24,6 +24,8 @@ namespace IBIIIS
         [SerializeField, Tooltip("선택. 표정별 초상화. 대사에서 표정 ID를 지정하면 이 목록에서 찾고, 없으면 기본 초상화를 씁니다.")] private DialogueExpression[] expressions = Array.Empty<DialogueExpression>();
         public string Id => characterId;
         public string DisplayName => displayName;
+        /// <summary>지금 언어의 이름(인물 표, 키 = 인물 ID).</summary>
+        public string LocalizedName => GameText.Get(GameText.CharactersTable, characterId, displayName);
         public Color NameColor => nameColor;
         public DialogueSide Side => side;
         /// <summary>표정 ID의 초상화. ID가 비었거나 없으면 기본 초상화.</summary>

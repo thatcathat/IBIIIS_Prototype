@@ -30,7 +30,7 @@ namespace IBIIIS
             nameInput = root?.Q("name-input");
             nameField = root?.Q<TextField>("name-field");
             var confirm = root?.Q<Button>("name-confirm");
-            if (confirm != null) confirm.clicked += () => onName?.Invoke(nameField?.value);
+            if (confirm != null) { confirm.text = UiText.Confirm.Text; confirm.clicked += () => onName?.Invoke(nameField?.value); }
             nameField?.RegisterCallback<KeyDownEvent>(e => { if (e.keyCode == KeyCode.Return || e.keyCode == KeyCode.KeypadEnter) onName?.Invoke(nameField.value); }, TrickleDown.TrickleDown);
             HideNameInput();
             Hide();

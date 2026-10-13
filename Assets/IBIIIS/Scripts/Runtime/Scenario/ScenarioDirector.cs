@@ -134,7 +134,7 @@ namespace IBIIIS
             if (!string.IsNullOrEmpty(step.line.text))
             {
                 warningOpen = true;
-                EnsureDialogue().Open(Ui, new[] { step.line }, () => { warningOpen = false; closedFrame = Time.frameCount; }, true);
+                EnsureDialogue().Open(Ui, new[] { Line(step) }, () => { warningOpen = false; closedFrame = Time.frameCount; }, true);
             }
             return false;
         }
@@ -147,9 +147,9 @@ namespace IBIIIS
         }
         private void ShowRemainingKeys(ScenarioStep step)
         {
-            var caps = step.KeyCaps; var remaining = new List<string>();
+            var caps = Keys(step); var remaining = new List<string>();
             for (int i = 0; i < Cardinal.Length; i++) if (!triedDirections.Contains(Cardinal[i])) remaining.Add(caps.Length == Cardinal.Length ? caps[i] : Cardinal[i].ToString());
-            EnsureDialogue().Prompt(Ui, step.line, remaining);
+            EnsureDialogue().Prompt(Ui, Line(step), remaining);
         }
         /// <summary>네 방향 누르기 단계에서 지금까지 누른 방향 수(테스트·디버그용).</summary>
         public int TriedDirections => triedDirections.Count;
@@ -182,7 +182,7 @@ namespace IBIIIS
             {
                 case ScenarioStepType.Line:
                     // 대본은 한 줄씩 대화창을 다시 여므로, 좌우에 선 인물이 매 줄 사라지지 않게 이어 붙인다.
-                    EnsureDialogue().Open(Ui, new[] { step.line }, OnLineDone, true);
+                    EnsureDialogue().Open(Ui, new[] { Line(step) }, OnLineDone, true);
                     break;
                 case ScenarioStepType.Emote:
                     AddEmote(step); Next();
@@ -203,7 +203,7 @@ namespace IBIIIS
                     Prompt(step); battle.SetGuideCells(new[] { step.cell });
                     break;
                 case ScenarioStepType.NameInput:
-                    EnsureDialogue().AskName(Ui, step.line, step.text, value => { EnteredName = value; Next(); });
+                    EnsureDialogue().AskName(Ui, Line(step), GameText.GetShort(Table, step.id + ".default", step.text), value => { EnteredName = value; Next(); });
                     break;
                 case ScenarioStepType.SetActive:
                     var actor = FindActor(step.target);
@@ -270,8 +270,17 @@ namespace IBIIIS
         }
         private void Prompt(ScenarioStep step)
         {
-            if (string.IsNullOrEmpty(step.line.text) && step.KeyCaps.Length == 0) { EnsureDialogue().Hide(); return; }
-            EnsureDialogue().Prompt(Ui, step.line, step.KeyCaps);
+            var caps = Keys(step);
+            if (string.IsNullOrEmpty(step.line.text) && caps.Length == 0) { EnsureDialogue().Hide(); return; }
+            EnsureDialogue().Prompt(Ui, Line(step), caps);
+        }
+        // 번역: 대본 표(Scenario_대본 ID)에서 단계 ID로 찾는다. 키 표시는 한글 등이 있을 때만(예: "좌클릭") 번역한다.
+        private string Table => GameText.Scenario(script.Id);
+        private DialogueLine Line(ScenarioStep step) => step.line.Localized(Table, step.id);
+        private string[] Keys(ScenarioStep step)
+        {
+            var text = GameText.GetShort(Table, step.id + ".keys", step.keys);
+            return string.IsNullOrWhiteSpace(text) ? Array.Empty<string>() : text.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
         }
         private DialogueController EnsureDialogue()
         {

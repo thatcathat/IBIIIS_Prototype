@@ -92,7 +92,7 @@ namespace IBIIIS
             var text = runner.IsNarration ? runner.ShownText : $"{runner.SpeakerName}\n{runner.ShownText}";
             if (keys.Length > 0) text += "\n[" + string.Join(" + ", keys) + "]";
             if (Event.current.type == EventType.Repaint) GUI.Box(new Rect(40, Screen.height - 170, Screen.width - 80, 140), text, OverworldGui.Body);
-            if (nameDone != null && GUI.Button(new Rect(Screen.width / 2 - 60, Screen.height - 60, 120, 32), "확인")) SubmitName(nameDefault);
+            if (nameDone != null && GUI.Button(new Rect(Screen.width / 2 - 60, Screen.height - 60, 120, 32), UiText.Confirm.Text)) SubmitName(nameDefault);
         }
         private void OnDestroy() { runner.Close(); }
     }

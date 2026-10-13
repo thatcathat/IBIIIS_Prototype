@@ -13,7 +13,10 @@ namespace IBIIIS
         [SerializeField] private string battleScenePath;
         [SerializeField, Tooltip("선택. 클리어한 스테이지에서만 켜 둘 표시 오브젝트(깃발 등).")] private GameObject clearedIndicator;
         public string StageId => stageId;
-        public string DisplayName => string.IsNullOrEmpty(displayName) ? stageId : displayName;
+        /// <summary>지금 언어의 스테이지 이름(스테이지 표, 키 = Stage Id). 이름이 비면 Stage Id.</summary>
+        public string DisplayName => string.IsNullOrEmpty(displayName) ? stageId : GameText.Get(GameText.StagesTable, stageId, displayName);
+        /// <summary>원문(한국어) 이름. 번역 표 동기화용.</summary>
+        public string SourceName => displayName;
         public bool IsCleared => ProgressStore.IsCleared(stageId);
         public string BattleScenePath
         {
@@ -27,8 +30,8 @@ namespace IBIIIS
         }
         /// <summary>설정 오류. 정상이면 null.</summary>
         public string Problem => string.IsNullOrWhiteSpace(stageId) ? "Stage Id가 비어 있습니다." : string.IsNullOrEmpty(BattleScenePath) ? "Battle Scene이 지정되지 않았습니다." : null;
-        public override string PromptVerb => Problem != null ? null : IsCleared ? "입장 (클리어)" : "입장";
-        public override string PromptText => PromptVerb == null ? null : $"{DisplayName} {PromptVerb}";
+        // 이름이 들어가는 안내는 언어마다 어순이 달라 문장 통째로 번역 표에 둔다("{stage} 입장" / "Enter {stage}").
+        public override string PromptVerb => Problem != null ? null : (IsCleared ? UiText.PromptEnterCleared : UiText.PromptEnter).Format(("stage", DisplayName));
         protected override void OnEnable() { base.OnEnable(); RefreshIndicator(); }
         public void RefreshIndicator() { if (clearedIndicator != null) clearedIndicator.SetActive(IsCleared); }
         public override void Interact(OverworldPlayer player)

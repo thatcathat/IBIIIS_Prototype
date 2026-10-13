@@ -1,1 +1,15 @@
-{"name":"IBIIIS.Editor","references":["IBIIIS.Runtime","Unity.InputSystem"],"includePlatforms":["Editor"]}
+{
+    "name": "IBIIIS.Editor",
+    "references": [
+        "IBIIIS.Runtime",
+        "Unity.InputSystem",
+        "Unity.Localization",
+        "Unity.Localization.Editor",
+        "Unity.ResourceManager",
+        "Unity.Addressables",
+        "Unity.Addressables.Editor"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ]
+}

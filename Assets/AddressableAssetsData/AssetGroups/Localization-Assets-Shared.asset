@@ -1,0 +1,65 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bbb281ee3bf0b054c82ac2347e9e782c, type: 3}
+  m_Name: Localization-Assets-Shared
+  m_EditorClassIdentifier: Unity.Addressables.Editor::UnityEditor.AddressableAssets.Settings.AddressableAssetGroup
+  m_GroupName: Localization-Assets-Shared
+  m_GUID: 2625dc0e4d6c19e499a4fc712170f189
+  m_SerializeEntries:
+  - m_GUID: 20c9ead0860d1e642a3cc4b7dd5172c8
+    m_Address: Assets/IBIIIS/ScriptableObjects/Localization/Tables/UI Shared Data.asset
+    m_ReadOnly: 1
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 66899854c64b22b46bbf1fd80bcd590f
+    m_Address: Assets/IBIIIS/ScriptableObjects/Localization/Tables/Scenario_tutorial_1
+      Shared Data.asset
+    m_ReadOnly: 1
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 91f0e69e805a5674a80348de5f42b4cf
+    m_Address: Assets/IBIIIS/ScriptableObjects/Localization/Tables/Characters Shared
+      Data.asset
+    m_ReadOnly: 1
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 9d32434c902d85e479c7a74416975a03
+    m_Address: Assets/IBIIIS/ScriptableObjects/Localization/Tables/Stages Shared
+      Data.asset
+    m_ReadOnly: 1
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: b53f044127fc48b49954edd0f02eef47
+    m_Address: Assets/IBIIIS/ScriptableObjects/Localization/Tables/Dialogue_villager_greeting
+      Shared Data.asset
+    m_ReadOnly: 1
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: c6c4b1685f320ac4ea139c2f52d368f5
+    m_Address: Assets/IBIIIS/ScriptableObjects/Localization/Tables/BattleDialogue
+      Shared Data.asset
+    m_ReadOnly: 1
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: c9cd9e0f27207fb4b9e7cfefdf7387d8
+    m_Address: Assets/IBIIIS/ScriptableObjects/Localization/Tables/Scenario_tutorial_2
+      Shared Data.asset
+    m_ReadOnly: 1
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  m_ReadOnly: 1
+  m_Settings: {fileID: 11400000, guid: 747d4dc4f29656648bb6da70af11498c, type: 2}
+  m_SchemaSet:
+    m_Schemas:
+    - {fileID: 11400000, guid: 3299f20db9498fa43b97fa4c6bb9c831, type: 2}
+    - {fileID: 11400000, guid: 3a9f68cd1cfc4704ca6b5335f38cf0fd, type: 2}
+    - {fileID: 11400000, guid: 218501e5a2e9014439fe31a29dd16646, type: 2}

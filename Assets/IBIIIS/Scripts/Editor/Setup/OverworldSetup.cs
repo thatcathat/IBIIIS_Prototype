@@ -175,6 +175,7 @@ namespace IBIIIS.Editor
                 var npc = (GameObject)PrefabUtility.InstantiatePrefab(npcPrefab, scene); npc.name = "NPC_Guide";
                 npc.transform.position = new Vector3(-3, 0, 0);
                 var speaker = new SerializedObject(npc.GetComponent<NpcSpeaker>());
+                speaker.FindProperty("npcId").stringValue = "guide"; // 번역 표(NPC) 키
                 speaker.FindProperty("displayName").stringValue = "안내인";
                 var lines = speaker.FindProperty("lines"); lines.arraySize = 3;
                 lines.GetArrayElementAtIndex(0).stringValue = "어서 와. 여기는 미니맵 테스트 장소야.";

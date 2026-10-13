@@ -56,11 +56,11 @@ namespace IBIIIS
             restart = GameUiSettings.Find<Button>(root, "restart", Screen);
             ranges = GameUiSettings.Find<Button>(root, "ranges", Screen);
             if (evasionIcon != null && evasionSprite != null) evasionIcon.style.backgroundImage = new StyleBackground(evasionSprite);
-            if (caption != null) caption.text = "회피";
+            if (caption != null) caption.text = UiText.HudEvasion.Text;
             if (controls != null) controls.text = keys;
             if (debug != null) debug.style.display = showDebug ? DisplayStyle.Flex : DisplayStyle.None;
-            if (undo != null) { undo.text = Labelled("되돌리기", undoKey); undo.clicked += () => Press("undo"); }
-            if (restart != null) { restart.text = Labelled("다시 시작", restartKey); restart.clicked += () => Press("restart"); }
+            if (undo != null) { undo.text = Labelled(UiText.HudUndo.Text, undoKey); undo.clicked += () => Press("undo"); }
+            if (restart != null) { restart.text = Labelled(UiText.HudRestart.Text, restartKey); restart.clicked += () => Press("restart"); }
             if (ranges != null) ranges.clicked += () => Press("ranges");
         }
         private static string Labelled(string text, string key) => string.IsNullOrEmpty(key) ? text : $"{text} [{key}]";
@@ -81,8 +81,8 @@ namespace IBIIIS
             if (hasShown && s.Equals(shown)) return;
             shown = s; hasShown = true;
             if (stageName != null) stageName.text = s.StageName;
-            if (enemies != null) enemies.text = $"남은 적 {s.AliveEnemies}/{s.TotalEnemies}";
-            if (actions != null) actions.text = $"행동 {s.Actions}";
+            if (enemies != null) enemies.text = UiText.HudEnemies.Format(("alive", s.AliveEnemies), ("total", s.TotalEnemies));
+            if (actions != null) actions.text = UiText.HudActions.Format(("count", s.Actions));
             bool locked = s.EvasionCooldown > 0;
             evasionIcon?.EnableInClassList("locked", locked);
             if (cooldown != null) { cooldown.text = locked ? s.EvasionCooldown.ToString() : ""; cooldown.style.display = locked ? DisplayStyle.Flex : DisplayStyle.None; }
@@ -91,7 +91,7 @@ namespace IBIIIS
             if (undo != null) undo.style.display = s.UndoRestartAllowed ? DisplayStyle.Flex : DisplayStyle.None;
             if (restart != null) restart.style.display = s.UndoRestartAllowed ? DisplayStyle.Flex : DisplayStyle.None;
             if (ranges != null) ranges.style.display = s.RangesAllowed ? DisplayStyle.Flex : DisplayStyle.None;
-            if (ranges != null) { ranges.SetEnabled(s.Ready); ranges.text = Labelled(s.RangesOn ? "범위 표시 켬" : "범위 표시 끔", rangesKey); ranges.EnableInClassList("on", s.RangesOn); }
+            if (ranges != null) { ranges.SetEnabled(s.Ready); ranges.text = Labelled((s.RangesOn ? UiText.HudRangesOn : UiText.HudRangesOff).Text, rangesKey); ranges.EnableInClassList("on", s.RangesOn); }
             if (debug != null && showDebug) debug.text = $"{s.Phase} | 칸 ({s.Cell.x}, {s.Cell.y})";
         }
     }

@@ -17,6 +17,12 @@ namespace IBIIIS.Editor
         public const string Data = Root + "/ScriptableObjects";
         public const string Settings = Data + "/Settings";
         public const string Scenarios = Data + "/Scenarios";
+        // 번역: Localization 설정·언어(Locale)·번역 표. Addressables 설정은 패키지가 Assets/AddressableAssetsData에 만든다(이동 금지).
+        public const string Localization = Data + "/Localization";
+        public const string LocalizationSettings = Localization + "/LocalizationSettings.asset";
+        public const string Locales = Localization + "/Locales";
+        public const string StringTables = Localization + "/Tables";
+        public const string TranslationRecord = Localization + "/TranslationRecord.asset";
         public const string PlayerSettings = Settings + "/GlobalPlayerSettings.asset";
         public const string CameraSettings = Settings + "/GlobalCameraSettings.asset";
         public const string InputActions = Settings + "/IBIIISInput.inputactions";

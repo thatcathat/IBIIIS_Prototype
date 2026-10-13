@@ -74,6 +74,7 @@
 | `Scripts/Runtime/Overworld/Overworld*.cs`, `NpcSpeaker.cs`, `StageEntrance.cs` | 미니맵 자유 이동·걷기 손맛(`OverworldMotion`)·따라가는 카메라·입력·상호작용 대상(NPC 말풍선, 스테이지 입구) |
 | `Scripts/Runtime/Feedback/MotionEffects.cs`, `BreathingSprite.cs` | 전투·미니맵 공용 손맛 자세 계산과 먼지·잔상·소리, NPC 숨쉬기 |
 | `Scripts/Runtime/Core/StageFlow.cs`, `StageResultPopup.cs`, `ProgressStore.cs` | 미니맵 ↔ 전투 씬 전환, 결과 팝업, 클리어 기록 저장 |
+| `Scripts/Runtime/Localization/GameLanguage.cs`, `GameText.cs`, `UiText.cs`, `Scripts/Editor/Localization/` | 다국어: 게임 언어 선택·저장, 번역 표에서 글 찾기, 화면 문구 목록, 번역 표 동기화·CSV 내보내기·가져오기. 아래 다국어 항목 |
 | `Scripts/Editor/` | MapEditorWindow·MapCanvas·UXML/USS(맵 편집기), MapEditorSetup(새 맵·씬 생성), GridMapPreview(Scene 미리보기), 각종 기본 에셋 생성 메뉴 |
 
 Editor 코드는 런타임과 별도 어셈블리(`IBIIIS.Editor`)에 있고, 테스트는 `IBIIIS.Tests`에 있다.
@@ -87,8 +88,8 @@ Unity의 프로젝트 구성 가이드(unity.com/kr/how-to/organizing-your-proje
 - **예외 2 — 최상위 이름**: 위키독스 예시의 `_Project` 역할은 `Assets/IBIIIS/`가 한다(이름은 바꾸지 않음). 에셋 스토어·외부 플러그인을 들이면 `Assets/ThirdParty/<이름>/`처럼 따로 두고, 고친 부분은 문서에 적어 업데이트 때 다시 적용한다.
 - **진행 상황**: 1단계 코드(`Scripts/`)·2단계 데이터(`ScriptableObjects/`)·3단계 씬(`Scenes/`)·4단계 그림·프리팹·이펙트·소리(`Art/`·`Prefabs/`·`VFX/`·`Audio/`) 완료(2026-10-13).
 - **코드**: `Scripts/Runtime`(어셈블리 `IBIIIS.Runtime`, 네임스페이스 `IBIIIS`), `Scripts/Editor`(`IBIIIS.Editor`), `Scripts/Tests`(`IBIIIS.Tests`). 하위 폴더는 기능별이며 네임스페이스는 바꾸지 않는다.
-  - Runtime: `Core`(격자 판정·맵 데이터·클리어 기록·씬 전환·카메라 정면 규칙), `Battle`(전투 화면·입력·플레이어·적·동반 캐릭터), `Feedback`(손맛·충돌 연출·적 인식 말풍선), `Scenario`(대본·진행기·대화창), `Overworld`(미니맵), `UI`(게임 UI 설정·HUD·결과 팝업·타이틀)
-  - Editor: `MapEditor`(맵 에디터·새 맵·미리보기·검증, 화면 파일 `UI/`), `DialogueEditor`(IBIIIS Dialogue Editor), `Inspectors`(Inspector·Drawer), `Setup`(기본 에셋 생성 메뉴와 경로 상수 `AssetPaths`)
+  - Runtime: `Core`(격자 판정·맵 데이터·클리어 기록·씬 전환·카메라 정면 규칙), `Battle`(전투 화면·입력·플레이어·적·동반 캐릭터), `Feedback`(손맛·충돌 연출·적 인식 말풍선), `Scenario`(대본·진행기·대화창), `Overworld`(미니맵), `UI`(게임 UI 설정·HUD·결과 팝업·타이틀), `Localization`(게임 언어·번역 글 찾기·화면 문구 목록)
+  - Editor: `MapEditor`(맵 에디터·새 맵·미리보기·검증, 화면 파일 `UI/`), `DialogueEditor`(IBIIIS Dialogue Editor), `Inspectors`(Inspector·Drawer), `Setup`(기본 에셋 생성 메뉴와 경로 상수 `AssetPaths`), `Localization`(번역 표 동기화·CSV)
 - **이름**: 파일·폴더 이름에 공백을 쓰지 않고 PascalCase로 쓴다(`Tutorial1Script`, `PlayerSpriteImport`). 시험용은 `Test`를 붙인다. 고유 ID는 이름과 별개로 에셋 안에 둔다(적 ID, 대본 ID, 단계 ID).
 - **실험**: 정식이 아닌 씬·에셋은 `Assets/Sandbox/`에 두고 빌드 씬 목록에 넣지 않는다.
 - **이동**: Unity Project 창(또는 AssetDatabase)에서 옮겨 GUID를 보존하고, 코드 속 경로 상수(`Scripts/Editor/Setup/AssetPaths.cs`, 각 `*Setup.cs`)를 함께 고친다. 밖에서 옮겨야 하면 `.meta`를 같은 이름으로 함께 옮기고(`git mv`), 옮긴 뒤 GUID·참조를 확인한다.
@@ -110,6 +111,9 @@ Unity의 프로젝트 구성 가이드(unity.com/kr/how-to/organizing-your-proje
 | `Assets/IBIIIS/ScriptableObjects/Scenarios` | 모든 대본: `Tutorial/`(Tutorial1Script·Tutorial2Script), `NPC/`(미니맵 NPC 대화 DialogueScript). IBIIIS Dialogue Editor의 새 대본 기본 위치 |
 | `Assets/IBIIIS/Scenes/Battle/<맵 이름>/` | GridMap(.asset)과 연결 씬(.unity) 한 쌍. 샘플과 사용자 맵 모두 여기에 둔다 |
 | `Assets/IBIIIS/Resources/IBIIIS` | 이름으로 로드하는 기본 재질(DefaultGround). 이동 금지 |
+| `Assets/IBIIIS/ScriptableObjects/Localization` | 다국어: `LocalizationSettings`, `Locales/`(Korean·English), `Tables/`(번역 표. 표 묶음마다 `<표>`·`<표> Shared Data`·`<표>_ko`·`<표>_en` 에셋), `TranslationRecord`(번역할 때 본 원문 기록) |
+| `Assets/AddressableAssetsData` | Localization 패키지가 번역 표를 빌드에 넣으려고 쓰는 Addressables 설정(패키지가 만들고 관리, 이름에 공백이 있음). 옮기거나 고치지 않는다 |
+| `Translations/`(프로젝트 루트, Assets 밖) | 번역 CSV를 주고받는 기본 폴더(게임 에셋 아님). 아래 다국어 항목 |
 | `Assets/Settings` | URP 렌더 설정(템플릿) |
 | `Assets/Sandbox` | SampleScene 등 실험용. 빌드 씬 목록에 넣지 않는다(2026-10-13 SampleScene을 빌드 목록에서 뺐다) |
 
@@ -265,11 +269,27 @@ Unity의 프로젝트 구성 가이드(unity.com/kr/how-to/organizing-your-proje
 - **모양 바꾸기**: 색·크기·여백·글꼴은 `UI/GameUi.uss`, 배치는 UXML(UI Builder로 열 수 있음)에서 바꾼다. 요소 이름(name)은 코드가 찾는 키이므로 유지한다. 이름이 빠지면 Console에 어떤 화면의 어떤 이름이 없는지 경고하고 그 표시만 생략한다.
 - **글꼴**: `UI/Fonts/NotoSansKR-Regular.otf`·`NotoSansKR-Bold.otf`(Noto Sans KR, SIL OFL 1.1, 출처·라이선스는 같은 폴더 README). USS의 `-unity-font-definition`으로 지정한다.
 - **전투 HUD**: 왼쪽 위 스테이지 이름(미니맵에서 들어오면 입구의 Display Name, 아니면 맵 이름)·남은 적(남은/전체)·행동 횟수(되돌리기하면 줄어듦). 오른쪽 위 회피기 아이콘: 쓸 수 있으면 밝게, 쿨타임 중이면 회색에 남은 일반 행동 수(현재 규칙상 1)를 숫자로 표시한다. 왼쪽 아래 조작 안내(현재 키 배치). 오른쪽 아래 버튼 `되돌리기`·`다시 시작`·`범위 표시 켬/끔`은 마우스로 누를 수 있고 키와 같은 기능을 부른다. 행동·연출 중에는 꺼지고, 되돌릴 행동이 없으면 `되돌리기`가 꺼진다.
-- **결과 팝업**: 화면을 어둡게 덮고 가운데에 결과(`클리어!` 노랑·`패배` 빨강·`확인 필요`)와 안내, `확인` 버튼(Enter도 가능)을 보인다. 저장 실패·재시도 규칙은 위 미니맵 항목과 같다.
+- **결과 팝업**: 화면을 어둡게 덮고 가운데에 결과(`클리어!` 노랑·`패배` 빨강·`확인 필요`)와 스테이지 이름(문제가 있으면 그 안내도), `확인` 버튼(Enter도 가능)을 보인다. 본문은 이름 뒤에 조사가 붙는 문장("…을(를) 클리어했습니다")을 쓰지 않는다(다국어 대비, 사용자 결정 2026-10-13). 오류의 자세한 내용(예외 메시지·씬 경로)은 팝업 대신 Console에 남긴다. 저장 실패·재시도 규칙은 위 미니맵 항목과 같다.
 - **미니맵 안내**: 왼쪽 위 조작 안내와 클리어 수, 상호작용 대상의 기준점 아래에 `[F] 말 걸기`·`[F] 이름 입장` 안내가 따라붙는다.
 - **설정이 없을 때**: Game UI 설정이나 해당 화면 구성이 비어 있으면 그 화면만 이전 IMGUI 임시 표시로 대신하고 게임 진행은 막지 않는다.
 - 개발 검증: 컴파일 완료, EditMode 147/147 통과(신규: HUD 값·회피기 회색과 남은 턴·버튼이 대기 중에만 같은 기능 실행·빠진 요소 경고, 플레이어의 HUD 값이 행동·되돌리기·회피 쿨타임을 따름, 팝업·미니맵 화면 요소와 기본 설정 에셋, 팝업 내용·보이지 않을 때 확인 무시). Play에서 코드로 진행해 미니맵 안내·상호작용 안내 위치, 입구 진입 후 전투 HUD, 대시 뒤 회색 아이콘과 숫자 1, 패배 팝업이 한글 글꼴로 그려지는 것을 스크린샷으로 확인했다.
 - 사용자 확인 대기: [플레이 확인 목록](IBIIIS_플레이_확인_목록.md) B-10·O-03.
+
+## 다국어 (Localization, 2026-10-13)
+
+Unity Localization 패키지(`com.unity.localization` 1.5.13, 의존 패키지 Addressables 포함)로 한국어(원문)와 영어를 지원한다(사용자 결정). 지금 영어는 "영문판임을 알 수 있는 정도"만 넣었다: 화면 문구(UI 표)는 짧은 영어, 대사·이름 등은 아직 번역하지 않아 게임에서 `[EN] 원문`으로 보인다(임시 표시, `GameText.UntranslatedMark`).
+
+- **언어 고르기**: 타이틀의 `언어: 한국어` 버튼이 지원 언어를 차례로 바꾸고 바로 저장한다(PlayerPrefs `IBIIIS.Language`). 저장된 값이 없으면 시스템 언어가 한국어일 때 한국어, 아니면 영어로 시작한다. 타이틀 글자는 바로 바뀌고, 다른 화면은 그 화면을 새로 열 때 바뀐다.
+- **글을 고르는 규칙**(`GameText`): 한국어면 원문을 그대로 쓰고 번역 표를 보지 않는다. 다른 언어면 표에서 찾고, 비어 있으면 원문 앞에 `[EN] `을 붙인다. 키 표시(`좌클릭`)·이름 입력 기본값처럼 표시가 끼면 깨지는 짧은 칸은 표시 없이 원문을 쓰고, 영문·숫자·기호만 있는 칸(`W A S D`)은 번역하지 않는다.
+- **원문과 번역의 관리 기준**(같은 글을 두 곳에서 고치지 않기): 한국어 원문은 코드의 화면 문구 목록(`UiText`)과 대본·대화·인물·스테이지·NPC·전투 말풍선 에셋이 기준이다. 번역 표의 한국어 칸은 원문을 비춘 사본이라 동기화 때 덮어쓰며 표에서 고치지 않는다. 영어 칸은 번역 표가 기준이고 CSV 가져오기로 고친다. 데이터 기준과 CSV 절차는 [데이터 관리 문서](IBIIIS_데이터_관리_문서.md)의 번역 데이터 항목.
+- **표와 키**: `UI`(화면 문구, 키 `hud.enemies` 등), `Scenario_<대본 ID>`(단계 ID, `.name` 이름표 덮어쓰기, `.keys` 한글 키 표시, `.default` 이름 입력 기본값), `Dialogue_<대화 ID>`(대화 에셋의 줄 ID — 이번에 대화 줄에도 고유 ID를 붙였다), `Characters`(인물 ID), `Stages`(Stage Id), `NPC`(NPC ID`.name`, NPC ID`.순번` — 말풍선 대사, `Dialogue`가 없는 NPC만), `BattleDialogue`(말풍선 묶음 ID`.spotted.순번.player|enemy`, `.lost.순번`). 순번 키는 대사 순서를 바꾸면 그 자리 원문이 바뀌므로 CSV에 "원문 바뀜"으로 표시돼 다시 확인 대상이 된다. NPC 말풍선은 NpcSpeaker의 `Npc Id`가 비면 번역하지 않는다(동기화가 경고). 전투 말풍선 묶음은 `Dialogue Id`(기본 `battle`)가 에셋마다 달라야 한다.
+- **화면 문구 추가**: `Scripts/Runtime/Localization/UiText.cs`에 `GameString(키, 한국어, 영어 처음 값)`을 추가하고 코드에서 `UiText.이름.Text` 또는 `.Format(("이름", 값))`으로 쓴 뒤 메뉴 `IBIIIS > Localization > Sync Tables`. 이름이 들어가는 문장은 언어마다 어순이 다르므로 문장 통째로 둔다(`{stage} 입장` / `Enter {stage}`). 한국어 조사가 이름에 따라 바뀌는 문장은 만들지 않는다.
+- **메뉴**: `IBIIIS > Localization > Sync Tables (원문 → 번역 표)`(설정·언어·표를 없을 때 만들고 원문을 맞춤. 원문에 없는 키는 지우지 않고 알림), `Export CSV…`, `Import CSV…`(데이터 관리 문서의 절차).
+- **빌드**: 번역 표는 Addressables로 빌드에 들어간다. 동기화가 Addressables 설정을 "플레이어 빌드 때 함께 빌드"로 고정한다. 빌드 결과에서 영어가 보이는지는 빌드를 만들 때 확인이 필요하다(아직 빌드하지 않음).
+- **남은 한국어**: 디버그 표시(HUD 왼쪽 아래 전투 단계·칸), 화면 설정이 없을 때만 쓰는 IMGUI 임시 표시의 일부, 에디터 도구, Console 기록은 번역하지 않는다. 글꼴은 Noto Sans KR(영문 포함)이라 영어는 그대로 쓰고, 일본어·중국어를 넣을 때 언어별 글꼴을 추가한다(미정).
+- **아직 없는 것**(계획 5단계, 필요할 때): Dialogue Editor의 번역 상태 표시·미리 보기 언어, 가짜 번역 언어로 글 길이 점검.
+- 개발 검증(2026-10-13): 컴파일 완료, EditMode 202/202 통과. 신규 테스트: 한국어는 표를 보지 않음, 영어는 표 값 또는 `[EN] 원문`, 자리 표시 채우기, 화면 문구 키 중복 없음·두 언어 자리 표시 일치·동기화가 모두 모음, HUD가 지금 언어로 표시, 대사 줄·이름표·인물·전투 말풍선의 키 규칙과 짧은 칸 처리, CSV 왕복(쉼표·큰따옴표·줄바꿈)·번역 필요/원문 바뀜 표시·가져오기 반영과 기록·오류 하나면 전체 미반영·잘못된 파일 거부. 에디터에서 실제 번역 표로 영어 화면 문구(`Enemies 2/3`, `Enter Prototype`)와 없는 표의 `[EN] 원문`을 확인했고, 동기화로 표 7개·키 121개(UI 26, 튜토리얼 1·2단계 37·37, NPC 대화 5, 인물 6, 전투 말풍선 9, 스테이지 1)를 만들었다. 실제 내보내기는 이야기 순서로 121줄(영어 필요 95줄)이 나왔다.
+- 사용자 확인 대기: [플레이 확인 목록](IBIIIS_플레이_확인_목록.md) L-01~L-04.
 
 ## 미연시 대화창 (대화 시스템 1단계, 2026-10-12)
 

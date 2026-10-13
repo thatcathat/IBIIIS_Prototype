@@ -73,7 +73,7 @@ namespace IBIIIS
             if (settings == null) Debug.LogWarning($"[IBIIIS] {name}: Overworld Settings가 없어 기본 이동 속도·키 배치를 사용합니다.", this);
             input = new OverworldInput(settings != null ? settings.InputActions : null); input.Enable();
             interactKey = input.Key(OverworldInput.Interact);
-            controlsHint = $"미니맵 | 이동 {input.Key(OverworldInput.Move)} | 달리기 {input.Key(OverworldInput.Dash)}(누르고 있기) | 구르기 {input.Key(OverworldInput.Roll)} | 상호작용 {interactKey}";
+            controlsHint = UiText.OverworldControls.Format(("move", input.Key(OverworldInput.Move)), ("dash", input.Key(OverworldInput.Dash)), ("roll", input.Key(OverworldInput.Roll)), ("interact", interactKey));
             effectsRoot = new GameObject("Overworld Motion Effects").transform;
             UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(effectsRoot.gameObject, gameObject.scene);
             motion = new OverworldMotion(settings != null ? settings.MotionFeedback : null, settings, effectsRoot, ViewCamera);
@@ -209,13 +209,14 @@ namespace IBIIIS
         }
         /// <summary>상호작용 안내 문구("[F] 말 걸기" 등). 대상이 없거나 안내할 것이 없으면 null.</summary>
         public string PromptLabel => frozen || inputLocked || target == null || target.PromptText == null ? null : $"[{interactKey}] {target.PromptText}";
+        private string Hint() => $"{controlsHint} | {UiText.OverworldCleared.Format(("count", ProgressStore.ClearedStages.Count))}";
         /// <summary>정식 안내 화면을 쓰고 있으면 true(테스트·디버그용).</summary>
         public bool UsesGameUi => usesGameUi;
         // 카메라가 움직인 뒤 대상 위치에 안내를 붙인다(대상 기준점 바로 아래, 말풍선은 기준점 위).
         private void LateUpdate()
         {
             if (!usesGameUi || input == null) return;
-            var hint = $"{controlsHint} | 클리어 {ProgressStore.ClearedStages.Count}";
+            var hint = Hint();
             if (hintLabel != null && hint != shownHint) { hintLabel.text = hint; shownHint = hint; }
             if (promptLabel == null) return;
             var label = PromptLabel; var camera = ViewCamera;
@@ -231,7 +232,7 @@ namespace IBIIIS
         {
             if (usesGameUi || input == null) return;
             if (Event.current.type != EventType.Repaint) return;
-            GUI.Box(new Rect(12, 12, 560, 30), $"{controlsHint} | 클리어 {ProgressStore.ClearedStages.Count}");
+            GUI.Box(new Rect(12, 12, 560, 30), Hint());
             var label = PromptLabel;
             if (label == null || !OverworldGui.ToGui(ViewCamera, target.LabelPosition, out var anchor)) return;
             // 말풍선은 기준점 위, 안내 문구는 기준점 아래에 그려 겹치지 않게 한다.
