@@ -13,6 +13,13 @@ MonoBehaviour:
   m_Name: Tutorial1Script
   m_EditorClassIdentifier: IBIIIS.Runtime::IBIIIS.TutorialScript
   scriptId: tutorial_1
+  settings:
+    startTiming: 0
+    onlyOnce: 0
+    allowSkip: 1
+    skipHoldSeconds: 0.6
+    hideEnemyAlerts: 1
+    scriptControlsDanger: 1
   steps:
   - id: 0dccc635caea41dba0bc09f6abd29b5b
     type: 0
