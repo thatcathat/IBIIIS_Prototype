@@ -172,6 +172,20 @@ namespace IBIIIS.Tests
             player.UpdateMotion(.45f); Assert.IsNull(player.ReactionSprite); Assert.AreSame(idle, Shown, "벗어났으므로 일반 대기 그림");
             Assert.True(player.TryUndo()); Assert.AreSame(danger, Shown, "되돌리면 다시 인식 범위 안");
         }
+        [Test] public void SkillWhileRecognizedShowsEvadedSpritesEvenWithoutAnAttackToDodge()
+        {
+            UseReactionVisual();
+            map.SetStart(new Vector2Int(4, 2)); Enemy(3, 4, Vector2Int.down);
+            var so = new SerializedObject(map.EnemyAt(new Vector2Int(3, 4)).Prefab.GetComponent<EnemyDefinition>()); var recognition = so.FindProperty("recognition"); recognition.arraySize = 6;
+            int n = 0; for (int x = -1; x <= 1; x++) for (int y = 1; y <= 2; y++) recognition.GetArrayElementAtIndex(n++).vector2IntValue = new Vector2Int(x, y);
+            so.ApplyModifiedPropertiesWithoutUndo();
+            Build();
+            Assert.AreSame(danger, Shown, "인식된 상태(위험 그림)");
+            Assert.AreNotEqual(BattlePhase.Lost, player.Session.Predict(PlayerAction.Wait, Vector2Int.zero), "제자리에 있어도 맞지 않는 상황");
+            Assert.True(player.TryBeginAction(PlayerAction.Dash, Vector2Int.right)); player.AdvanceMovement(2);
+            Assert.AreEqual(BattlePhase.Waiting, player.Session.Phase);
+            Assert.AreSame(cleared, Shown, "위험 그림이 보이던 상태에서 회피기를 쓰면 회피 그림");
+        }
         [Test] public void DisabledFeedbackLeavesTheDefeatedPlayerInPlace()
         {
             var so = new SerializedObject(settings); so.FindProperty("enabledFeedback").boolValue = false; so.ApplyModifiedPropertiesWithoutUndo();

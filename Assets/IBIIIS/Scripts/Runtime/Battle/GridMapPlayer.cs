@@ -364,7 +364,7 @@ namespace IBIIIS
         {
             float duration = MoveDuration * (action == PlayerAction.Dash ? 2 : 1);
             if (session == null || !session.CanAct(action, direction) || session.Phase != BattlePhase.Waiting) return false;
-            // 반응 판정용(표시 전용): 행동 전 인식 여부, 회피기라면 제자리에 있었을 때 맞았을지.
+            // 반응 판정용(표시 전용): 행동 전 인식 여부(위험 그림이 보이는 상황), 회피기라면 제자리에 있었을 때 맞았을지.
             bool recognized = AnyRecognizing();
             bool threatened = (action == PlayerAction.Dash || action == PlayerAction.Roll) && session.Predict(PlayerAction.Wait, Vector2Int.zero) == BattlePhase.Lost;
             if (!session.TryAct(action, direction, duration, playerSettings != null ? playerSettings.EnemyStepDuration : .25f)) return false;
@@ -427,14 +427,14 @@ namespace IBIIIS
         }
         /// <summary>지금 보이는 상황 반응 그림(없으면 null). 테스트·디버그용.</summary>
         public Sprite ReactionSprite => playerView != null ? playerView.ReactionSprite : null;
-        // 판정이 끝난 행동의 반응: 패배 → 패배 그림(유지)·떨림, 대시·구르기로 맞을 공격을 피함 → 회피 그림들 차례로·으쓱,
+        // 판정이 끝난 행동의 반응: 패배 → 패배 그림(유지)·떨림, 적에게 인식된 상태이거나 맞을 공격이 있을 때 대시·구르기를 씀 → 회피 그림들 차례로·으쓱,
         // 이동만으로 인식 범위를 벗어남 → 벗어남 그림·한숨. 그림이 비어 있으면 그 반응은 건너뛴다(진행에는 영향 없음).
         private void ChooseReaction()
         {
             if (playerView == null || session == null) return;
             if (session.Phase == BattlePhase.Lost) { StartReaction(playerView.DefeatedSprite != null ? new[] { playerView.DefeatedSprite } : null, true, PoseMotion.Shake); return; }
             bool skill = lastAction == PlayerAction.Dash || lastAction == PlayerAction.Roll;
-            if (skill && startedThreatened)
+            if (skill && (startedThreatened || startedRecognized))
             {
                 var frames = new List<Sprite>(); foreach (var s in playerView.EvadedSprites) if (s != null) frames.Add(s);
                 StartReaction(frames.ToArray(), false, PoseMotion.Proud);
