@@ -38,6 +38,6 @@ MonoBehaviour:
   playerHitVolume: 0.9
   lungeDistance: 0.3
   lungeTime: 0.2
-  knockbackDistance: 0.25
+  knockbackDistance: 1
   knockbackTime: 0.18
   contactDistance: 0.6
