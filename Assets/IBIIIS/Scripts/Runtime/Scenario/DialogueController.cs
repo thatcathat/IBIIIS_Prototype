@@ -24,6 +24,8 @@ namespace IBIIIS
         public bool AskingName => nameDone != null;
         public bool IsOpen => runner.IsOpen;
         public bool UsesGameUi => view != null;
+        /// <summary>건너뛰기 안내. 0~1이면 보이며 누른 비율만큼 막대가 찬다, 음수면 숨긴다. 대본 진행기가 매 프레임 정한다.</summary>
+        public float SkipProgress { get; set; } = -1;
 
         /// <summary>대화를 시작한다. ui는 화면 구성·글자 속도를 가진 Game UI 설정(없으면 임시 표시). finished는 대화가 끝나면 한 번 불린다.</summary>
         public static DialogueController Play(GameUiSettings ui, IEnumerable<DialogueLine> lines, Action finished = null)
@@ -72,7 +74,7 @@ namespace IBIIIS
             var document = ui.CreateDocument("Dialogue UI", ui.DialogueBox, transform, 50);
             if (document != null) view = new DialogueView(document.rootVisualElement, Advance, SubmitName);
         }
-        private void Draw() { view?.Show(runner, time, keys); }
+        private void Draw() { view?.Show(runner, time, keys, SkipProgress); }
         /// <summary>넘기기(키·클릭과 같은 경로). 대화를 연 프레임에는 무시한다.</summary>
         public void Advance() { if (Time.frameCount != openedFrame) runner.Advance(); }
         private void Update()
@@ -91,6 +93,7 @@ namespace IBIIIS
             if (view != null || !runner.IsOpen) return;
             var text = runner.IsNarration ? runner.ShownText : $"{runner.SpeakerName}\n{runner.ShownText}";
             if (keys.Length > 0) text += "\n[" + string.Join(" + ", keys) + "]";
+            if (SkipProgress >= 0) text += "\n(" + UiText.DialogueSkip.Text + ")";
             if (Event.current.type == EventType.Repaint) GUI.Box(new Rect(40, Screen.height - 170, Screen.width - 80, 140), text, OverworldGui.Body);
             if (nameDone != null && GUI.Button(new Rect(Screen.width / 2 - 60, Screen.height - 60, 120, 32), UiText.Confirm.Text)) SubmitName(nameDefault);
         }

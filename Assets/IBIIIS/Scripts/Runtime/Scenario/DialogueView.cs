@@ -12,7 +12,8 @@ namespace IBIIIS
         private const string Screen = "대화창";
         private readonly VisualElement root, left, right, box;
         private readonly Label nameLabel, text, next;
-        private readonly VisualElement keys, nameInput;
+        private readonly VisualElement keys, nameInput, skip, skipFill;
+        private readonly Label skipText;
         private readonly TextField nameField;
         private string[] shownKeys = new string[0];
         public VisualElement Root => root;
@@ -28,6 +29,7 @@ namespace IBIIIS
             box?.RegisterCallback<ClickEvent>(_ => onClick?.Invoke());
             keys = root?.Q("keys");
             nameInput = root?.Q("name-input");
+            skip = root?.Q("skip"); skipText = root?.Q<Label>("skip-text"); skipFill = root?.Q("skip-fill");
             nameField = root?.Q<TextField>("name-field");
             var confirm = root?.Q<Button>("name-confirm");
             if (confirm != null) { confirm.text = UiText.Confirm.Text; confirm.clicked += () => onName?.Invoke(nameField?.value); }
@@ -43,8 +45,9 @@ namespace IBIIIS
             if (nameField != null) { nameField.value = value; nameField.Focus(); }
         }
         public void HideNameInput() { if (nameInput != null) nameInput.style.display = DisplayStyle.None; }
-        /// <summary>현재 상태를 그린다(매 프레임). time은 다음 표시·키 표시 깜빡임용. keyCaps는 입력을 기다릴 때 보일 키.</summary>
-        public void Show(DialogueRunner runner, float time, string[] keyCaps = null)
+        /// <summary>현재 상태를 그린다(매 프레임). time은 다음 표시·키 표시 깜빡임용. keyCaps는 입력을 기다릴 때 보일 키.
+        /// skipProgress는 건너뛰기 안내(0~1: 누른 비율, 음수: 숨김).</summary>
+        public void Show(DialogueRunner runner, float time, string[] keyCaps = null, float skipProgress = -1)
         {
             if (root == null) return;
             if (runner == null || !runner.IsOpen) { Hide(); return; }
@@ -61,6 +64,16 @@ namespace IBIIIS
             bool waitingForInput = runner.Locked;
             if (next != null) next.style.visibility = !waitingForInput && runner.LineComplete && Mathf.Repeat(time, 1f) < .6f ? Visibility.Visible : Visibility.Hidden;
             ShowKeys(keyCaps ?? new string[0], time);
+            ShowSkip(skipProgress);
+        }
+        private void ShowSkip(float progress)
+        {
+            if (skip == null) return;
+            skip.style.display = progress >= 0 ? DisplayStyle.Flex : DisplayStyle.None;
+            if (progress < 0) return;
+            if (skipText != null) skipText.text = UiText.DialogueSkip.Text;
+            if (skipFill != null) skipFill.style.width = Length.Percent(Mathf.Clamp01(progress) * 100);
+            skip.EnableInClassList("holding", progress > 0);
         }
         // 키 표시: 바뀌었을 때만 다시 만들고, 깜빡임은 투명도로.
         private void ShowKeys(string[] caps, float time)

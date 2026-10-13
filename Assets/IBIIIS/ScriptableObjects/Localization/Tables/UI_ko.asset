@@ -129,6 +129,10 @@ MonoBehaviour:
     m_Localized: "\uB2EB\uAE30"
     m_Metadata:
       m_Items: []
+  - m_Id: 14796257509376
+    m_Localized: "Esc \uAE38\uAC8C: \uAC74\uB108\uB6F0\uAE30"
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []

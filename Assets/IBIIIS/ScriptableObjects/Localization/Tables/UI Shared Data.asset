@@ -119,6 +119,10 @@ MonoBehaviour:
     m_Key: prompt.close
     m_Metadata:
       m_Items: []
+  - m_Id: 14796257509376
+    m_Key: dialogue.skip
+    m_Metadata:
+      m_Items: []
   m_Metadata:
     m_Items: []
   m_KeyGenerator:

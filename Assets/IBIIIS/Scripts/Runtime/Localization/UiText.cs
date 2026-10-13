@@ -48,5 +48,7 @@ namespace IBIIIS
         public static readonly GameString PromptTalk = new GameString("prompt.talk", "말 걸기", "Talk");
         public static readonly GameString PromptNext = new GameString("prompt.next", "다음", "Next");
         public static readonly GameString PromptClose = new GameString("prompt.close", "닫기", "Close");
+
+        public static readonly GameString DialogueSkip = new GameString("dialogue.skip", "Esc 길게: 건너뛰기", "Hold Esc: Skip");
     }
 }

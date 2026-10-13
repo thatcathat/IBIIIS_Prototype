@@ -9,6 +9,11 @@
       <ui:Label name="name" class="dialogue-name" picking-mode="Ignore" />
       <ui:Label name="text" class="dialogue-text" picking-mode="Ignore" />
       <ui:Label name="next" text="▼" class="dialogue-next" picking-mode="Ignore" />
+      <!-- 대사 건너뛰기 안내(대본 진행 중 대사에서만). 누르고 있는 동안 아래 막대가 찬다. 문구는 번역 표 UI의 dialogue.skip. -->
+      <ui:VisualElement name="skip" class="dialogue-skip" picking-mode="Ignore">
+        <ui:Label name="skip-text" class="dialogue-skip-text" picking-mode="Ignore" />
+        <ui:VisualElement name="skip-fill" class="dialogue-skip-fill" picking-mode="Ignore" />
+      </ui:VisualElement>
       <!-- 입력을 기다릴 때 보이는 키 표시(예: Shift + W). 코드가 key-cap 라벨을 채운다. -->
       <ui:VisualElement name="keys" class="dialogue-keys" picking-mode="Ignore" />
       <!-- 이름 입력(대본의 이름 짓기 단계). -->
