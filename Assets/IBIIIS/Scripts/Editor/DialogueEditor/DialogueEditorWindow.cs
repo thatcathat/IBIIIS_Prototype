@@ -20,6 +20,9 @@ namespace IBIIIS.Editor
         private static readonly Color InputColor = new Color(.95f, .65f, .25f), WorldColor = new Color(.45f, .8f, .45f), FlowColor = new Color(.6f, .6f, .65f);
         private static readonly Color SelectedBorder = new Color(.45f, .7f, 1f), Highlight = new Color(.95f, .8f, .3f, .3f);
         private static readonly Color StartColor = new Color(.55f, .8f, .4f), WarnColor = new Color(.95f, .7f, .3f);
+        private static readonly Color ErrorColor = new Color(1f, .4f, .35f), ArrowColor = new Color(.62f, .64f, .72f, .9f);
+        // 세로줄 배경: 번갈아 옅게 칠하고, 고른 단계가 있는 세로줄은 푸르게.
+        private static readonly Color StripeColor = new Color(1, 1, 1, .028f), SelectedColumnColor = new Color(.45f, .7f, 1f, .1f), BandTint = new Color(.95f, .8f, .3f, .18f);
 
         [SerializeField] private ScenarioScript script;
         // 선택한 단계의 고유 ID(마지막이 기준 단계). 단계를 넣거나 빼도 선택이 따라간다.
@@ -39,12 +42,20 @@ namespace IBIIIS.Editor
         private List<DialogueScriptScenes.Entry> linked = new List<DialogueScriptScenes.Entry>();
         private string linkedKey = "";
         // 세로줄 목록(전체 대본 순서, DialogueScriptEdits.Columns와 같은 순서). 끌어 놓을 자리를 찾는 데 쓴다.
-        private sealed class Column { public int From, To; public bool HasMain; public VisualElement Element, Group; public StyleColor Background; }
+        // Band는 세로줄 전체 높이의 배경 띠, Hidden은 접힌 장면의 세로줄(놓을 자리로 고르지 않음).
+        private sealed class Column { public int From, To; public bool HasMain, Hidden; public VisualElement Element, Group, Band; public StyleColor Background, BandBackground; }
         private readonly List<Column> columns = new List<Column>();
         // 단계 번호 → 그 단계를 보여 주는 요소(노드·막대·경고). 검사 목록에서 이동할 때 쓴다.
         private readonly Dictionary<int, VisualElement> stepElements = new Dictionary<int, VisualElement>();
         // 복사한 단계(에디터를 켜 둔 동안 대본끼리도 붙여 넣을 수 있음).
         private static List<ScenarioStep> clipboard;
+        // 접은 장면(장면을 끝내는 단계의 ID). 창을 다시 열어도 유지된다.
+        [SerializeField] private List<string> collapsedScenes = new List<string>();
+        // 단계 번호 → 검사 문제(노드·막대에 배지로 보임).
+        private readonly Dictionary<int, List<DialogueScriptEdits.Issue>> issuesAt = new Dictionary<int, List<DialogueScriptEdits.Issue>>();
+        // 노드 사이 연결선: 같은 장면이면 옆으로, 장면이 바뀌면 장면 아래로 돌아 다음 줄 처음으로 잇는다.
+        private readonly List<(VisualElement from, VisualElement to, VisualElement group)> links = new List<(VisualElement, VisualElement, VisualElement)>();
+        private VisualElement linkLayer;
 
         // ── 끌기 상태 ──
         private enum DragKind { None, SpanStart, SpanEnd, SpanBody, Column, Instant, Draw }
@@ -202,7 +213,7 @@ namespace IBIIIS.Editor
         {
             if (graph == null) return;
             var scroll = graph.scrollOffset;
-            graph.Clear(); columns.Clear(); stepElements.Clear();
+            graph.Clear(); columns.Clear(); stepElements.Clear(); links.Clear(); linkLayer = null;
             RefreshIssues();
             if (script == null) { graph.Add(new Label("대본(Scenario Script)을 고르세요. Project 창에서 대본 에셋을 더블클릭해도 열립니다.") { style = { marginLeft = 10, marginTop = 10 } }); return; }
             graph.Add(StartNode());
@@ -213,7 +224,19 @@ namespace IBIIIS.Editor
             var selectedSpan = primary >= 0 && spans.TryGetValue(primary, out var s) ? s : (ScenarioSpan?)null;
             var column = new VisualElement { style = { paddingLeft = 8, paddingTop = 8, paddingBottom = 8, alignItems = Align.FlexStart } };
             var scenes = ScenarioTimeline.Scenes(steps);
-            for (int n = 0; n < scenes.Count; n++) column.Add(Scene(n, scenes[n], steps, spans, lanes, selectedSpan));
+            (VisualElement last, VisualElement group) previous = (null, null);
+            for (int n = 0; n < scenes.Count; n++)
+            {
+                var scene = Scene(n, scenes[n], steps, spans, lanes, selectedSpan, out var first, out var last);
+                if (previous.last != null) links.Add((previous.last, first, previous.group));
+                previous = (last, scene);
+                column.Add(scene);
+            }
+            // 연결선은 맨 위 층에 그린다(누르기는 아래 노드로 통과).
+            linkLayer = new VisualElement { pickingMode = PickingMode.Ignore, style = { position = Position.Absolute, left = 0, top = 0, right = 0, bottom = 0 } };
+            linkLayer.generateVisualContent += DrawLinks;
+            column.Add(linkLayer);
+            column.RegisterCallback<GeometryChangedEvent>(_ => linkLayer?.MarkDirtyRepaint());
             graph.Add(column);
             graph.schedule.Execute(() => graph.scrollOffset = scroll);
         }
@@ -234,19 +257,28 @@ namespace IBIIIS.Editor
         // 노드 대신 트랙 막대로 보이는 단계.
         private static bool IsTrackStep(ScenarioStepType type) => type == ScenarioStepType.Emote || type == ScenarioStepType.Pose || type == ScenarioStepType.EndDisplay;
         private static float NodeWidth(ScenarioStep step) => step.type == ScenarioStepType.Line ? LineNodeWidth : SmallNodeWidth;
-        private VisualElement Scene(int number, (int start, int end) scene, ScenarioStep[] steps, Dictionary<int, ScenarioSpan> spans, Dictionary<int, int> lanes, ScenarioSpan? selectedSpan)
+        private VisualElement Scene(int number, (int start, int end) scene, ScenarioStep[] steps, Dictionary<int, ScenarioSpan> spans, Dictionary<int, int> lanes, ScenarioSpan? selectedSpan, out VisualElement firstElement, out VisualElement lastElement)
         {
-            var group = new VisualElement { style = { marginBottom = 12, paddingLeft = 8, paddingRight = 8, paddingTop = 4, paddingBottom = 8, backgroundColor = new Color(1, 1, 1, .03f), borderTopLeftRadius = 8, borderTopRightRadius = 8, borderBottomLeftRadius = 8, borderBottomRightRadius = 8 } };
+            var group = new VisualElement { style = { marginBottom = 14, paddingLeft = 8, paddingRight = 8, paddingTop = 4, paddingBottom = 8, backgroundColor = new Color(1, 1, 1, .03f), borderTopLeftRadius = 8, borderTopRightRadius = 8, borderBottomLeftRadius = 8, borderBottomRightRadius = 8 } };
             SetBorder(group, new Color(.4f, .42f, .48f), 1);
             var last = steps[scene.end];
-            group.Add(new Label($"장면 {number + 1}   ·   {(ScenarioTimeline.EndsScene(last.type) ? Summary(last) : "끝")}") { style = { unityFontStyleAndWeight = FontStyle.Bold, color = new Color(.8f, .82f, .88f), marginBottom = 4 } });
+            bool collapsed = collapsedScenes.Contains(last.id);
+            var header = SceneHeader(number, scene, steps, last, collapsed);
+            group.Add(header);
+            // 본문: 순간 번호 눈금 → 위 줄(바로 넘어가는 단계) → 아래 줄(기다리는 단계) → 트랙. 세로줄 배경 띠는 본문 뒤에 깐다.
+            var body = new VisualElement { style = { position = Position.Relative } };
+            var bands = new VisualElement { pickingMode = PickingMode.Ignore, style = { position = Position.Absolute, left = 0, top = 0, right = 0, bottom = 0 } };
+            body.Add(bands);
             // 세로줄 = 같은 순간. 감정 표시·자세·표시 끝은 노드 없이 아래 트랙 막대로만 보인다(막대 시작 = 그 단계의 세로줄).
             // 위 줄에는 막대가 없는 바로 넘어가는 단계(켜기·끄기·적 합류·클리어 기록)를 실행 순서대로 쌓아 아래에 붙이고,
-            // 아래 줄에는 그 순간의 기다리는 단계(대사·입력 등)를 위에 붙여 나란히 둔다. 두 줄은 같은 폭·간격을 써서 세로줄이 맞는다.
+            // 아래 줄에는 그 순간의 기다리는 단계(대사·입력 등)를 위에 붙여 나란히 둔다. 모든 줄이 같은 폭·간격을 써서 세로줄이 맞는다.
+            var ruler = new VisualElement { style = { flexDirection = FlexDirection.Row, marginBottom = 2 } };
             var top = new VisualElement { style = { flexDirection = FlexDirection.Row, alignItems = Align.FlexEnd } };
             var bottom = new VisualElement { style = { flexDirection = FlexDirection.Row, alignItems = Align.Stretch } };
             var columnOf = new Dictionary<int, int>(); var left = new List<float>(); var width = new List<float>(); float x = 0;
             var moments = ScenarioTimeline.Moments(steps, scene.start, scene.end);
+            int primary = Primary; VisualElement previousMain = null;
+            firstElement = lastElement = header;
             for (int m = 0; m < moments.Count; m++)
             {
                 var (from, to) = moments[m];
@@ -255,10 +287,11 @@ namespace IBIIIS.Editor
                 int columnIndex = columns.Count;
                 if (m > 0)
                 {
-                    top.Add(new VisualElement { style = { width = Gap, flexShrink = 0 } });
-                    bottom.Add(new Label(hasMain ? "→" : "") { style = { width = Gap, flexShrink = 0, unityTextAlign = TextAnchor.MiddleCenter, color = new Color(.6f, .6f, .65f) } });
+                    foreach (var row in new[] { ruler, top, bottom }) row.Add(new VisualElement { style = { width = Gap, flexShrink = 0 } });
                     x += Gap;
                 }
+                bool chosenColumn = primary >= from && primary <= to;
+                ruler.Add(new Label($"{columnIndex + 1}") { tooltip = $"{columnIndex + 1}번째 순간 ({from}~{to}번 단계)", style = { width = w, flexShrink = 0, fontSize = 9, unityTextAlign = TextAnchor.MiddleCenter, color = chosenColumn ? SelectedBorder : new Color(.5f, .52f, .58f), unityFontStyleAndWeight = chosenColumn ? FontStyle.Bold : FontStyle.Normal } });
                 var stack = new VisualElement { style = { width = w, flexShrink = 0 } };
                 for (int i = from; i <= (hasMain ? to - 1 : to); i++)
                 {
@@ -271,10 +304,20 @@ namespace IBIIIS.Editor
                 bottom.Add(main);
                 stack.AddManipulator(new ContextualMenuManipulator(e => ColumnMenu(e, columnIndex)));
                 main.AddManipulator(new ContextualMenuManipulator(e => ColumnMenu(e, columnIndex)));
-                columns.Add(new Column { From = from, To = to, HasMain = hasMain, Element = main, Group = group, Background = main.style.backgroundColor });
+                var bandColor = chosenColumn ? SelectedColumnColor : m % 2 == 1 ? StripeColor : new Color(0, 0, 0, 0);
+                var band = new VisualElement { pickingMode = PickingMode.Ignore, style = { position = Position.Absolute, left = x - 3, width = w + 6, top = 0, bottom = 0, backgroundColor = bandColor, borderTopLeftRadius = 4, borderTopRightRadius = 4, borderBottomLeftRadius = 4, borderBottomRightRadius = 4 } };
+                bands.Add(band);
+                columns.Add(new Column { From = from, To = to, HasMain = hasMain, Hidden = collapsed, Element = main, Group = group, Band = band, Background = main.style.backgroundColor, BandBackground = bandColor });
+                if (!collapsed)
+                {
+                    if (previousMain != null) links.Add((previousMain, main, null));
+                    if (m == 0) firstElement = main;
+                    lastElement = main;
+                }
+                previousMain = main;
                 left.Add(x); width.Add(w); x += w;
             }
-            group.Add(top); group.Add(bottom);
+            body.Add(ruler); body.Add(top); body.Add(bottom);
             // 트랙: 이 장면과 겹치는 범위를 세로줄 기준으로 그린다. 앞 장면에서 이어지면 «, 다음 장면으로 이어지면 »를 붙인다.
             int laneTop = -1;
             foreach (var pair in spans) if (pair.Value.Start <= scene.end && pair.Value.End >= scene.start) laneTop = Mathf.Max(laneTop, lanes[pair.Key]);
@@ -305,8 +348,81 @@ namespace IBIIIS.Editor
             SetBorder(draw, new Color(1, 1, 1, .08f), 1);
             Draggable(draw, DragKind.Draw, -1, -1);
             track.Add(draw);
-            group.Add(track);
+            body.Add(track);
+            // 접은 장면은 세로줄 계산(끌어 놓을 자리 번호)을 위해 그대로 만들되 보이지 않게 한다.
+            if (collapsed) body.style.display = DisplayStyle.None;
+            group.Add(body);
             return group;
+        }
+        // 장면 머리: 접기 단추, 장면 번호, 장면을 끝내는 방식(색 꼬리표), 단계 범위·순간 수, 이 장면의 검사 문제 수.
+        private VisualElement SceneHeader(int number, (int start, int end) scene, ScenarioStep[] steps, ScenarioStep last, bool collapsed)
+        {
+            var header = new VisualElement { style = { flexDirection = FlexDirection.Row, alignItems = Align.Center, marginBottom = 4, minHeight = 20 } };
+            string key = last.id;
+            var fold = new Label(collapsed ? "▶" : "▼") { tooltip = collapsed ? "장면 펼치기" : "장면 접기", style = { width = 16, unityTextAlign = TextAnchor.MiddleCenter, color = new Color(.75f, .77f, .82f), fontSize = 10 } };
+            header.Add(fold);
+            header.Add(new Label($"장면 {number + 1}") { style = { unityFontStyleAndWeight = FontStyle.Bold, color = new Color(.85f, .87f, .92f), marginRight = 6 } });
+            bool ends = ScenarioTimeline.EndsScene(last.type);
+            var endColor = ends ? CategoryColor(last.type) : FlowColor;
+            header.Add(Pill(ends ? (last.type == ScenarioStepType.LoadScene ? "씬 전환" : TypeName(last.type)) : "대본 끝", endColor));
+            if (ends) header.Add(new Label(Summary(last)) { style = { fontSize = 10, color = new Color(.7f, .72f, .78f), marginLeft = 6, marginRight = 8 } });
+            int moments = ScenarioTimeline.Moments(steps, scene.start, scene.end).Count;
+            header.Add(new Label($"{scene.start}~{scene.end}번 · 순간 {moments}") { style = { fontSize = 10, color = new Color(.55f, .57f, .62f), marginLeft = 4 } });
+            int errors = 0, warnings = 0;
+            for (int i = scene.start; i <= scene.end; i++) if (issuesAt.TryGetValue(i, out var list)) foreach (var issue in list) { if (issue.Error) errors++; else warnings++; }
+            if (errors > 0) header.Add(Pill($"⚠ 오류 {errors}", ErrorColor));
+            if (warnings > 0) header.Add(Pill($"주의 {warnings}", WarnColor));
+            if (collapsed)
+            {
+                int lines = 0; for (int i = scene.start; i <= scene.end; i++) if (steps[i].type == ScenarioStepType.Line) lines++;
+                header.Add(new Label($"접힘 — 대사 {lines}개") { style = { fontSize = 10, color = new Color(.6f, .62f, .68f), marginLeft = 8, unityFontStyleAndWeight = FontStyle.Italic } });
+            }
+            header.tooltip = collapsed ? "눌러서 펼치기" : "눌러서 접기";
+            header.RegisterCallback<PointerDownEvent>(e =>
+            {
+                if (e.button != 0) return;
+                if (!collapsedScenes.Remove(key)) collapsedScenes.Add(key);
+                RebuildGraph(); e.StopPropagation();
+            });
+            return header;
+        }
+        private static Label Pill(string text, Color color) => new Label(text)
+        {
+            style = { fontSize = 10, color = new Color(.1f, .1f, .12f), backgroundColor = new Color(color.r, color.g, color.b, .85f), paddingLeft = 6, paddingRight = 6, marginLeft = 4, borderTopLeftRadius = 7, borderTopRightRadius = 7, borderBottomLeftRadius = 7, borderBottomRightRadius = 7 }
+        };
+        // 연결선: 같은 장면은 노드 오른쪽에서 다음 노드 왼쪽으로 부드러운 곡선, 장면이 바뀌면 장면 아래 틈으로 돌아 다음 장면 첫 노드로.
+        private void DrawLinks(MeshGenerationContext context)
+        {
+            if (linkLayer == null) return;
+            var painter = context.painter2D;
+            painter.lineWidth = 1.5f; painter.strokeColor = ArrowColor; painter.fillColor = ArrowColor;
+            Rect Local(VisualElement element) { var b = element.worldBound; var min = linkLayer.WorldToLocal(b.min); var max = linkLayer.WorldToLocal(b.max); return Rect.MinMaxRect(min.x, min.y, max.x, max.y); }
+            foreach (var (fromElement, toElement, group) in links)
+            {
+                if (fromElement.panel == null || toElement.panel == null) continue;
+                var a = Local(fromElement); var b = Local(toElement);
+                if (float.IsNaN(a.x) || float.IsNaN(b.x) || a.width <= 0 || b.width <= 0) continue;
+                var start = new Vector2(a.xMax + 1, a.center.y); var end = new Vector2(b.xMin - 2, b.center.y);
+                painter.BeginPath(); painter.MoveTo(start);
+                if (group == null)
+                {
+                    float bend = Mathf.Max(4, (end.x - start.x) * .5f);
+                    painter.BezierCurveTo(start + new Vector2(bend, 0), end - new Vector2(bend, 0), end);
+                }
+                else
+                {
+                    // 장면 사이: 오른쪽으로 조금 → 장면 아래 틈까지 내려감 → 왼쪽으로 → 다음 줄 높이까지 내려감 → 첫 노드로.
+                    var g = Local(group);
+                    float gapY = g.yMax + 7, outX = Mathf.Max(start.x + 10, g.xMax - 2), inX = Mathf.Max(2, b.xMin - 10);
+                    painter.ArcTo(new Vector2(outX, start.y), new Vector2(outX, gapY), 6);
+                    painter.ArcTo(new Vector2(outX, gapY), new Vector2(inX, gapY), 6);
+                    painter.ArcTo(new Vector2(inX, gapY), new Vector2(inX, end.y), 6);
+                    painter.ArcTo(new Vector2(inX, end.y), end, 6);
+                    painter.LineTo(end);
+                }
+                painter.Stroke();
+                painter.BeginPath(); painter.MoveTo(end + new Vector2(1, 0)); painter.LineTo(end + new Vector2(-5, -3.5f)); painter.LineTo(end + new Vector2(-5, 3.5f)); painter.ClosePath(); painter.Fill();
+            }
         }
         // 맨 앞 시작 노드: 대본 설정(시작 시점·한 번만·건너뛰기·연출)과 연결된 씬 수·대상 ID 경고를 보인다. 누르면 아래에서 편집한다.
         // 대본마다 하나이고 단계가 아니므로 옮기거나 지우거나 복사하지 않는다.
@@ -341,8 +457,10 @@ namespace IBIIIS.Editor
             SetBorder(node, chosen ? SelectedBorder : new Color(color.r, color.g, color.b, .5f), 1);
             node.style.borderLeftWidth = 4; node.style.borderLeftColor = color;
             node.Add(new Label($"{TypeName(step.type)} · {Detail(step)}") { style = { whiteSpace = WhiteSpace.Normal, flexShrink = 1, fontSize = 10, color = new Color(.88f, .88f, .9f) } });
+            var badge = IssueBadge(index, node, chosen);
+            if (badge != null) node.Add(badge);
             node.Add(new Label($"{index}") { style = { fontSize = 9, color = new Color(.5f, .5f, .55f), marginLeft = 4, flexShrink = 0 } });
-            node.tooltip = Summary(step) + (spans.TryGetValue(index, out var own) ? $"\n{EndText(own)}" : "") + (step.sprite != null ? $"\n그림: {step.sprite.name}" : "") + "\n끌어서 다른 세로줄로 옮기기";
+            node.tooltip = Summary(step) + (spans.TryGetValue(index, out var own) ? $"\n{EndText(own)}" : "") + (step.sprite != null ? $"\n그림: {step.sprite.name}" : "") + IssueText(index) + "\n끌어서 다른 세로줄로 옮기기";
             Draggable(node, DragKind.Instant, index, column);
             stepElements[index] = node;
             return node;
@@ -360,7 +478,11 @@ namespace IBIIIS.Editor
             node.style.borderTopColor = color;
             var head = new VisualElement { style = { flexDirection = FlexDirection.Row, justifyContent = Justify.SpaceBetween } };
             head.Add(new Label(line ? (step.line.speaker != null || !string.IsNullOrEmpty(step.line.nameOverride) ? "대사" : "지문") : TypeName(step.type)) { style = { fontSize = 10, color = color } });
-            head.Add(new Label($"{index}") { style = { fontSize = 10, color = new Color(.5f, .5f, .55f) } });
+            var right = new VisualElement { style = { flexDirection = FlexDirection.Row, alignItems = Align.Center } };
+            var badge = IssueBadge(index, node, chosen);
+            if (badge != null) right.Add(badge);
+            right.Add(new Label($"{index}") { style = { fontSize = 10, color = new Color(.5f, .5f, .55f), marginLeft = 4 } });
+            head.Add(right);
             node.Add(head);
             if (line) LineContent(node, step.line);
             else
@@ -368,17 +490,36 @@ namespace IBIIIS.Editor
                 string text = Detail(step);
                 if (spans.TryGetValue(index, out var own)) text += $"\n({EndText(own)})";
                 node.Add(new Label(text) { style = { whiteSpace = WhiteSpace.Normal, color = new Color(.85f, .85f, .88f), fontSize = 11 } });
-                if (step.sprite != null) node.tooltip = step.sprite.name;
+                node.tooltip = Summary(step) + (step.sprite != null ? $"\n그림: {step.sprite.name}" : "");
             }
+            node.tooltip += IssueText(index);
             Draggable(node, DragKind.Column, index, column, line ? (System.Action)(() => BeginInlineEdit(index)) : null);
             stepElements[index] = node;
             return node;
         }
-        // 대사는 화자 이름과 본문 세 줄까지만 보인다(전체는 마우스를 올리거나 더블클릭해 고칠 때).
+        // 검사 문제가 있는 단계: 테두리를 빨강(오류)·노랑(주의)으로 바꾸고 ⚠ 배지를 돌려준다(없으면 null).
+        private Label IssueBadge(int index, VisualElement node, bool chosen)
+        {
+            if (!issuesAt.TryGetValue(index, out var list) || list.Count == 0) return null;
+            bool error = list.Any(i => i.Error); var color = error ? ErrorColor : WarnColor;
+            if (!chosen) { node.style.borderRightColor = node.style.borderBottomColor = color; node.style.borderRightWidth = node.style.borderBottomWidth = 2; } // 왼쪽·위 띠는 종류 색
+            return new Label(list.Count > 1 ? $"⚠{list.Count}" : "⚠") { tooltip = string.Join("\n", list.Select(i => (i.Error ? "오류: " : "주의: ") + i.Message)), style = { fontSize = 10, color = new Color(.1f, .1f, .12f), backgroundColor = color, paddingLeft = 3, paddingRight = 3, borderTopLeftRadius = 6, borderTopRightRadius = 6, borderBottomLeftRadius = 6, borderBottomRightRadius = 6, flexShrink = 0, marginLeft = 4 } };
+        }
+        private string IssueText(int index) => issuesAt.TryGetValue(index, out var list) ? "\n" + string.Join("\n", list.Select(i => "⚠ " + (i.Error ? "오류: " : "주의: ") + i.Message)) : "";
+        // 대사는 화자 초상화·이름(인물 이름 색)과 본문 세 줄까지만 보인다(전체는 마우스를 올리거나 더블클릭해 고칠 때).
         private static void LineContent(VisualElement node, DialogueLine line)
         {
             string name = !string.IsNullOrEmpty(line.nameOverride) ? line.nameOverride : line.speaker != null ? line.speaker.DisplayName : null;
-            if (name != null) node.Add(new Label(name) { style = { unityFontStyleAndWeight = FontStyle.Bold, color = line.speaker != null ? line.speaker.NameColor : Color.white } });
+            if (name != null)
+            {
+                var who = new VisualElement { style = { flexDirection = FlexDirection.Row, alignItems = Align.Center, marginBottom = 1 } };
+                var portrait = line.speaker != null ? line.speaker.Portrait(line.expression) : null;
+                if (portrait != null)
+                    who.Add(new Image { sprite = portrait, scaleMode = ScaleMode.ScaleToFit, pickingMode = PickingMode.Ignore, style = { width = 24, height = 24, marginRight = 5, backgroundColor = new Color(0, 0, 0, .25f), borderTopLeftRadius = 12, borderTopRightRadius = 12, borderBottomLeftRadius = 12, borderBottomRightRadius = 12, flexShrink = 0 } });
+                who.Add(new Label(name) { style = { unityFontStyleAndWeight = FontStyle.Bold, color = line.speaker != null ? line.speaker.NameColor : Color.white } });
+                if (!string.IsNullOrEmpty(line.expression)) who.Add(new Label(line.expression) { style = { fontSize = 9, color = new Color(.6f, .62f, .68f), marginLeft = 4 } });
+                node.Add(who);
+            }
             var text = new Label(string.IsNullOrEmpty(line.text) ? "(비어 있음 — 더블클릭해 입력)" : line.text) { enableRichText = false, style = { whiteSpace = WhiteSpace.Normal, maxHeight = 46, overflow = Overflow.Hidden } };
             if (name == null || string.IsNullOrEmpty(line.text)) { text.style.unityFontStyleAndWeight = FontStyle.Italic; text.style.color = new Color(.75f, .75f, .78f); }
             node.Add(text); node.tooltip = line.text + "\n더블클릭: 바로 고치기 · 끌기: 세로줄 옮기기";
@@ -402,6 +543,17 @@ namespace IBIIIS.Editor
                 }
             };
             if (chosen) SetBorder(bar, SelectedBorder, 1);
+            // 자세 그림·감정 표시 아이콘을 막대 앞에 작게 보인다.
+            if (step.sprite != null)
+            {
+                bar.Add(new Image { sprite = step.sprite, scaleMode = ScaleMode.ScaleToFit, pickingMode = PickingMode.Ignore, style = { position = Position.Absolute, left = continuesBefore ? 3 : 10, top = 1, width = TrackRow - 6, height = TrackRow - 6 } });
+                bar.style.paddingLeft = (continuesBefore ? 3 : 10) + TrackRow - 4;
+            }
+            if (issuesAt.TryGetValue(owner, out var problems) && problems.Count > 0)
+            {
+                SetBorder(bar, problems.Any(i => i.Error) ? ErrorColor : WarnColor, 2);
+                bar.tooltip += IssueText(owner);
+            }
             Draggable(bar, DragKind.SpanBody, owner, -1);
             // 양 끝 손잡이: 앞쪽은 그 단계를 옮기고, 뒤쪽은 표시 끝 단계를 만들거나 옮긴다. 다른 장면으로 이어지는 쪽에는 없다.
             if (!continuesBefore) bar.Add(Handle(owner, true));
@@ -526,6 +678,7 @@ namespace IBIIIS.Editor
             int best = -1; float bestScore = float.MaxValue;
             for (int c = 0; c < columns.Count; c++)
             {
+                if (columns[c].Hidden) continue; // 접힌 장면에는 놓지 않는다
                 var group = columns[c].Group.worldBound; var rect = columns[c].Element.worldBound;
                 float dy = point.y < group.yMin ? group.yMin - point.y : point.y > group.yMax ? point.y - group.yMax : 0;
                 float dx = point.x < rect.xMin ? rect.xMin - point.x : point.x > rect.xMax ? point.x - rect.xMax : 0;
@@ -546,6 +699,7 @@ namespace IBIIIS.Editor
         {
             if (gap < 0 || columns.Count == 0) { dropMarker?.RemoveFromHierarchy(); dropMarker = null; return; }
             var column = columns[Mathf.Min(gap, columns.Count - 1)];
+            if (column.Hidden) { dropMarker?.RemoveFromHierarchy(); dropMarker = null; return; }
             var rect = column.Element.worldBound; var group = column.Group.worldBound;
             float x = gap < columns.Count ? rect.xMin - Gap / 2 : rect.xMax + Gap / 2;
             var local = rootVisualElement.WorldToLocal(new Vector2(x, group.yMin));
@@ -554,11 +708,11 @@ namespace IBIIIS.Editor
         }
         private void Tint(int from, int to)
         {
-            for (int c = Mathf.Max(0, from); c <= to && c < columns.Count; c++) { columns[c].Element.style.backgroundColor = Highlight; tinted.Add(c); }
+            for (int c = Mathf.Max(0, from); c <= to && c < columns.Count; c++) { columns[c].Element.style.backgroundColor = Highlight; if (columns[c].Band != null) columns[c].Band.style.backgroundColor = BandTint; tinted.Add(c); }
         }
         private void ClearTint()
         {
-            foreach (int c in tinted) if (c < columns.Count) columns[c].Element.style.backgroundColor = columns[c].Background;
+            foreach (int c in tinted) if (c < columns.Count) { columns[c].Element.style.backgroundColor = columns[c].Background; if (columns[c].Band != null) columns[c].Band.style.backgroundColor = columns[c].BandBackground; }
             tinted.Clear();
         }
         private void ShowLabel(string text, Vector2 point)
@@ -813,9 +967,10 @@ namespace IBIIIS.Editor
         private void RefreshIssues()
         {
             if (issuesButton == null || issuesList == null) return;
-            issuesList.Clear();
+            issuesList.Clear(); issuesAt.Clear();
             var issues = script != null ? DialogueScriptEdits.Validate(script.Steps) : new List<DialogueScriptEdits.Issue>();
             if (script != null) issues.AddRange(DialogueScriptScenes.ActorIssues(script.Steps, linked));
+            foreach (var issue in issues) { if (!issuesAt.TryGetValue(issue.Index, out var list)) issuesAt[issue.Index] = list = new List<DialogueScriptEdits.Issue>(); list.Add(issue); }
             int errors = issues.Count(i => i.Error), warnings = issues.Count - errors;
             issuesButton.text = issues.Count == 0 ? "검사: 문제 없음" : $"검사: 오류 {errors} · 주의 {warnings}";
             issuesButton.style.color = errors > 0 ? new Color(1f, .45f, .4f) : warnings > 0 ? new Color(.95f, .8f, .3f) : new Color(.5f, .85f, .5f);
@@ -824,9 +979,16 @@ namespace IBIIIS.Editor
             {
                 int index = issue.Index;
                 var row = new Label($"{(issue.Error ? "오류" : "주의")}  {index}번 · {issue.Message}") { style = { color = issue.Error ? new Color(1f, .55f, .5f) : new Color(.95f, .82f, .45f), paddingTop = 1, paddingBottom = 1 } };
-                row.RegisterCallback<PointerDownEvent>(_ => { SelectIndex(index); graph.schedule.Execute(() => { if (stepElements.TryGetValue(index, out var element)) graph.ScrollTo(element); }); });
+                row.RegisterCallback<PointerDownEvent>(_ => { ExpandSceneOf(index); SelectIndex(index); graph.schedule.Execute(() => { if (stepElements.TryGetValue(index, out var element)) graph.ScrollTo(element); }); });
                 issuesList.Add(row);
             }
+        }
+
+        // 그 단계가 있는 장면이 접혀 있으면 펼친다(검사 목록에서 이동할 때).
+        private void ExpandSceneOf(int index)
+        {
+            if (script == null) return;
+            foreach (var (start, end) in ScenarioTimeline.Scenes(script.Steps)) if (index >= start && index <= end) collapsedScenes.Remove(script.Steps[end].id);
         }
 
         // ── 표시 문구 ──
