@@ -55,6 +55,15 @@ namespace IBIIIS.Tests
             director.Tick(0);
         }
 
+        [Test] public void SkippingJumpsOverLinesAndStopsAtTheNextInputStep()
+        {
+            director.Begin();
+            Assert.AreEqual(0, director.StepIndex);
+            Assert.AreEqual(2, director.SkipLines(), "대사 두 줄을 건너뜀(사이의 감정 표시는 실행)");
+            Assert.AreEqual(3, director.StepIndex, "이름 입력에서 멈춤"); Assert.IsTrue(director.Dialogue.AskingName);
+            Assert.IsEmpty(director.ActiveEmotes, "다음 대사까지 보이는 감정 표시는 함께 지움");
+            Assert.AreEqual(0, director.SkipLines(), "입력 대기 중에는 건너뛰지 않음"); Assert.AreEqual(3, director.StepIndex);
+        }
         private const string Enemy003 = "Assets/IBIIIS/Prefabs/Characters/Enemies/Enemy003.prefab";
         [Test] public void SpawnedEnemiesJoinAndUndoRemovesThem()
         {

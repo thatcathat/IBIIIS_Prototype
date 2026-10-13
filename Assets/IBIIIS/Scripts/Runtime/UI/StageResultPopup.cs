@@ -46,6 +46,8 @@ namespace IBIIIS
             if (run == null || closing) return false;
             var shown = Problem;
             if (shown == null && result != BattlePhase.Won && result != BattlePhase.Lost) return false;
+            // 클리어 대화(대본 진행기, 시작 시점 Battle Won)가 진행 중이거나 곧 시작하면 끝날 때까지 기다린다.
+            if (shown == null && result == BattlePhase.Won && ScenarioDirector.HoldsWonResultOf(battle)) return false;
             heading = (result == BattlePhase.Won ? UiText.ResultCleared : result == BattlePhase.Lost ? UiText.ResultDefeated : UiText.ResultCheck).Text;
             // 본문은 스테이지 이름만 보인다(이름 뒤 조사가 언어·이름마다 달라지는 문장을 만들지 않음).
             text = result == BattlePhase.Won || result == BattlePhase.Lost ? run.DisplayName : "";

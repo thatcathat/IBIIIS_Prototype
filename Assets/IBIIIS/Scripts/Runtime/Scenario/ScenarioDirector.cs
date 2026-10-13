@@ -6,6 +6,14 @@ using UnityEngine.UIElements;
 
 namespace IBIIIS
 {
+    /// <summary>대본을 자동으로 시작하는 때. 값은 씬에 정수로 저장되므로 끝에만 추가한다.</summary>
+    public enum ScenarioStartTiming
+    {
+        /// <summary>전투가 준비되는 대로(튜토리얼처럼 전투 전체를 대본이 이끈다).</summary>
+        BattleReady = 0,
+        /// <summary>적을 모두 물리치고 충돌 연출이 끝난 뒤. 그때까지 전투는 평소대로 진행되고, 결과 팝업은 대본이 끝난 뒤 뜬다.</summary>
+        BattleWon = 1,
+    }
     /// <summary>전투 씬에서 대본(ScenarioScript)을 위에서부터 실행한다. 대사는 미연시 대화창으로 보이고,
     /// 입력 대기 단계에서는 허용한 행동만 전투에 통과시키며(나머지는 무시) 안내 칸을 점멸·키를 표시한다.
     /// 대본이 도는 동안 되돌리기·다시 시작·범위 표시는 막는다. 판정은 바꾸지 않고 입력만 걸러 낸다.</summary>
@@ -28,10 +36,15 @@ namespace IBIIIS
         [SerializeField, Tooltip("필수. 실행할 대본.")] private ScenarioScript script;
         [SerializeField, Tooltip("등장 오브젝트. 대본의 Target ID로 찾습니다.")] private Actor[] actors = Array.Empty<Actor>();
         [SerializeField, Min(0), Tooltip("플레이어 감정 표시 높이(칸). 임시 1.6.")] private float playerEmoteHeight = 1.6f;
-        [SerializeField, Tooltip("체크하면 전투가 준비되는 대로 대본을 시작합니다.")] private bool playOnStart = true;
+        [SerializeField, Tooltip("체크하면 시작 시점(Start Timing)에 대본을 자동으로 시작합니다. 끄면 코드에서 Begin()을 불러야 시작합니다.")] private bool playOnStart = true;
+        [SerializeField, Tooltip("자동 시작 시점. Battle Ready: 전투가 준비되는 대로(튜토리얼). Battle Won: 적을 모두 물리친 뒤(클리어 대화, 그 전까지 전투는 평소대로). Play On Start를 끄면 쓰지 않습니다.")] private ScenarioStartTiming startTiming = ScenarioStartTiming.BattleReady;
+        [SerializeField, Tooltip("체크하면 이 대본을 끝까지 본 뒤로는 자동으로 시작하지 않습니다(같은 맵을 다시 깨도 대화가 다시 나오지 않음). 본 기록은 대본 ID로 클리어 기록 파일에 남습니다.")] private bool onlyOnce;
+        [SerializeField, Tooltip("체크하면 대사가 보이는 동안 Esc를 길게 눌러 다음 입력 대기 단계(행동·칸 누르기·이름 입력·자유 전투)나 대본 끝까지 대사를 건너뜁니다.")] private bool allowSkip = true;
+        [SerializeField, Min(0.1f), Tooltip("건너뛰기에 필요한 Esc 누르는 시간(초). 임시 0.6.")] private float skipHoldSeconds = 0.6f;
         [SerializeField, Tooltip("체크하면 대본이 도는 동안 적 인식 말풍선(대사)을 띄우지 않습니다. 대본 대사와 겹치지 않게 튜토리얼에서 켭니다.")] private bool hideEnemyAlerts = true;
         [SerializeField, Tooltip("체크하면 대본이 도는 동안 적 인식 범위 안의 위험 그림을 자동으로 보이지 않습니다. 위험 자세는 대본의 Pose 단계로 정합니다.")] private bool scriptControlsDanger = true;
         private int index = -1;
+        private float skipHeld;
         private bool waitingFirstMove, clicked;
         private int baselineActions;
         private float timer;
@@ -59,14 +72,35 @@ namespace IBIIIS
         /// <summary>칸 누르기 단계에서 정답 칸을 누른 순간(연출용, 예: 칼이 날아가는 연출).</summary>
         public event Action<ScenarioStep> CellClicked;
         public DialogueController Dialogue => dialogue;
+        public ScenarioStartTiming StartTiming => startTiming;
+        /// <summary>'한 번만'이 켜져 있고 이 대본을 이미 끝까지 봤으면 true(자동으로 시작하지 않는다).</summary>
+        public bool AlreadySeen => onlyOnce && script != null && ProgressStore.IsSeen(script.Id);
+        /// <summary>클리어 결과 팝업을 미룰지. 승리한 전투에서 이 진행기가 대본을 진행 중이거나 곧 시작할 때 true.</summary>
+        public bool HoldsWonResult
+        {
+            get
+            {
+                if (!isActiveAndEnabled || battle == null || battle.Session == null || battle.Session.Phase != BattlePhase.Won) return false;
+                return IsRunning || (!Finished && WaitsForWin && script != null && !AlreadySeen);
+            }
+        }
+        /// <summary>battle의 승리 결과를 미루는 진행기가 있으면 true(결과 팝업이 대본이 끝날 때까지 기다린다). 승리한 뒤에만 찾는다.</summary>
+        public static bool HoldsWonResultOf(GridMapPlayer battle)
+        {
+            if (battle == null || battle.Session == null || battle.Session.Phase != BattlePhase.Won) return false;
+            foreach (var director in FindObjectsByType<ScenarioDirector>(FindObjectsSortMode.None)) if (director.battle == battle && director.HoldsWonResult) return true;
+            return false;
+        }
+        private bool WaitsForWin => playOnStart && startTiming == ScenarioStartTiming.BattleWon;
         public IReadOnlyList<string> ActiveEmotes { get { var list = new List<string>(); foreach (var e in emotes) list.Add(e.Text); return list; } }
         private GameUiSettings Ui => battle != null && battle.SharedPlayerSettings != null ? battle.SharedPlayerSettings.GameUi : null;
         public void Configure(GridMapPlayer value, ScenarioScript tutorial, Actor[] cast = null) { battle = value; script = tutorial; actors = cast ?? Array.Empty<Actor>(); }
 
         private void Update()
         {
-            if (!IsRunning && !Finished && playOnStart && battle != null && battle.Session != null && script != null) Begin();
+            if (ShouldAutoStart()) Begin();
             Tick(Time.unscaledDeltaTime);
+            TickSkip(Keyboard.current != null && Keyboard.current.escapeKey.isPressed, Time.unscaledDeltaTime);
             if (IsRunning && Current.type == ScenarioStepType.WaitClickCell && !clicked)
             {
                 var mouse = Mouse.current;
@@ -75,6 +109,16 @@ namespace IBIIIS
         }
         private void LateUpdate() => RenderEmotes();
 
+        // 자동 시작 조건. '한 번만'으로 이미 본 대본은 시작하지 않고 끝난 것으로 둔다.
+        private bool ShouldAutoStart()
+        {
+            if (IsRunning || Finished || !playOnStart || battle == null || battle.Session == null || script == null) return false;
+            if (startTiming == ScenarioStartTiming.BattleWon && (battle.Session.Phase != BattlePhase.Won || battle.Session.IsBusy || battle.IsPresenting)) return false;
+            if (AlreadySeen) { Finished = true; return false; }
+            return true;
+        }
+        /// <summary>자동 시작 조건을 확인해 맞으면 시작한다(테스트용, Play 중에는 매 프레임 같은 확인을 한다). 시작했으면 true.</summary>
+        public bool TryAutoStart() { if (!ShouldAutoStart()) return false; Begin(); return IsRunning; }
         /// <summary>대본을 처음부터 시작한다.</summary>
         public void Begin()
         {
@@ -119,6 +163,26 @@ namespace IBIIIS
                     if (triedDirections.Count >= Cardinal.Length && ready) Next();
                     break;
             }
+        }
+        // 건너뛰기: 대사가 보이는 동안 Esc를 skipHoldSeconds 이상 누르고 있으면 한 번 건너뛴다(뗐다가 다시 눌러야 또 건너뜀).
+        private void TickSkip(bool held, float seconds)
+        {
+            if (!held) { skipHeld = 0; return; }
+            if (skipHeld < 0 || !allowSkip || !IsRunning || Current.type != ScenarioStepType.Line) return;
+            skipHeld += seconds;
+            if (skipHeld >= skipHoldSeconds) { skipHeld = -1; SkipLines(); }
+        }
+        /// <summary>지금 대사부터 대사·기다리기 단계를 건너뛴다. 입력 대기·이름 입력·자유 전투 단계나 대본 끝에서 멈춘다.
+        /// 그 사이의 감정 표시·자세·켜고 끄기·적 합류·기록·씬 전환 단계는 평소대로 실행된다. 건너뛴 대사 수를 돌려준다.</summary>
+        public int SkipLines()
+        {
+            int skipped = 0;
+            while (IsRunning && (Current.type == ScenarioStepType.Line || Current.type == ScenarioStepType.Wait))
+            {
+                if (Current.type == ScenarioStepType.Line) { skipped++; EnsureDialogue().Hide(); OnLineDone(); }
+                else Next();
+            }
+            return skipped;
         }
         private bool JustClosed => Application.isPlaying && Time.frameCount == closedFrame;
         // 입력 대기 단계의 판정을 감싼다: 경고가 떠 있거나 방금 대사를 닫은 프레임이면 막는다.
@@ -249,7 +313,7 @@ namespace IBIIIS
                 case ScenarioStepType.Wait:
                     break;
                 case ScenarioStepType.LoadScene:
-                    IsRunning = false; Finished = true; LoadedScene = step.scenePath;
+                    IsRunning = false; Finished = true; LoadedScene = step.scenePath; MarkSeen();
                     // 씬 전환은 Play 중에만 한다(에디터 테스트에서는 기록만).
                     if (Application.isPlaying && !StageFlow.LoadScene(step.scenePath)) { Debug.LogError($"[IBIIIS] {name}: 대본의 다음 씬 '{step.scenePath}'을 불러오지 못했습니다.", this); Restore(); }
                     break;
@@ -289,9 +353,16 @@ namespace IBIIIS
         }
         private void Finish()
         {
-            IsRunning = false; Finished = true;
+            IsRunning = false; Finished = true; MarkSeen();
             EnsureDialogue().Hide();
             Restore();
+        }
+        // '한 번만' 대본을 끝까지 봤다고 기록한다. 저장에 실패해도 진행은 막지 않는다(다음에 다시 나올 수 있음).
+        private void MarkSeen()
+        {
+            if (!onlyOnce || script == null) return;
+            try { ProgressStore.MarkSeen(script.Id); }
+            catch (Exception e) { Debug.LogException(e); }
         }
         private void Restore() { battle.CommandFilter = null; battle.SetGuideCells(null); battle.AllowUndoRestart = true; battle.AllowRangeToggle = true; battle.AlertsEnabled = true; battle.DangerIdleEnabled = true; }
         private Actor FindActor(string id)

@@ -395,6 +395,103 @@ namespace IBIIIS.Tests
             ProgressStore.Reload(); Assert.IsTrue(ProgressStore.IsCleared("stage-win"), "저장한 기록은 유지");
             Object.DestroyImmediate(map);
         }
+        // 첫 대기에서 두 적이 (1,0)에서 부딪혀 이기는 1x5 맵.
+        private GridMapPlayer WinnableBattle(out GridMap map, int start = 4, bool single = false)
+        {
+            map = ScriptableObject.CreateInstance<GridMap>(); map.Resize(5, 1);
+            for (int x = 0; x < 5; x++) map.SetWalkable(new Vector2Int(x, 0), true);
+            map.SetStart(new Vector2Int(start, 0));
+            foreach (var (x, facing) in single ? new[] { (0, Vector2Int.right) } : new[] { (0, Vector2Int.right), (2, Vector2Int.left) })
+            {
+                var enemy = Track(new GameObject("Enemy")); var so = new SerializedObject(enemy.AddComponent<EnemyDefinition>());
+                so.FindProperty("recognition").arraySize = 0; so.ApplyModifiedPropertiesWithoutUndo(); map.PlaceEnemy(new Vector2Int(x, 0), enemy, facing);
+            }
+            var battle = Track(new GameObject("Battle")).AddComponent<GridMapPlayer>(); battle.Configure(map, null, null); battle.Build();
+            return battle;
+        }
+        private static ScenarioDirector ClearTalk(GridMapPlayer battle, ScenarioScript script, bool onlyOnce)
+        {
+            var director = battle.gameObject.AddComponent<ScenarioDirector>(); director.Configure(battle, script);
+            var so = new SerializedObject(director);
+            so.FindProperty("startTiming").enumValueIndex = (int)ScenarioStartTiming.BattleWon; so.FindProperty("onlyOnce").boolValue = onlyOnce;
+            so.ApplyModifiedPropertiesWithoutUndo();
+            return director;
+        }
+        private static void FinishLine(ScenarioDirector director) { var r = director.Dialogue.Runner; r.Advance(); r.Advance(); }
+        [Test] public void ClearDialogueStartsAfterTheWinAndHoldsTheResultPopupUntilItEnds()
+        {
+            var battle = WinnableBattle(out var map);
+            var script = ScriptableObject.CreateInstance<ScenarioScript>(); script.Set("clear-talk", new[] { new ScenarioStep { type = ScenarioStepType.Line, line = DialogueLine.Narrate("해냈다!") } });
+            try
+            {
+                var director = ClearTalk(battle, script, true);
+                var popup = StageResultPopup.Create(new StageRun("stage-talk", "T", "Assets/Battle.unity", "Assets/Overworld.unity", Vector3.zero, PlayerFacing.Front));
+                Track(popup.gameObject); popup.Watch(battle);
+                Assert.IsFalse(director.TryAutoStart(), "이기기 전에는 시작하지 않음");
+                Assert.IsTrue(battle.AllowUndoRestart, "그동안 전투는 평소대로");
+                Assert.True(battle.TryBeginAction(PlayerAction.Wait, Vector2Int.zero));
+                for (int i = 0; i < 200 && (battle.Session.IsBusy || battle.IsPresenting); i++) battle.AdvanceMovement(.05f);
+                Assert.AreEqual(BattlePhase.Won, popup.Result);
+                Assert.IsFalse(popup.TryGetView(out _, out _, out _), "곧 시작할 클리어 대화가 있으면 팝업을 미룸");
+                popup.CheckResult(); Assert.IsTrue(ProgressStore.IsCleared("stage-talk"), "클리어 기록은 승리 때 바로 저장");
+                Assert.IsTrue(director.TryAutoStart()); Assert.IsTrue(director.IsRunning);
+                Assert.IsFalse(popup.TryGetView(out _, out _, out _), "대화 중에는 팝업 없음");
+                FinishLine(director);
+                Assert.IsTrue(director.Finished); Assert.IsTrue(ProgressStore.IsSeen("clear-talk"), "끝까지 보면 본 기록");
+                Assert.IsTrue(popup.TryGetView(out var heading, out _, out _), "대화가 끝나면 팝업"); Assert.AreEqual("클리어!", heading);
+                Assert.IsTrue(battle.AllowUndoRestart, "대화가 끝나면 되돌리기 복원");
+
+                // '한 번만': 다시 이겨도(새 진행기) 이미 본 대화는 시작하지 않고 팝업을 막지 않는다.
+                Object.DestroyImmediate(director);
+                var again = ClearTalk(battle, script, true);
+                Assert.IsFalse(again.TryAutoStart()); Assert.IsTrue(again.Finished); Assert.IsFalse(again.IsRunning);
+                Assert.IsTrue(popup.TryGetView(out _, out _, out _));
+                Object.DestroyImmediate(again);
+                var always = ClearTalk(battle, script, false);
+                Assert.IsTrue(always.TryAutoStart(), "'한 번만'을 끄면 매번 시작");
+            }
+            finally
+            {
+                var dialogue = Object.FindAnyObjectByType<DialogueController>(); if (dialogue != null) Object.DestroyImmediate(dialogue.gameObject);
+                Object.DestroyImmediate(map); Object.DestroyImmediate(script);
+            }
+        }
+        [Test] public void LostBattleIsNotHeldByAClearDialogue()
+        {
+            var battle = WinnableBattle(out var map, 1, true); // 적 하나가 플레이어 칸 (1,0)으로 들어온다
+            var script = ScriptableObject.CreateInstance<ScenarioScript>(); script.Set("clear-talk", new[] { new ScenarioStep { type = ScenarioStepType.Line, line = DialogueLine.Narrate("해냈다!") } });
+            try
+            {
+                var director = ClearTalk(battle, script, false);
+                Assert.True(battle.TryBeginAction(PlayerAction.Wait, Vector2Int.zero));
+                for (int i = 0; i < 200 && (battle.Session.IsBusy || battle.IsPresenting); i++) battle.AdvanceMovement(.05f);
+                Assert.AreEqual(BattlePhase.Lost, battle.Session.Phase);
+                Assert.IsFalse(director.TryAutoStart(), "패배하면 시작하지 않음"); Assert.IsFalse(ScenarioDirector.HoldsWonResultOf(battle));
+            }
+            finally { Object.DestroyImmediate(map); Object.DestroyImmediate(script); }
+        }
+        [Test] public void OldSaveWithoutSeenListLoadsAndSeenRecordsPersist()
+        {
+            File.WriteAllText(savePath, "{\"version\":1,\"clearedStages\":[\"stage-a\"]}");
+            ProgressStore.Reload();
+            Assert.IsTrue(ProgressStore.IsCleared("stage-a")); Assert.IsFalse(ProgressStore.IsSeen("talk"));
+            ProgressStore.MarkSeen("talk"); ProgressStore.MarkSeen("talk");
+            ProgressStore.Reload();
+            Assert.IsTrue(ProgressStore.IsSeen("talk")); Assert.IsTrue(ProgressStore.IsCleared("stage-a"), "클리어 기록 유지");
+            Assert.IsFalse(ProgressStore.IsCleared("talk"), "본 기록은 클리어 기록과 따로");
+        }
+        [Test] public void NpcSwitchesToClearedLinesAfterTheStageIsCleared()
+        {
+            var npc = Npc(Vector3.zero, "저 앞 밭이 위험해");
+            var so = new SerializedObject(npc);
+            so.FindProperty("clearedStageId").stringValue = "stage-n";
+            var cleared = so.FindProperty("clearedLines"); cleared.arraySize = 1; cleared.GetArrayElementAtIndex(0).stringValue = "벌레를 쫓아냈구나!";
+            so.ApplyModifiedPropertiesWithoutUndo();
+            npc.Interact(null); Assert.AreEqual("저 앞 밭이 위험해", npc.CurrentLine); Assert.IsFalse(npc.UsesCleared);
+            npc.OnLeft(); ProgressStore.MarkCleared("stage-n");
+            npc.Interact(null); Assert.AreEqual("벌레를 쫓아냈구나!", npc.CurrentLine); Assert.IsTrue(npc.UsesCleared);
+            npc.Interact(null); Assert.IsFalse(npc.IsTalking, "클리어 후 대사도 마지막 줄 다음 닫힘");
+        }
         [Test] public void EnteringAMissingBattleSceneDoesNothing()
         {
             LogAssert.Expect(LogType.Error, new System.Text.RegularExpressions.Regex("찾을 수 없습니다"));

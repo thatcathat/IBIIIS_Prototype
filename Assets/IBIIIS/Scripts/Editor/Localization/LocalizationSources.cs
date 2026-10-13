@@ -106,12 +106,14 @@ namespace IBIIIS.Editor
                         {
                             if (string.IsNullOrEmpty(npc.NpcId))
                             {
-                                if (npc.Dialogue == null && npc.SourceLines.Length > 0) Warnings.Add($"{sceneName}/{npc.name}: NPC ID가 없어 말풍선을 번역하지 않음");
+                                if ((npc.DefaultDialogue == null && npc.SourceLines.Length > 0) || (npc.ClearedDialogue == null && npc.SourceClearedLines.Length > 0)) Warnings.Add($"{sceneName}/{npc.name}: NPC ID가 없어 말풍선을 번역하지 않음");
                                 continue;
                             }
                             if (!string.IsNullOrEmpty(npc.SourceName)) list.Add(new LocalizedEntry(NpcSpeaker.NpcTable, npc.NpcId + ".name", npc.SourceName, null, $"NPC 이름 · {sceneName}/{npc.name}"));
                             var lines = npc.SourceLines;
                             for (int i = 0; i < lines.Length; i++) if (!string.IsNullOrEmpty(lines[i])) list.Add(new LocalizedEntry(NpcSpeaker.NpcTable, $"{npc.NpcId}.{i}", lines[i], null, $"NPC 말풍선 {i}번 · {sceneName}/{npc.name}"));
+                            var cleared = npc.SourceClearedLines;
+                            for (int i = 0; i < cleared.Length; i++) if (!string.IsNullOrEmpty(cleared[i])) list.Add(new LocalizedEntry(NpcSpeaker.NpcTable, $"{npc.NpcId}.cleared.{i}", cleared[i], null, $"NPC 클리어 후 말풍선 {i}번 · {sceneName}/{npc.name}"));
                         }
                     }
                 }
