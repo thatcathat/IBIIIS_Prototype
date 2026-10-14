@@ -11,6 +11,12 @@ namespace IBIIIS
         [SerializeField, Tooltip("필수. 카메라 거리·빠르기 설정")] private OverworldSettings settings;
         [SerializeField, Tooltip("대상 발밑에서 바라볼 지점의 높이(칸)")] private float focusHeight = .5f;
         private bool snapped;
+        // 흔들림(표시 전용): 따라가는 위치(basePosition)에 흔들림만 더한다. 따라가기는 흔들리지 않은 위치를 기준으로 한다.
+        private Vector3 basePosition;
+        private float shakeLeft, shakeTime, shakeAmplitude;
+        /// <summary>seconds 동안 amplitude(칸)만큼 화면을 흔든다(점점 약해짐).</summary>
+        public void Shake(float amplitude, float seconds) { if (amplitude <= 0 || seconds <= 0) return; shakeAmplitude = amplitude; shakeTime = shakeLeft = seconds; }
+        public bool Shaking => shakeLeft > 0;
         public Transform Target => target;
         public void Configure(Transform value, OverworldSettings shared) { target = value; settings = shared; }
         private void Awake()
@@ -35,15 +41,18 @@ namespace IBIIIS
         // Orthographic이면 보이는 세로 범위에 맞게 Size를 맞춘다(Snap·매 프레임).
         private void ApplyViewSize() { var camera = GetComponent<Camera>(); if (camera.orthographic) camera.orthographicSize = ViewHeight / 2; }
         /// <summary>지연 없이 대상 위치로 옮긴다.</summary>
-        public void Snap() { if (target != null) { ApplyViewSize(); transform.position = DesiredPosition; snapped = true; } }
+        public void Snap() { if (target != null) { ApplyViewSize(); basePosition = transform.position = DesiredPosition; snapped = true; } }
         private void LateUpdate()
         {
             if (target == null) return;
             ApplyViewSize();
             float sharpness = settings != null ? settings.CameraFollowSharpness : OverworldSettings.DefaultCameraFollowSharpness;
             // 첫 프레임(전투에서 돌아와 위치를 옮긴 직후 포함)은 바로 붙인다.
-            if (!snapped || sharpness <= 0) { Snap(); return; }
-            transform.position = Vector3.Lerp(transform.position, DesiredPosition, 1 - Mathf.Exp(-sharpness * Time.deltaTime));
+            if (!snapped || sharpness <= 0) Snap();
+            else basePosition = Vector3.Lerp(basePosition, DesiredPosition, 1 - Mathf.Exp(-sharpness * Time.deltaTime));
+            var offset = Vector3.zero;
+            if (shakeLeft > 0) { shakeLeft -= Time.deltaTime; offset = Random.insideUnitSphere * shakeAmplitude * Mathf.Clamp01(shakeLeft / shakeTime); }
+            transform.position = basePosition + offset;
         }
     }
 }

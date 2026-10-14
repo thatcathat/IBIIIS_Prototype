@@ -34,4 +34,12 @@ MonoBehaviour:
   wallBump: 1
   contactGraceSeconds: 1.5
   returnClearance: 0.6
+  contactImpactPrefab: {fileID: 1953720409002165113, guid: c6caf0bf3a19eec48baf749749150b98, type: 3}
+  contactImpactScale: 1.2
+  contactImpactTime: 0.3
+  contactSound: {fileID: 8300000, guid: 0553a09bfe9016543a415a77b678bfff, type: 3}
+  contactVolume: 0.9
+  contactShakeAmplitude: 0.08
+  contactShakeTime: 0.2
+  contactHoldSeconds: 0.5
   gameUi: {fileID: 11400000, guid: b077a0c6cd1c8c045b171d047fcb86d0, type: 2}

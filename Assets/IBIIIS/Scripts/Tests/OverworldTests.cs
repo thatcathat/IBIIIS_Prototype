@@ -513,24 +513,67 @@ namespace IBIIIS.Tests
             Assert.That(StageEnemy.ReturnPoint(Vector3.zero, Vector3.zero, 1, 0).z, Is.EqualTo(-1).Within(1e-4f), "같은 자리면 앞(-Z) 쪽");
             Disable(enemy);
         }
-        [Test] public void TouchingAStageEnemyShowsTheBeforePartThenTriesToEnter()
+        [Test] public void TouchingAStageEnemyPlaysTheHitHoldsThenDialogueThenEntersBattle()
         {
             var script = ThreePart("touch", false);
+            var settings = ScriptableObject.CreateInstance<OverworldSettings>();
+            var burst = Track(new GameObject("Burst Source")); burst.AddComponent<SpriteRenderer>();
+            var so = new UnityEditor.SerializedObject(settings);
+            so.FindProperty("contactImpactPrefab").objectReferenceValue = burst;
+            so.FindProperty("contactHoldSeconds").floatValue = .5f;
+            so.ApplyModifiedPropertiesWithoutUndo();
             try
             {
                 var enemy = Enemy("stage-touch", Vector3.zero, script);
                 var player = Track(new GameObject("Player")).AddComponent<OverworldPlayer>();
+                so = new UnityEditor.SerializedObject(player); so.FindProperty("settings").objectReferenceValue = settings; so.ApplyModifiedPropertiesWithoutUndo();
+                player.transform.position = new Vector3(-.6f, 0, 0);
                 enemy.Engage(player);
-                Assert.IsTrue(enemy.Engaging); Assert.IsTrue(player.InputLocked, "입장 전 대화 동안 이동을 막음");
+                Assert.IsTrue(enemy.Engaging); Assert.IsTrue(player.InputLocked, "부딪힌 뒤 멈춰 있음");
+                var impact = Object.FindAnyObjectByType<ImpactPop>(); Assert.IsNotNull(impact, "충격 이펙트");
+                Track(impact.gameObject);
+                Assert.That(impact.transform.position.x, Is.EqualTo(-.3f).Within(1e-4f), "플레이어와 적 사이");
+                Assert.IsNull(Object.FindAnyObjectByType<DialogueController>(), "멈춤 동안은 대화 없음"); Assert.AreEqual(1, enemy.EngagePhase);
                 Assert.IsNull(StageEnemy.FindTouching(Vector3.zero), "진입 중에는 다시 닿지 않음");
+                enemy.Advance(.3f); Assert.AreEqual(1, enemy.EngagePhase, "아직 멈춤");
+                enemy.Advance(.25f); Assert.AreEqual(2, enemy.EngagePhase, "멈춤 뒤 입장 전 대화");
                 var dialogue = Object.FindAnyObjectByType<DialogueController>(); Assert.AreEqual("닿았다", dialogue.Runner.Current.text);
+                Assert.IsTrue(player.InputLocked, "대화 동안 이동을 막음");
                 LogAssert.Expect(LogType.Error, new System.Text.RegularExpressions.Regex("찾을 수 없습니다")); // 시험용 없는 전투 씬
                 dialogue.Runner.Advance(); dialogue.Runner.Advance();
-                Assert.IsFalse(player.InputLocked, "대화가 끝나면 풀림");
+                Assert.AreEqual(0, enemy.EngagePhase, "대화가 끝나면 전투 씬으로 들어가려 함");
                 Assert.IsFalse(enemy.Engaging, "전투 씬을 불러오지 못하면 다시 닿을 수 있게 됨"); Assert.IsNull(StageFlow.Current);
+                Assert.IsFalse(SceneTransition.Busy, "전환도 시작하지 않음"); Assert.IsFalse(player.InputLocked, "이동 다시 가능");
                 Disable(enemy);
             }
-            finally { CloseDialogue(); Object.DestroyImmediate(script); }
+            finally { CloseDialogue(); Object.DestroyImmediate(script); Object.DestroyImmediate(settings); }
+        }
+        [Test] public void SceneTransitionCoversLoadsThenUncovers()
+        {
+            string loaded = null;
+            var settings = ScriptableObject.CreateInstance<SceneTransitionSettings>();
+            var so = new UnityEditor.SerializedObject(settings); so.FindProperty("outSeconds").floatValue = .4f; so.FindProperty("inSeconds").floatValue = .2f; so.ApplyModifiedPropertiesWithoutUndo();
+            SceneTransition.Loader = path => loaded = path;
+            try
+            {
+                Assert.IsTrue(SceneTransition.Begin("Assets/Next.unity", settings));
+                Assert.IsTrue(SceneTransition.Busy); Assert.IsFalse(SceneTransition.Begin("Assets/Other.unity", settings), "전환 중에는 다른 전환을 받지 않음");
+                var run = SceneTransition.Current; var view = (FadeTransitionView)run.View;
+                Assert.AreEqual(SceneTransitionPhase.Out, run.Phase); Assert.AreEqual(0, view.Cover);
+                for (int i = 0; i < 6; i++) run.Tick(SceneTransition.MaxStep);
+                Assert.That(view.Cover, Is.EqualTo(6 * SceneTransition.MaxStep / .4f).Within(1e-4f), "가리는 중"); Assert.IsNull(loaded, "다 가리기 전에는 불러오지 않음");
+                for (int i = 0; i < 20 && run.Phase == SceneTransitionPhase.Out; i++) run.Tick(SceneTransition.MaxStep);
+                Assert.AreEqual(SceneTransitionPhase.Loading, run.Phase); Assert.AreEqual("Assets/Next.unity", loaded, "다 가리면 불러옴"); Assert.AreEqual(1, view.Cover);
+                run.Tick(5); Assert.AreEqual(SceneTransitionPhase.Loading, run.Phase, "불러오기가 끝날 때까지 가린 채 기다림");
+                run.Loaded(); Assert.AreEqual(SceneTransitionPhase.In, run.Phase); Assert.AreEqual(1, view.Cover);
+                for (int i = 0; i < SceneTransition.SettleFrames; i++) run.Tick(.5f); // 불러온 직후의 긴 프레임
+                Assert.AreEqual(1, view.Cover, "불러온 직후 프레임은 건너뜀(한 번에 밝아지지 않음)");
+                run.Tick(.5f); Assert.That(view.Cover, Is.EqualTo(1 - SceneTransition.MaxStep / .2f).Within(1e-4f), "긴 프레임도 최대 한 걸음만 진행");
+                for (int i = 0; i < 10 && SceneTransition.Busy; i++) run.Tick(SceneTransition.MaxStep);
+                Assert.IsFalse(SceneTransition.Busy, "다 드러내면 사라짐");
+                Assert.IsTrue(SceneTransition.Begin("Assets/Again.unity", settings), "끝난 뒤에는 다시 전환 가능");
+            }
+            finally { SceneTransition.Cancel(); SceneTransition.Loader = null; Object.DestroyImmediate(settings); }
         }
         [Test] public void StageRunCarriesTheScriptAndResultBackToTheAdventureScene()
         {

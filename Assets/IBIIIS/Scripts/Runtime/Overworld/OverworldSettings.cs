@@ -12,6 +12,7 @@ namespace IBIIIS
         public const float DefaultStrideLength = .9f, DefaultRunStrideLength = 1.3f, DefaultWalkHopScale = .5f, DefaultStopSquashScale = .6f;
         public const int DefaultDustEverySteps = 3;
         public const float DefaultContactGraceSeconds = 1.5f, DefaultReturnClearance = .6f;
+        public const float DefaultContactHoldSeconds = .5f, DefaultContactImpactScale = 1.2f, DefaultContactImpactTime = .3f, DefaultContactShakeAmplitude = .08f, DefaultContactShakeTime = .2f;
         [SerializeField, Min(.1f), Tooltip("플레이어 이동 속도(칸/초). 1칸 = 1 Unity 단위. 임시 기본값 3.5.")] private float moveSpeed = DefaultMoveSpeed;
         [SerializeField, Tooltip("선택. 카메라 Projection·내려다보는 각도·화각. 비우면 카메라의 현재 값을 유지합니다. 기본은 미니맵 전용 OverworldCameraSettings(화각 30)이며, 전투와 같게 하려면 GlobalCameraSettings를 연결합니다.")]
         private MapCameraSettings cameraSettings;
@@ -62,6 +63,23 @@ namespace IBIIIS
         [SerializeField, Min(0), Tooltip("전투에서 돌아올 때 적의 닿음 거리 바깥으로 더 떨어뜨리는 거리(칸). 적과 겹치지 않게 합니다. 임시 0.6.")] private float returnClearance = DefaultReturnClearance;
         public float ContactGraceSeconds => Mathf.Max(0, contactGraceSeconds);
         public float ReturnClearance => Mathf.Max(0, returnClearance);
+        [Header("적 접촉 연출(표시 전용)")]
+        [SerializeField, Tooltip("선택. 적에 닿은 순간 플레이어와 적 사이에 생성할 충격 이펙트(SpriteRenderer가 있는 프리팹). 비우면 이펙트 없음. 기본은 전투 충돌의 CollisionBurst.")] private GameObject contactImpactPrefab;
+        [SerializeField, Min(0), Tooltip("충격 이펙트 최대 크기(칸). 임시 1.2.")] private float contactImpactScale = DefaultContactImpactScale;
+        [SerializeField, Min(.01f), Tooltip("충격 이펙트가 커지며 사라지는 시간(초). 임시 0.3.")] private float contactImpactTime = DefaultContactImpactTime;
+        [SerializeField, Tooltip("선택. 닿은 순간 효과음. 비우면 소리 없음. 기본은 전투 충돌의 CollisionImpact.")] private AudioClip contactSound;
+        [SerializeField, Range(0, 1)] private float contactVolume = .9f;
+        [SerializeField, Min(0), Tooltip("화면 흔들림 세기(칸). 0이면 흔들지 않습니다. 임시 0.08.")] private float contactShakeAmplitude = DefaultContactShakeAmplitude;
+        [SerializeField, Min(0), Tooltip("화면 흔들림 시간(초). 임시 0.2.")] private float contactShakeTime = DefaultContactShakeTime;
+        [SerializeField, Min(0), Tooltip("닿은 뒤 입장 전 대화·전투 진입까지 플레이어와 적이 멈춰 있는 시간(초). 0이면 바로. 임시 0.5.")] private float contactHoldSeconds = DefaultContactHoldSeconds;
+        public GameObject ContactImpactPrefab => contactImpactPrefab;
+        public float ContactImpactScale => Mathf.Max(0, contactImpactScale);
+        public float ContactImpactTime => Mathf.Max(.01f, contactImpactTime);
+        public AudioClip ContactSound => contactSound;
+        public float ContactVolume => Mathf.Clamp01(contactVolume);
+        public float ContactShakeAmplitude => Mathf.Max(0, contactShakeAmplitude);
+        public float ContactShakeTime => Mathf.Max(0, contactShakeTime);
+        public float ContactHoldSeconds => Mathf.Max(0, contactHoldSeconds);
         public UnityEngine.InputSystem.InputActionAsset InputActions => inputActions;
         [SerializeField, Tooltip("선택. 게임 화면 UI(미니맵 안내·결과 팝업) 설정. 전투 Player Settings와 같은 에셋을 연결합니다. 비우면 임시 IMGUI 표시를 씁니다.")]
         private GameUiSettings gameUi;

@@ -127,8 +127,26 @@ namespace IBIIIS
             frozen = true; IsMoving = IsRunning = false; evade.Reset(); ShowVisual(Vector2Int.zero, false);
             if (visual != null) visual.SetPose(MotionPose.Identity, ViewCamera);
         }
+        // 적에 부딪힌 반응(표시 전용): 입력이 막혀 있어도 진행한다.
+        private float contactBumpTime = -1;
+        private Vector3 contactBumpDirection;
+        /// <summary>direction(바닥 평면) 쪽으로 부딪혔다 돌아오는 반응을 보인다(공용 손맛 설정의 Bump 값). 손맛 설정이 없으면 아무것도 하지 않는다.</summary>
+        public void PlayContactBump(Vector3 direction)
+        {
+            direction.y = 0;
+            if (settings == null || settings.MotionFeedback == null || direction.sqrMagnitude < 1e-6f) return;
+            contactBumpDirection = direction.normalized; contactBumpTime = 0;
+        }
+        private void TickContactBump(float seconds)
+        {
+            var feel = settings.MotionFeedback;
+            contactBumpTime += seconds;
+            if (contactBumpTime >= feel.BumpTime) { contactBumpTime = -1; if (visual != null) visual.SetPose(MotionPose.Identity, ViewCamera); return; }
+            if (visual != null) visual.SetPose(MotionPoses.Bump(contactBumpTime, feel.BumpTime, feel.BumpSquash, feel.BumpDistance, contactBumpDirection), ViewCamera);
+        }
         private void Update()
         {
+            if (contactBumpTime >= 0 && settings != null && settings.MotionFeedback != null) TickContactBump(Time.deltaTime);
             if (frozen || inputLocked || Time.frameCount == unlockedFrame || input == null) return;
             if (evade.Recovering) { UpdateRecovery(); CheckWorld(); return; }
             var move = input.ReadMove();

@@ -67,6 +67,9 @@ namespace IBIIIS.Editor
                 Fill(so, "inputActions", EnsureInput);
                 Fill(so, "motionFeedback", () => AssetDatabase.LoadAssetAtPath<MotionFeedbackSettings>(AssetPaths.MotionFeedback));
                 Fill(so, "gameUi", GameUiSetup.EnsureDefault);
+                // 적 접촉 연출: 전투 충돌과 같은 충격 별·"쿵" 소리(임시)
+                Fill(so, "contactImpactPrefab", () => AssetDatabase.LoadAssetAtPath<GameObject>(CollisionFeedbackSetup.BurstPrefab));
+                Fill(so, "contactSound", () => AssetDatabase.LoadAssetAtPath<AudioClip>(CollisionFeedbackSetup.ImpactSound));
             }
             if (AssetDatabase.LoadAssetAtPath<InputActionAsset>(AssetPaths.OverworldInput) != null) AddMissingInputActions();
             AssetDatabase.SaveAssetIfDirty(settings);

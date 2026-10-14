@@ -19,7 +19,8 @@ namespace IBIIIS
         public StageRun(string stageId, string displayName, string battleScene, string returnScene, Vector3 returnPosition, PlayerFacing returnFacing, ScenarioScript script = null)
         { StageId = stageId; DisplayName = displayName; BattleScene = battleScene; ReturnScene = returnScene; ReturnPosition = returnPosition; ReturnFacing = returnFacing; Script = script; }
     }
-    /// <summary>미니맵 ↔ 전투 씬 전환. 전투 씬과 GridMapPlayer는 이 흐름을 모른다. 미니맵을 거치지 않고 전투 씬을 바로 Play하면 기존과 같이 동작한다.</summary>
+    /// <summary>미니맵 ↔ 전투 씬 전환. 전투 씬과 GridMapPlayer는 이 흐름을 모른다. 미니맵을 거치지 않고 전투 씬을 바로 Play하면 기존과 같이 동작한다.
+    /// 모든 씬 이동은 Play 중 SceneTransition(가리기 → 불러오기 → 드러내기)을 거친다.</summary>
     public static class StageFlow
     {
         /// <summary>진행 중인 전투. 미니맵으로 돌아가 위치를 복원하면 비운다.</summary>
@@ -33,6 +34,7 @@ namespace IBIIIS
         {
             if (string.IsNullOrEmpty(run.BattleScene)) { Debug.LogError($"[IBIIIS] 스테이지 '{run.StageId}'에 전투 씬이 지정되지 않았습니다."); return false; }
             if (!CanLoad(run.BattleScene)) return false;
+            if (SceneTransition.Busy) return false; // 다른 전환 중에는 들어가지 않는다
             Begin(run);
             StageResultPopup.Create(run, ui);
             Load(run.BattleScene);
@@ -82,7 +84,14 @@ namespace IBIIIS
             if (string.IsNullOrEmpty(scenePath) || !CanLoad(scenePath)) return false;
             Load(scenePath); return true;
         }
+        // Play 중에는 전환 화면을 거쳐 불러온다(에디터 테스트에서는 바로).
         private static void Load(string scenePath)
+        {
+            if (Application.isPlaying) { if (!SceneTransition.Begin(scenePath)) Debug.LogWarning($"[IBIIIS] 다른 씬 전환 중이라 '{scenePath}'(으)로 이동하지 않았습니다."); return; }
+            LoadImmediately(scenePath);
+        }
+        /// <summary>전환 없이 바로 불러온다(SceneTransition이 가린 뒤 부른다).</summary>
+        public static void LoadImmediately(string scenePath)
         {
 #if UNITY_EDITOR
             UnityEditor.SceneManagement.EditorSceneManager.LoadSceneInPlayMode(scenePath, new LoadSceneParameters(LoadSceneMode.Single));

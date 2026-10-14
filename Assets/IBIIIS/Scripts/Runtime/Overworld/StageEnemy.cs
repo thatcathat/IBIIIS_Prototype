@@ -16,7 +16,9 @@ namespace IBIIIS
     /// <summary>어드벤처씬에 서 있는 적. 플레이어가 닿으면 대본의 '입장 전' 구간을 보여 준 뒤 연결된 전투 씬으로 들어간다(기획서 7.2).
     /// 달리기 중에 닿아도 들어가고, 구르기 중에는 들어가지 않는다(구르기 뒤 회복 중에는 들어감). 클리어한 적은 사라진다.
     /// 전투에서 돌아오면 적과 겹치지 않는 자리에 서고, 잠깐 동안(Overworld Settings의 접촉 무시 시간) 다시 닿아도 들어가지 않는다.
-    /// 닿음은 바닥 평면(XZ)의 거리로 판정하며 Collider와 무관하다. 표시는 자식 오브젝트(그림 등)가 맡는다.</summary>
+    /// 닿음은 바닥 평면(XZ)의 거리로 판정하며 Collider와 무관하다. 표시는 자식 오브젝트(그림 등)가 맡는다.
+    /// 닿은 순간 부딪힘 연출(충격 이펙트·효과음·화면 흔들림·플레이어가 부딪혔다 돌아오는 반응)을 보이고 잠시 멈춘 뒤,
+    /// 입장 전 대화를 거쳐 전투씬으로 넘어간다(화면 전환은 SceneTransition. 수치·에셋은 Overworld Settings의 적 접촉 연출, 표시 전용).</summary>
     public sealed class StageEnemy : MonoBehaviour, IStageLink
     {
         private static readonly List<StageEnemy> active = new List<StageEnemy>();
@@ -29,6 +31,12 @@ namespace IBIIIS
             "'입장 후' 구간은 전투 씬의 대본 진행기가 실행하므로 전투 씬 진행기에도 같은 대본을 연결하세요.")] private ScenarioScript script;
         [SerializeField, Min(.1f), Tooltip("닿음 판정 거리(칸). 플레이어 발밑과 이 오브젝트 위치의 바닥 평면 거리가 이보다 가까우면 닿은 것입니다. 임시 0.8.")] private float contactRadius = .8f;
         private bool engaging;
+        // 닿은 뒤 진행: 부딪힘 연출 뒤 멈춤 → 입장 전 대화 → 화면 어두워짐 → 전투씬.
+        private enum Phase { None, Hold, Dialogue }
+        private Phase phase;
+        private float phaseLeft;
+        private OverworldPlayer engagedPlayer;
+        private static AudioSource contactAudio;
         /// <summary>이 시각(Time.time)까지는 어떤 적에 닿아도 들어가지 않는다(전투에서 돌아온 직후).</summary>
         public static float IgnoreContactUntil { get; private set; } = -1;
         public static IReadOnlyList<StageEnemy> Active => active;
@@ -82,13 +90,47 @@ namespace IBIIIS
             point.y = player.y;
             return point;
         }
-        /// <summary>플레이어가 닿았다: 입장 전 대화가 있으면 보여 주고, 끝나면 전투 씬으로 들어간다. 진입 중에는 다시 반응하지 않는다.</summary>
+        /// <summary>지금 진행 단계(테스트·디버그용): 0 없음, 1 멈춤, 2 대화.</summary>
+        public int EngagePhase => (int)phase;
+        /// <summary>플레이어가 닿았다: 부딪힘 연출 뒤 멈추고, 입장 전 대화가 있으면 보여 준 뒤 전투 씬으로 들어간다(전환 화면을 거침). 진입 중에는 다시 반응하지 않는다.</summary>
         public void Engage(OverworldPlayer player)
         {
             if (engaging || player == null) return;
             if (Problem != null) { Debug.LogError($"[IBIIIS] 어드벤처씬 적 '{name}': {Problem}", this); return; }
-            engaging = true;
-            if (!AdventureDialogue.Play(script, ScenarioSection.Before, player, () => Enter(player))) Enter(player);
+            engaging = true; engagedPlayer = player;
+            player.SetInputLocked(true); // 연출 동안 제자리에 선다
+            var s = player.Settings;
+            var toEnemy = transform.position - player.transform.position; toEnemy.y = 0;
+            var between = Vector3.Lerp(player.transform.position, transform.position, .5f) + Vector3.up * .9f;
+            ImpactPop.Spawn(s != null ? s.ContactImpactPrefab : null, between, s != null ? s.ContactImpactScale : OverworldSettings.DefaultContactImpactScale, s != null ? s.ContactImpactTime : OverworldSettings.DefaultContactImpactTime);
+            if (s != null && s.ContactSound != null) RuntimeObjects.PlayOneShot(ref contactAudio, transform, "Contact Audio", s.ContactSound, s.ContactVolume);
+            var camera = FindAnyObjectByType<OverworldCamera>();
+            if (camera != null) camera.Shake(s != null ? s.ContactShakeAmplitude : OverworldSettings.DefaultContactShakeAmplitude, s != null ? s.ContactShakeTime : OverworldSettings.DefaultContactShakeTime);
+            player.PlayContactBump(toEnemy);
+            phase = Phase.Hold; phaseLeft = s != null ? s.ContactHoldSeconds : OverworldSettings.DefaultContactHoldSeconds;
+            Advance(0);
+        }
+        private void Update() { if (phase != Phase.None) Advance(Time.deltaTime); }
+        /// <summary>닿은 뒤 진행을 seconds만큼 진행한다(Play 중 매 프레임, 테스트에서는 직접 호출).</summary>
+        public void Advance(float seconds)
+        {
+            var player = engagedPlayer;
+            if (player == null) { phase = Phase.None; engaging = false; return; }
+            switch (phase)
+            {
+                case Phase.Hold:
+                    phaseLeft -= seconds;
+                    if (phaseLeft > 0) return;
+                    player.SetInputLocked(false);
+                    phase = Phase.Dialogue;
+                    if (!AdventureDialogue.Play(script, ScenarioSection.Before, player, EnterAfterDialogue)) EnterAfterDialogue();
+                    break;
+            }
+        }
+        private void EnterAfterDialogue()
+        {
+            phase = Phase.None;
+            if (engagedPlayer != null) Enter(engagedPlayer);
         }
         private void Enter(OverworldPlayer player)
         {
@@ -96,7 +138,7 @@ namespace IBIIIS
             var back = ReturnPoint(transform.position, player.transform.position, ContactRadius, settings != null ? settings.ReturnClearance : OverworldSettings.DefaultReturnClearance);
             var run = new StageRun(stageId, DisplayName, BattleScenePath, gameObject.scene.path, back, player.Facing, script);
             if (StageFlow.Enter(run, settings != null ? settings.GameUi : null)) player.Freeze();
-            else engaging = false;
+            else { engaging = false; engagedPlayer = null; player.SetInputLocked(false); }
         }
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetStatics() { IgnoreContactUntil = -1; }

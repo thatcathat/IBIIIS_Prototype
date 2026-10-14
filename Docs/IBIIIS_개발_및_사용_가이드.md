@@ -110,7 +110,7 @@ Unity의 프로젝트 구성 가이드(unity.com/kr/how-to/organizing-your-proje
 | `Assets/IBIIIS/Scenes` | 씬: `Title.unity`, `OverworldTest.unity`(어드벤처씬 테스트), `Battle/<맵>/`(전투 맵 데이터와 씬 한 쌍) |
 | `Assets/IBIIIS/ScriptableObjects/Scenarios` | 모든 대본: `Tutorial/`(Tutorial1Script·Tutorial2Script), `NPC/`(어드벤처씬 NPC 대화 DialogueScript). IBIIIS Dialogue Editor의 새 대본 기본 위치 |
 | `Assets/IBIIIS/Scenes/Battle/<맵 이름>/` | GridMap(.asset)과 연결 씬(.unity) 한 쌍. 샘플과 사용자 맵 모두 여기에 둔다 |
-| `Assets/IBIIIS/Resources/IBIIIS` | 이름으로 로드하는 기본 재질(DefaultGround). 이동 금지 |
+| `Assets/IBIIIS/Resources/IBIIIS` | 이름으로 로드하는 에셋: 기본 재질(DefaultGround), 씬 전환 설정(SceneTransitionSettings). 이동 금지 |
 | `Assets/IBIIIS/ScriptableObjects/Localization` | 다국어: `LocalizationSettings`, `Locales/`(Korean·English), `Tables/`(번역 표. 표 묶음마다 `<표>`·`<표> Shared Data`·`<표>_ko`·`<표>_en` 에셋), `TranslationRecord`(번역할 때 본 원문 기록) |
 | `Assets/AddressableAssetsData` | Localization 패키지가 번역 표를 빌드에 넣으려고 쓰는 Addressables 설정(패키지가 만들고 관리, 이름에 공백이 있음). 옮기거나 고치지 않는다 |
 | `Translations/`(프로젝트 루트, Assets 밖) | 번역 CSV를 주고받는 기본 폴더(게임 에셋 아님). 아래 다국어 항목 |
@@ -265,6 +265,16 @@ Unity의 프로젝트 구성 가이드(unity.com/kr/how-to/organizing-your-proje
 10. 알려진 결과(2026-10-09, 상태 중복 제거 후): `ProtoTypeMap`(11×11, 적 6)은 18초 동안 약 17만 상태·13행동 깊이까지 탐색해 최단 11행동 승리 경로(재생하면 승리)와 3행동 패배 경로를 찾았다. 끝까지 탐색하지는 못했다(불완전). 같은 20,000 상태 한도에서 중복 제거 전후를 비교하면 ProtoTypeMap 9.9초→1.7초(깊이 10→11), PrototypeMap2(13×13, 적 8) 10.8초→1.8초(깊이 8→10)이고 가장 빠른 패배와 그 경로는 같았다.
 12. 결과 일관성 검증(2026-10-09): 맵 에디터 창을 ProtoTypeMap·PrototypeMap2 사본과 임시 적으로 직접 조작해 확인했다 — 맵과 무관한 실행 취소는 결과 유지, 이미 시작 위치인 칸 클릭은 저장 표시 없이 결과 유지, 적 설정 변경 뒤 결과 지움, 시작 위치 이동은 결과 지움·실행 취소로 복구, 같은 맵 다시 열기는 결과 유지·다른 맵 열기는 결과와 재생 지움, 6단계 재생을 끝까지 넘긴 뒤 1단계 재생은 0단계부터 시작, 마우스 아래 칸 정보는 편집 뒤 갱신. 원본 맵·씬은 수정되지 않았다. EditMode 123/123 통과. 실제 창 조작감은 사용자 확인 대기([플레이 확인 목록](IBIIIS_플레이_확인_목록.md) E-05).
 11. 상태 중복 제거 검증(2026-10-09): EditMode 123/123 통과(신규: 죽은 적의 위치·방향만 다른 상태는 같은 상태, 살아 있는 적 위치·생존 여부는 구분, 죽은 적의 저장 위치가 판정에 쓰이지 않음). 기존 분석기·경로 재생·충돌 순서 테스트도 그대로 통과했다. 적 충돌 계산이 행동마다 새 목록을 만들지 않도록 바꾸고(충돌 기록 순서 유지) 이동 가능 판정 델리게이트를 재사용했다.
+
+## 씬 전환 (2026-10-15)
+
+- 모든 씬 이동이 같은 전환을 거친다: 지금 씬을 가림(어두워짐) → 다음 씬 불러오기 → 새 씬을 드러냄(밝아짐). 어드벤처씬 → 전투씬(적 접촉·입구), 전투씬 → 어드벤처씬(결과 팝업 `확인`), 타이틀 → 튜토리얼, 대본의 `씬 전환` 단계가 모두 해당한다(사용자 요청: 전투 입장·퇴장·어드벤처 복귀 페이드). 전투씬이나 어드벤처씬을 바로 Play했을 때 처음 씬은 전환 없이 보인다.
+- 설정: 메뉴 `IBIIIS > Scene Transition Settings`가 `Assets/IBIIIS/Resources/IBIIIS/SceneTransitionSettings.asset`을 없을 때만 만들고 고른다. `Out Seconds`(가리는 시간, 임시 0.3초)·`In Seconds`(드러내는 시간, 임시 0.3초)·`Fade Color`(기본 검정)·`View Prefab`(선택, 전환 화면). 에셋이 없으면 기본값(0.3초 검은 페이드)으로 동작한다.
+- 전환 화면 바꾸기(로딩 화면 등): `ISceneTransitionView`를 구현한 컴포넌트를 가진 프리팹을 만들어 `View Prefab`에 넣는다. `Show(단계, 가리는 정도 0~1, 불러오기 진행 0~1)`를 매 프레임 받아 직접 그린다(단계: `Out` 가리는 중 → `Loading` 다 가린 채 불러오는 중 → `In` 드러내는 중). 전환이 끝나면 프리팹 오브젝트째 지워진다. 컴포넌트가 없으면 경고 후 기본 페이드를 쓴다. 지금 불러오기는 한 번에 불러오므로 진행 값은 Loading 동안 0, In에서 1이다(진행률이 필요한 로딩 화면을 만들 때 비동기 불러오기로 바꾼다 — 예정).
+- 불러온 직후 몇 프레임(2)은 새 씬 초기화로 한 프레임이 길어지므로 드러내기를 시작하지 않고, 한 프레임에 진행하는 시간은 최대 1/30초로 묶는다. 수정(2026-10-15): 페이드인이 한 번에 밝아지던 문제(사용자 보고)의 원인 — 불러온 직후 긴 프레임 하나에 드러내는 시간을 다 써 버림.
+- 전환 중에는 다른 씬 이동 요청을 받지 않는다(중복 입장 방지). 시간 정지(전투 입력 대기)와 무관하게 실제 시간으로 진행하고, 씬이 바뀌어도 남는다(DontDestroyOnLoad). 기본 페이드는 IMGUI로 화면 맨 위에 그린다.
+- 코드: `Scripts/Runtime/UI/SceneTransition.cs`(진행·`ISceneTransitionView`), `SceneTransitionSettings.cs`, `FadeTransitionView.cs`(기본 페이드), `StageFlow`(모든 씬 이동의 입구), `Scripts/Editor/Setup/SceneTransitionSetup.cs`(설정 메뉴).
+- 개발 검증(2026-10-15): Unity 컴파일 오류 0, EditMode 221/221 통과(가리는 중 → 다 가린 뒤에만 불러오기 → 불러오기가 끝날 때까지 가린 채 기다림 → 드러내기 → 사라짐, 전환 중 다른 요청 거부·끝난 뒤 다시 가능. 적 접촉 뒤 진입 흐름). 실제 화면은 사용자 확인 대기([플레이 확인 목록](IBIIIS_플레이_확인_목록.md) O-18·G-14).
 
 ## 게임 화면 UI (UI Toolkit)
 
@@ -487,7 +497,8 @@ main에 들어와 있는 시험 기능이다. 규칙은 [기획서](IBIIIS_게�
 - **카메라 바라보기**: 플레이어·적·NPC 그림은 모두 카메라 회전과 같은 회전으로 세워진다(`CameraFacingSprite`). NPC는 Play 중 매 프레임 맞추며, 편집 중 Scene에서는 똑바로 서 있는 상태로 보인다.
 - **어드벤처씬의 적**(2026-10-15, 기획서 7.2): 메뉴 `GameObject > IBIIIS > Stage Enemy (어드벤처씬 적)`(Hierarchy 우클릭에도 있음)로 Scene 뷰 가운데 바닥에 만든다(기본 적 그림 `Art/Sprites/Enemies/Enemy001.png`을 자식 `Visual`에 1.5배로 세움, Stage Id는 `stage-N`으로 제안). 루트의 `StageEnemy`에서 `Stage Id`(필수, 클리어 기록 키. 정한 뒤 바꾸지 않음), `Display Name`, `Battle Scene`(필수), `Script`(선택, 진입 대화 대본), `Contact Radius`(닿음 판정 거리, 칸, 임시 0.8)를 정한다. Inspector는 입구와 같은 검사(ID 누락·입구와의 중복 포함, 빌드 씬 목록)에, 전투 씬 진행기의 대본이 이 적의 대본과 다르면 경고와 연결 단추를 보인다. 고르면 Scene 뷰에 닿음 거리 원이 보인다.
   - 닿음: 플레이어 발밑과 적 위치의 바닥 평면 거리가 `Contact Radius` 이하이면 닿은 것이다(Collider와 무관, 높이 무시). 걷기·달리기 중에 닿으면 들어가고, 구르는 중에는 들어가지 않으며, 구르기 뒤 일어나는 중(`Roll Recovery`)에는 들어간다. 대화창이 떠 있는 동안에는 판정하지 않는다.
-  - 닿으면 대본의 입장 전 구간을 보여 준 뒤(없으면 바로) 전투씬으로 들어간다. 결과 팝업·복귀는 입구와 같다.
+  - 닿으면 부딪힘 연출(2026-10-15 사용자 결정, 표시 전용): 플레이어와 적 사이에 충격 별 이펙트와 "쿵" 소리, 짧은 화면 흔들림, 플레이어가 적 쪽으로 부딪혔다 돌아오는 반응(공용 손맛 설정의 Bump 값)을 보이고, 둘 다 `Contact Hold Seconds`(임시 0.5초) 멈춘다. 그 뒤 대본의 입장 전 구간을 보여 주고(없으면 건너뜀) 전투씬으로 넘어간다(화면 전환은 아래 씬 전환). 적 머리 위 "!" 표시는 넣지 않는다(사용자 결정). 연출 동안 입력을 받지 않는다. 전투씬을 불러오지 못하면 다시 움직일 수 있다.
+  - 연출 설정은 `Overworld Settings`의 `적 접촉 연출`: `Contact Impact Prefab`(기본 전투 충돌의 `VFX/CollisionBurst.prefab`)·`Contact Impact Scale`(칸, 임시 1.2)·`Contact Impact Time`(초, 임시 0.3)·`Contact Sound`(기본 `Audio/SFX/CollisionImpact.wav`)·`Contact Volume`·`Contact Shake Amplitude`(칸, 임시 0.08, 0이면 안 흔듦)·`Contact Shake Time`(임시 0.2초)·`Contact Hold Seconds`(0이면 바로). 이펙트·소리 슬롯이 비면 그 연출만 건너뛴다. 설정 에셋을 새로 만들 때 이펙트·소리 슬롯을 기본값으로 채운다(기존 에셋은 2026-10-15에 한 번 채움). 코드: `StageEnemy`(진행), `ImpactPop`(이펙트), `OverworldCamera.Shake`, `OverworldPlayer.PlayContactBump`.
   - 이기면 그 적은 어드벤처씬에서 사라지고 다시 도전할 수 없다(클리어 기록이 있으면 씬을 열 때 꺼짐). 이겨서 돌아오면 대본의 클리어 후 구간을 보여 준다.
   - 돌아오는 자리: 적에서 닿았을 때 플레이어가 있던 쪽으로 `Contact Radius` + `Return Clearance`(Overworld Settings, 임시 0.6칸)만큼 떨어진 곳(같은 자리였으면 적의 앞쪽). 돌아온 뒤 `Contact Grace Seconds`(임시 1.5초) 동안은 적에 닿아도 들어가지 않는다(기획서 7.2 에이전트 제안·사용자 승인, 수치는 기획서 7.5 미정).
   - 이전 방식의 스테이지 입구(F)는 그대로 쓸 수 있다.
