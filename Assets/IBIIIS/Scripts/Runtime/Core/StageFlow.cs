@@ -12,8 +12,12 @@ namespace IBIIIS
         public string ReturnScene { get; }
         public Vector3 ReturnPosition { get; }
         public PlayerFacing ReturnFacing { get; }
-        public StageRun(string stageId, string displayName, string battleScene, string returnScene, Vector3 returnPosition, PlayerFacing returnFacing)
-        { StageId = stageId; DisplayName = displayName; BattleScene = battleScene; ReturnScene = returnScene; ReturnPosition = returnPosition; ReturnFacing = returnFacing; }
+        /// <summary>선택. 진입 대화 대본(돌아온 뒤 '클리어 후' 구간을 보여 줄 때 쓴다).</summary>
+        public ScenarioScript Script { get; }
+        /// <summary>전투 결과. 결과 팝업을 닫고 돌아갈 때 기록한다(그 전에는 Waiting).</summary>
+        public BattlePhase Result { get; set; } = BattlePhase.Waiting;
+        public StageRun(string stageId, string displayName, string battleScene, string returnScene, Vector3 returnPosition, PlayerFacing returnFacing, ScenarioScript script = null)
+        { StageId = stageId; DisplayName = displayName; BattleScene = battleScene; ReturnScene = returnScene; ReturnPosition = returnPosition; ReturnFacing = returnFacing; Script = script; }
     }
     /// <summary>미니맵 ↔ 전투 씬 전환. 전투 씬과 GridMapPlayer는 이 흐름을 모른다. 미니맵을 거치지 않고 전투 씬을 바로 Play하면 기존과 같이 동작한다.</summary>
     public static class StageFlow
@@ -48,10 +52,16 @@ namespace IBIIIS
         /// <summary>돌아온 씬이 맞으면 복원할 위치를 돌려주고 진행 정보를 비운다.</summary>
         public static bool TakeReturnPoint(string scenePath, out Vector3 position, out PlayerFacing facing)
         {
-            position = default; facing = PlayerFacing.Front;
+            bool taken = TakeReturn(scenePath, out var run);
+            position = taken ? run.ReturnPosition : default; facing = taken ? run.ReturnFacing : PlayerFacing.Front;
+            return taken;
+        }
+        /// <summary>돌아온 씬이 맞으면 끝난 전투 정보(위치·방향·결과·대본)를 돌려주고 진행 정보를 비운다.</summary>
+        public static bool TakeReturn(string scenePath, out StageRun run)
+        {
+            run = null;
             if (Current == null || !returning || Current.ReturnScene != scenePath) return false;
-            position = Current.ReturnPosition; facing = Current.ReturnFacing;
-            Current = null; returning = false; return true;
+            run = Current; Current = null; returning = false; return true;
         }
         private static bool CanLoad(string scenePath)
         {

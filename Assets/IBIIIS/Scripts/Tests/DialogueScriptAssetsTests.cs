@@ -37,8 +37,10 @@ namespace IBIIIS.Tests
             var created = DialogueScriptAssets.Create(folder + "/New.asset", "test_new_blank", DialogueScriptAssets.BlankSteps(), out string problem);
             Assert.IsNull(problem); Assert.IsNotNull(created);
             Assert.AreEqual("test_new_blank", created.Id);
-            Assert.AreEqual(1, created.Steps.Length); Assert.AreEqual(ScenarioStepType.Line, created.Steps[0].type);
-            Assert.IsFalse(string.IsNullOrEmpty(created.Steps[0].id), "단계 ID가 채워짐");
+            Assert.AreEqual(3, created.Steps.Length); Assert.AreEqual(ScenarioStepType.Line, created.Steps[1].type);
+            Assert.AreEqual(0, created.BattleMarker); Assert.AreEqual(2, created.ClearMarker, "빈 입장 전 · 지문 한 줄(입장 후) · 빈 클리어 후");
+            Assert.IsFalse(created.HasBeforePart); Assert.IsTrue(created.HasStartPart); Assert.IsFalse(created.HasClearPart);
+            Assert.IsFalse(string.IsNullOrEmpty(created.Steps[1].id), "단계 ID가 채워짐");
             Assert.AreSame(created, AssetDatabase.LoadAssetAtPath<ScenarioScript>(folder + "/New.asset"), "파일로 저장됨");
             Assert.IsNull(DialogueScriptAssets.Create(folder + "/New.asset", "test_other", null, out problem), "있는 파일은 덮어쓰지 않음"); Assert.IsNotNull(problem);
             Assert.IsNull(DialogueScriptAssets.Create(folder + "/Other.asset", "test_new_blank", null, out problem), "겹친 ID는 만들지 않음"); Assert.IsNotNull(problem);

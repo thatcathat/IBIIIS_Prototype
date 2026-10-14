@@ -95,8 +95,15 @@ namespace IBIIIS
                 Time.timeScale = 1;
                 Debug.LogWarning("[IBIIIS] 미니맵 시작 시 게임 시간이 멈춰 있어 1로 되돌렸습니다.");
             }
-            if (StageFlow.TakeReturnPoint(gameObject.scene.path, out var position, out var returnFacing)) Teleport(position, returnFacing);
+            if (StageFlow.TakeReturn(gameObject.scene.path, out var run))
+            {
+                Teleport(run.ReturnPosition, run.ReturnFacing);
+                // 돌아온 직후 잠깐은 적에 닿아도 다시 들어가지 않는다. 이겼으면 진입 대화의 '클리어 후' 구간을 보여 준다.
+                StageEnemy.IgnoreContactFor(settings != null ? settings.ContactGraceSeconds : OverworldSettings.DefaultContactGraceSeconds);
+                if (run.Result == BattlePhase.Won) AdventureDialogue.Play(run.Script, ScenarioSection.Clear, this, null);
+            }
             else ShowVisual(Vector2Int.zero, false);
+            DialogueZone.UpdateInside(transform.position); // 시작 위치가 이미 구역 안이면 들어온 것으로 보지 않는다
         }
         /// <summary>위치와 바라보는 방향을 바로 바꾼다(전투에서 돌아올 때).</summary>
         public void Teleport(Vector3 position, PlayerFacing value)
@@ -123,9 +130,9 @@ namespace IBIIIS
         private void Update()
         {
             if (frozen || inputLocked || Time.frameCount == unlockedFrame || input == null) return;
-            if (evade.Recovering) { UpdateRecovery(); return; }
+            if (evade.Recovering) { UpdateRecovery(); CheckWorld(); return; }
             var move = input.ReadMove();
-            if (UpdateEvade(move)) { UpdateTarget(); return; }
+            if (UpdateEvade(move)) { UpdateTarget(); CheckWorld(); return; }
             var direction = DirectionOf(move);
             var intended = Vector3.zero; var before = transform.position;
             // 대시 키를 누르고 있는 동안 달린다(홀드식).
@@ -145,7 +152,19 @@ namespace IBIIIS
             var pose = motion.Tick(Time.deltaTime, transform.position, intended, actual, IsRunning, minMove);
             if (visual != null) visual.SetPose(pose, ViewCamera);
             UpdateTarget();
+            if (CheckWorld()) return;
             if (target != null && input.InteractPressed()) target.Interact(this);
+        }
+        // 근접 대화 구역에 새로 들어왔거나 적에 닿았으면 반응한다(구르는 중에는 적에 닿아도 들어가지 않음). 반응했으면 true.
+        private bool CheckWorld()
+        {
+            var zone = DialogueZone.UpdateInside(transform.position);
+            if (zone != null && zone.Play(this)) return true;
+            if (evade.Active) return false;
+            var enemy = StageEnemy.FindTouching(transform.position);
+            if (enemy == null) return false;
+            enemy.Engage(this);
+            return true;
         }
         // 구르기(Space)를 시작하거나 진행한다. 진행 중이었으면 true(이번 프레임의 걷기·상호작용은 하지 않음).
         private bool UpdateEvade(Vector2 move)

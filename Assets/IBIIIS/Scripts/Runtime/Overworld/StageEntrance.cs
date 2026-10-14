@@ -4,7 +4,7 @@ namespace IBIIIS
 {
     /// <summary>미니맵의 전투 스테이지 입구. 범위 안에서 상호작용 키를 누르면 연결된 전투 씬으로 들어간다.
     /// 클리어 기록은 Stage Id로 저장하므로, 한 번 정한 ID는 표시 이름·씬 경로가 바뀌어도 유지한다.</summary>
-    public sealed class StageEntrance : OverworldInteractable
+    public sealed class StageEntrance : OverworldInteractable, IStageLink
     {
         [SerializeField, Tooltip("필수. 클리어 기록에 쓰는 고유 ID. 미니맵 전체에서 겹치면 안 되며, 정한 뒤에는 바꾸지 않습니다.")] private string stageId;
         [SerializeField, Tooltip("안내 문구·결과 팝업에 표시할 스테이지 이름")] private string displayName = "스테이지";

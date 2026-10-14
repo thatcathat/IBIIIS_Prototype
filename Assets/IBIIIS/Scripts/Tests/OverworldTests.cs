@@ -416,43 +416,156 @@ namespace IBIIIS.Tests
             return director;
         }
         private static void FinishLine(ScenarioDirector director) { var r = director.Dialogue.Runner; r.Advance(); r.Advance(); }
-        [Test] public void ClearDialogueStartsAfterTheWinAndHoldsTheResultPopupUntilItEnds()
+        // Play 중 매 프레임 호출되는 진행기 Update를 한 번 실행한다.
+        private static void Frame(ScenarioDirector director) => typeof(ScenarioDirector).GetMethod("Update", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).Invoke(director, null);
+        private static ScenarioStep Say(string text) => new ScenarioStep { type = ScenarioStepType.Line, line = DialogueLine.Narrate(text) };
+        private static ScenarioStep Marker(ScenarioStepType type) => new ScenarioStep { type = type };
+        // 세 구간 대본: [입장 전 "닿았다"] [입장 후 "가자!"] [클리어 후 "해냈다!"]
+        private static ScenarioScript ThreePart(string id, bool onlyOnce)
+        {
+            var script = ScriptableObject.CreateInstance<ScenarioScript>();
+            script.Set(id, new[] { Say("닿았다"), Marker(ScenarioStepType.BattleSection), Say("가자!"), Marker(ScenarioStepType.ClearSection), Say("해냈다!") });
+            var options = script.Options; options.onlyOnce = onlyOnce; script.SetOptions(options);
+            return script;
+        }
+        private static void CloseDialogue() { var dialogue = Object.FindAnyObjectByType<DialogueController>(); if (dialogue != null) Object.DestroyImmediate(dialogue.gameObject); }
+        [Test] public void BattleDirectorRunsOnlyTheEntryPartAndDoesNotHoldTheWin()
         {
             var battle = WinnableBattle(out var map);
-            var script = ScriptableObject.CreateInstance<ScenarioScript>(); script.Set("clear-talk", new[] { new ScenarioStep { type = ScenarioStepType.Line, line = DialogueLine.Narrate("해냈다!") } });
+            var script = ThreePart("three", true);
             try
             {
-                var director = ClearTalk(battle, script, true);
-                var popup = StageResultPopup.Create(new StageRun("stage-talk", "T", "Assets/Battle.unity", "Assets/Overworld.unity", Vector3.zero, PlayerFacing.Front));
+                var director = battle.gameObject.AddComponent<ScenarioDirector>(); director.Configure(battle, script);
+                var popup = StageResultPopup.Create(new StageRun("stage-three", "T", "Assets/Battle.unity", "Assets/Overworld.unity", Vector3.zero, PlayerFacing.Front));
                 Track(popup.gameObject); popup.Watch(battle);
-                Assert.IsFalse(director.TryAutoStart(), "이기기 전에는 시작하지 않음");
-                Assert.IsTrue(battle.AllowUndoRestart, "그동안 전투는 평소대로");
+                Frame(director);
+                Assert.IsTrue(director.IsRunning); Assert.AreEqual(2, director.StepIndex, "입장 후 구간 첫 단계(입장 전 구간은 전투씬에서 실행하지 않음)");
+                Assert.IsFalse(battle.AllowUndoRestart);
+                FinishLine(director);
+                Assert.IsFalse(director.IsRunning); Assert.IsTrue(director.Finished, "입장 후 구간에서 끝(클리어 후 구간은 어드벤처씬)");
+                Assert.IsTrue(battle.AllowUndoRestart, "끝나면 일반 전투"); Assert.IsTrue(ProgressStore.IsSeen("three"));
+                battle.Restart(); battle = director.Battle;
+                for (int i = 0; i < 3; i++) Frame(director);
+                Assert.IsFalse(director.IsRunning, "재시작해도 다시 나오지 않음");
                 Assert.True(battle.TryBeginAction(PlayerAction.Wait, Vector2Int.zero));
                 for (int i = 0; i < 200 && (battle.Session.IsBusy || battle.IsPresenting); i++) battle.AdvanceMovement(.05f);
-                Assert.AreEqual(BattlePhase.Won, popup.Result);
-                Assert.IsFalse(popup.TryGetView(out _, out _, out _), "곧 시작할 클리어 대화가 있으면 팝업을 미룸");
-                popup.CheckResult(); Assert.IsTrue(ProgressStore.IsCleared("stage-talk"), "클리어 기록은 승리 때 바로 저장");
-                Assert.IsTrue(director.TryAutoStart()); Assert.IsTrue(director.IsRunning);
-                Assert.IsFalse(popup.TryGetView(out _, out _, out _), "대화 중에는 팝업 없음");
-                FinishLine(director);
-                Assert.IsTrue(director.Finished); Assert.IsTrue(ProgressStore.IsSeen("clear-talk"), "끝까지 보면 본 기록");
-                Assert.IsTrue(popup.TryGetView(out var heading, out _, out _), "대화가 끝나면 팝업"); Assert.AreEqual("클리어!", heading);
-                Assert.IsTrue(battle.AllowUndoRestart, "대화가 끝나면 되돌리기 복원");
-
-                // '한 번만': 다시 이겨도(새 진행기) 이미 본 대화는 시작하지 않고 팝업을 막지 않는다.
-                Object.DestroyImmediate(director);
-                var again = ClearTalk(battle, script, true);
-                Assert.IsFalse(again.TryAutoStart()); Assert.IsTrue(again.Finished); Assert.IsFalse(again.IsRunning);
-                Assert.IsTrue(popup.TryGetView(out _, out _, out _));
-                Object.DestroyImmediate(again);
-                var always = ClearTalk(battle, script, false);
-                Assert.IsTrue(always.TryAutoStart(), "'한 번만'을 끄면 매번 시작");
+                for (int i = 0; i < 3; i++) Frame(director);
+                Assert.IsFalse(director.IsRunning, "이겨도 전투씬에서는 클리어 후 구간을 실행하지 않음");
+                Assert.IsTrue(popup.TryGetView(out var heading, out _, out _), "결과 팝업이 바로 뜸"); Assert.AreEqual("클리어!", heading);
             }
-            finally
+            finally { CloseDialogue(); Object.DestroyImmediate(map); Object.DestroyImmediate(script); }
+        }
+        [Test] public void AdventureDialoguePlaysTheBeforeAndClearPartsOnceEach()
+        {
+            var script = ThreePart("adv", true);
+            try
             {
-                var dialogue = Object.FindAnyObjectByType<DialogueController>(); if (dialogue != null) Object.DestroyImmediate(dialogue.gameObject);
-                Object.DestroyImmediate(map); Object.DestroyImmediate(script);
+                bool done = false;
+                Assert.IsFalse(AdventureDialogue.Play(script, ScenarioSection.Battle, null, null), "입장 후 구간은 어드벤처씬에서 실행하지 않음");
+                Assert.IsTrue(AdventureDialogue.Play(script, ScenarioSection.Before, null, () => done = true));
+                var dialogue = Object.FindAnyObjectByType<DialogueController>(); Assert.IsTrue(dialogue.IsOpen);
+                Assert.AreEqual("닿았다", dialogue.Runner.Current.text, "입장 전 구간의 대사");
+                dialogue.Runner.Advance(); dialogue.Runner.Advance();
+                Assert.IsTrue(done, "끝나면 done"); Assert.IsTrue(ProgressStore.IsSeen("adv:before"));
+                Assert.IsFalse(AdventureDialogue.Play(script, ScenarioSection.Before, null, null), "'한 번만': 다시 보이지 않음");
+                Assert.IsTrue(AdventureDialogue.Play(script, ScenarioSection.Clear, null, null));
+                Assert.AreEqual("해냈다!", dialogue.Runner.Current.text, "클리어 후 구간의 대사");
+                dialogue.Runner.Advance(); dialogue.Runner.Advance();
+                Assert.IsTrue(ProgressStore.IsSeen("adv:clear"));
+                var record = ScriptableObject.CreateInstance<ScenarioScript>();
+                record.Set("rec", new[] { Marker(ScenarioStepType.BattleSection), Marker(ScenarioStepType.ClearSection), new ScenarioStep { type = ScenarioStepType.RecordClear, text = "story-1" } });
+                try { Assert.IsFalse(AdventureDialogue.Play(record, ScenarioSection.Clear, null, null), "대사가 없으면 대화창 없이"); Assert.IsTrue(ProgressStore.IsCleared("story-1"), "클리어 기록은 실행"); }
+                finally { Object.DestroyImmediate(record); }
             }
+            finally { CloseDialogue(); Object.DestroyImmediate(script); }
+        }
+        private StageEnemy Enemy(string id, Vector3 position, ScenarioScript script, string scene = "Assets/IBIIIS/Scripts/Tests/NoSuchBattle.unity")
+        {
+            var enemy = Track(new GameObject("Stage Enemy " + id)).AddComponent<StageEnemy>(); enemy.transform.position = position;
+            var so = new UnityEditor.SerializedObject(enemy);
+            so.FindProperty("stageId").stringValue = id; so.FindProperty("script").objectReferenceValue = script;
+            so.ApplyModifiedPropertiesWithoutUndo();
+            // 경로는 OnValidate가 씬 에셋에서 다시 쓰므로 직접 넣는다(시험용 없는 씬: 불러오기가 실패해야 Play 없이 확인할 수 있음).
+            typeof(StageEnemy).GetField("battleScenePath", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).SetValue(enemy, scene);
+            Enable(enemy);
+            return enemy;
+        }
+        // EditMode에서 붙인 컴포넌트는 OnEnable이 불리지 않으므로(Play 중에는 자동) 목록 등록을 직접 부른다.
+        private static void Enable(MonoBehaviour component) => component.GetType().GetMethod("OnEnable", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).Invoke(component, null);
+        private static void Disable(MonoBehaviour component)
+        {
+            component.GetType().GetMethod("OnDisable", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).Invoke(component, null);
+        }
+        [Test] public void StageEnemyContactRulesAndReturnPoint()
+        {
+            var enemy = Enemy("stage-e", new Vector3(5, 0, 5), null);
+            Assert.AreSame(enemy, StageEnemy.FindTouching(new Vector3(5.5f, 0, 5)), "닿음 거리(0.8칸) 안");
+            Assert.IsNull(StageEnemy.FindTouching(new Vector3(6, 0, 5)), "닿음 거리 밖");
+            Assert.AreSame(enemy, StageEnemy.FindTouching(new Vector3(5.5f, 3, 5)), "높이는 보지 않음(바닥 평면 거리)");
+            StageEnemy.IgnoreContactFor(10);
+            Assert.IsNull(StageEnemy.FindTouching(new Vector3(5, 0, 5)), "돌아온 직후 접촉 무시 시간");
+            StageEnemy.IgnoreContactFor(0);
+            ProgressStore.MarkCleared("stage-e");
+            Assert.IsNull(StageEnemy.FindTouching(new Vector3(5, 0, 5)), "클리어한 적은 닿지 않음");
+            var back = StageEnemy.ReturnPoint(new Vector3(5, 0, 5), new Vector3(5.3f, .2f, 5), .8f, .6f);
+            Assert.That(OverworldInteractable.FlatDistance(back, new Vector3(5, 0, 5)), Is.EqualTo(1.4f).Within(1e-4f), "닿음 거리 + 여유만큼 떨어진 자리");
+            Assert.That(back.x, Is.GreaterThan(5), "플레이어가 있던 쪽"); Assert.AreEqual(.2f, back.y, 1e-4f, "높이는 그대로");
+            Assert.That(StageEnemy.ReturnPoint(Vector3.zero, Vector3.zero, 1, 0).z, Is.EqualTo(-1).Within(1e-4f), "같은 자리면 앞(-Z) 쪽");
+            Disable(enemy);
+        }
+        [Test] public void TouchingAStageEnemyShowsTheBeforePartThenTriesToEnter()
+        {
+            var script = ThreePart("touch", false);
+            try
+            {
+                var enemy = Enemy("stage-touch", Vector3.zero, script);
+                var player = Track(new GameObject("Player")).AddComponent<OverworldPlayer>();
+                enemy.Engage(player);
+                Assert.IsTrue(enemy.Engaging); Assert.IsTrue(player.InputLocked, "입장 전 대화 동안 이동을 막음");
+                Assert.IsNull(StageEnemy.FindTouching(Vector3.zero), "진입 중에는 다시 닿지 않음");
+                var dialogue = Object.FindAnyObjectByType<DialogueController>(); Assert.AreEqual("닿았다", dialogue.Runner.Current.text);
+                LogAssert.Expect(LogType.Error, new System.Text.RegularExpressions.Regex("찾을 수 없습니다")); // 시험용 없는 전투 씬
+                dialogue.Runner.Advance(); dialogue.Runner.Advance();
+                Assert.IsFalse(player.InputLocked, "대화가 끝나면 풀림");
+                Assert.IsFalse(enemy.Engaging, "전투 씬을 불러오지 못하면 다시 닿을 수 있게 됨"); Assert.IsNull(StageFlow.Current);
+                Disable(enemy);
+            }
+            finally { CloseDialogue(); Object.DestroyImmediate(script); }
+        }
+        [Test] public void StageRunCarriesTheScriptAndResultBackToTheAdventureScene()
+        {
+            var script = ThreePart("back", false);
+            try
+            {
+                var run = new StageRun("stage-back", "B", "Assets/Battle.unity", "Assets/Overworld.unity", new Vector3(1, 0, 2), PlayerFacing.Left, script);
+                StageFlow.Begin(run); run.Result = BattlePhase.Won; StageFlow.BeginReturn();
+                Assert.IsTrue(StageFlow.TakeReturn("Assets/Overworld.unity", out var back));
+                Assert.AreSame(script, back.Script); Assert.AreEqual(BattlePhase.Won, back.Result); Assert.AreEqual(new Vector3(1, 0, 2), back.ReturnPosition);
+                Assert.IsNull(StageFlow.Current, "한 번만 가져감");
+            }
+            finally { Object.DestroyImmediate(script); }
+        }
+        [Test] public void DialogueZoneStartsOnEnteringAndOnlyOnce()
+        {
+            var lines = ScriptableObject.CreateInstance<DialogueScript>();
+            try
+            {
+                var so = new UnityEditor.SerializedObject(lines); var list = so.FindProperty("lines"); list.arraySize = 1;
+                list.GetArrayElementAtIndex(0).FindPropertyRelative("text").stringValue = "여기는 숲이다"; so.ApplyModifiedPropertiesWithoutUndo();
+                var zone = Track(new GameObject("Zone")).AddComponent<DialogueZone>(); zone.transform.position = new Vector3(10, 0, 0);
+                so = new UnityEditor.SerializedObject(zone); so.FindProperty("zoneId").stringValue = "forest"; so.FindProperty("dialogue").objectReferenceValue = lines; so.ApplyModifiedPropertiesWithoutUndo();
+                Enable(zone);
+                Assert.IsNull(DialogueZone.UpdateInside(Vector3.zero), "구역 밖");
+                Assert.AreSame(zone, DialogueZone.UpdateInside(new Vector3(11, 0, 1)), "구역에 들어온 순간");
+                Assert.IsNull(DialogueZone.UpdateInside(new Vector3(10.5f, 0, 0)), "안에 계속 있으면 다시 시작하지 않음");
+                Assert.IsTrue(zone.Play(null));
+                var dialogue = Object.FindAnyObjectByType<DialogueController>(); Assert.AreEqual("여기는 숲이다", dialogue.Runner.Current.text);
+                dialogue.Runner.Advance(); dialogue.Runner.Advance();
+                Assert.IsTrue(ProgressStore.IsSeen("zone:forest"));
+                DialogueZone.UpdateInside(Vector3.zero);
+                Assert.IsNull(DialogueZone.UpdateInside(new Vector3(10, 0, 0)), "'한 번만': 본 뒤로는 다시 들어와도 시작하지 않음");
+            }
+            finally { foreach (var z in Object.FindObjectsByType<DialogueZone>(FindObjectsSortMode.None)) Disable(z); CloseDialogue(); Object.DestroyImmediate(lines); }
         }
         [Test] public void LostBattleIsNotHeldByAClearDialogue()
         {

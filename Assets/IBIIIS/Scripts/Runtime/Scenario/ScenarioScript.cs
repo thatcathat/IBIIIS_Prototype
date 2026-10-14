@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace IBIIIS
@@ -38,8 +39,16 @@ namespace IBIIIS
         WaitAllDirections = 14,
         /// <summary>'표시 끝 단계까지 유지'로 띄운 감정 표시(Target 대상) 또는 자세를 끝낸다. 바로 다음 단계. IBIIIS Dialogue Editor에서는 막대의 끝으로 보인다.</summary>
         EndDisplay = 15,
+        /// <summary>'클리어 후' 구간 시작(대본마다 하나). 이 뒤는 전투에서 이겨 어드벤처씬으로 돌아온 뒤 실행한다. 경계로만 쓰고 실행하지 않는다.
+        /// IBIIIS Dialogue Editor에서는 '▶ 클리어 후' 시작 노드로 보인다.</summary>
+        ClearSection = 16,
+        /// <summary>'입장 후' 구간 시작(대본마다 하나). 앞은 어드벤처씬에서 전투씬으로 들어가기 전에 실행하는 '입장 전' 구간, 뒤는 전투가 준비되면 전투씬에서 실행하는 '입장 후' 구간이다.
+        /// 경계로만 쓰고 실행하지 않는다. IBIIIS Dialogue Editor에서는 '▶ 입장 후' 시작 노드로 보인다.</summary>
+        BattleSection = 17,
     }
-    /// <summary>대본을 자동으로 시작하는 때. 값은 대본 에셋에 정수로 저장되므로 끝에만 추가한다.</summary>
+    /// <summary>대본 구간. 입장 전·클리어 후는 어드벤처씬(AdventureDialogue), 입장 후는 전투씬(ScenarioDirector)이 실행한다.</summary>
+    public enum ScenarioSection { Before = 0, Battle = 1, Clear = 2 }
+    /// <summary>예전 대본의 시작 시점(클리어 구간 단계가 없는 대본에서만 쓴다). 값은 대본 에셋에 정수로 저장되므로 끝에만 추가한다.</summary>
     public enum ScenarioStartTiming
     {
         /// <summary>전투가 준비되는 대로(튜토리얼처럼 전투 전체를 대본이 이끈다).</summary>
@@ -98,8 +107,8 @@ namespace IBIIIS
         [Serializable]
         public struct Settings
         {
-            [Tooltip("자동 시작 시점. Battle Ready: 전투가 준비되는 대로(튜토리얼). Battle Won: 적을 모두 물리친 뒤(클리어 대화, 그 전까지 전투는 평소대로, 결과 팝업은 대본이 끝난 뒤). 진행기의 Play On Start를 끄면 쓰지 않습니다.")] public ScenarioStartTiming startTiming;
-            [Tooltip("체크하면 이 대본을 끝까지 본 뒤로는 자동으로 시작하지 않습니다(같은 맵을 다시 깨도 대화가 다시 나오지 않음). 본 기록은 대본 ID로 클리어 기록 파일에 남습니다.")] public bool onlyOnce;
+            [HideInInspector, Tooltip("예전 대본 호환용. 클리어 구간 단계가 없는 대본에서만 쓴다: Battle Won이면 단계 전체가 클리어 구간, 아니면 전투 시작 구간.")] public ScenarioStartTiming startTiming;
+            [Tooltip("체크하면 전투 시작·클리어 구간을 각각 한 번 끝까지 본 뒤로는 그 구간을 자동으로 시작하지 않습니다(같은 맵을 다시 깨도 대화가 다시 나오지 않음). 본 기록은 구간별로 클리어 기록 파일에 남습니다.")] public bool onlyOnce;
             [Tooltip("체크하면 대사가 보이는 동안 Esc를 길게 눌러 다음 입력 대기 단계(행동·칸 누르기·이름 입력·자유 전투)나 대본 끝까지 대사를 건너뜁니다. 대화 상자에 안내가 보입니다.")] public bool allowSkip;
             [Min(0.1f), Tooltip("건너뛰기에 필요한 Esc 누르는 시간(초). 임시 0.6.")] public float skipHoldSeconds;
             [Tooltip("체크하면 대본이 도는 동안 적 인식 말풍선(대사)을 띄우지 않습니다. 대본 대사와 겹치지 않게 튜토리얼에서 켭니다.")] public bool hideEnemyAlerts;
@@ -110,6 +119,70 @@ namespace IBIIIS
             public static Settings Default => new Settings { startTiming = ScenarioStartTiming.BattleReady, allowSkip = true, skipHoldSeconds = .6f, hideEnemyAlerts = true, scriptControlsDanger = true };
         }
         public ScenarioStep[] Steps => steps ?? Array.Empty<ScenarioStep>();
+        /// <summary>구간 경계 단계의 위치(없으면 -1).</summary>
+        public int BattleMarker => IndexOf(Steps, ScenarioStepType.BattleSection);
+        public int ClearMarker => IndexOf(Steps, ScenarioStepType.ClearSection);
+        public static int IndexOf(ScenarioStep[] list, ScenarioStepType type) { for (int i = 0; i < list.Length; i++) if (list[i].type == type) return i; return -1; }
+        public static int IndexOfClearSection(ScenarioStep[] list) => IndexOf(list, ScenarioStepType.ClearSection);
+        /// <summary>단계가 구간 경계(입장 후 구간 시작·클리어 후 구간 시작)인지.</summary>
+        public static bool IsSectionMarker(ScenarioStepType type) => type == ScenarioStepType.BattleSection || type == ScenarioStepType.ClearSection;
+        /// <summary>입장 후 구간의 첫 위치(입장 후 구간 시작 단계 바로 뒤, 없으면 0 — 입장 전 구간 없음).</summary>
+        public int BattleStart => BattleMarker + 1;
+        /// <summary>클리어 후 구간 시작 위치(경계). 입장 후 구간은 [BattleStart, 경계), 클리어 후 구간은 (경계, 끝]. 클리어 후 구간 시작 단계가 없는 예전 대본은
+        /// 시작 시점이 Battle Won이면 BattleStart - 1(입장 후 구간 없음, 나머지 전체가 클리어 후 구간), 아니면 단계 수(클리어 후 구간 없음)다.</summary>
+        public int ClearBoundary { get { int marker = ClearMarker; return marker >= 0 ? marker : settings.startTiming == ScenarioStartTiming.BattleWon ? BattleStart - 1 : Steps.Length; } }
+        public bool HasBeforePart => BattleMarker > 0;
+        public bool HasStartPart => ClearBoundary > BattleStart;
+        public bool HasClearPart => ClearBoundary + 1 < Steps.Length;
+        /// <summary>구간의 단계 범위 [from, to).</summary>
+        public void Range(ScenarioSection section, out int from, out int to)
+        {
+            switch (section)
+            {
+                case ScenarioSection.Before: from = 0; to = Mathf.Max(0, BattleMarker); break;
+                case ScenarioSection.Battle: from = BattleStart; to = Mathf.Max(BattleStart, ClearBoundary); break;
+                default: from = ClearBoundary + 1; to = Steps.Length; break;
+            }
+        }
+        public bool Has(ScenarioSection section) => section == ScenarioSection.Before ? HasBeforePart : section == ScenarioSection.Battle ? HasStartPart : HasClearPart;
+        /// <summary>단계가 속한 구간(경계 단계는 그 뒤 구간).</summary>
+        public static ScenarioSection SectionOf(IReadOnlyList<ScenarioStep> list, int index)
+        {
+            var section = ScenarioSection.Battle; bool battleMarker = false;
+            for (int i = 0; i < list.Count; i++) if (list[i].type == ScenarioStepType.BattleSection) { battleMarker = true; break; }
+            if (battleMarker) section = ScenarioSection.Before;
+            for (int i = 0; i < index && i < list.Count; i++)
+            {
+                if (list[i].type == ScenarioStepType.BattleSection) section = ScenarioSection.Battle;
+                else if (list[i].type == ScenarioStepType.ClearSection) section = ScenarioSection.Clear;
+            }
+            return section;
+        }
+        /// <summary>구간별 '한 번만' 기록 ID. 입장 후 구간은 대본 ID, 입장 전은 '대본 ID:before', 클리어 후는 '대본 ID:clear'
+        /// (클리어 후 구간만 있는 대본은 대본 ID: 예전 클리어 대본과 같은 기록).</summary>
+        public string SeenId(ScenarioSection section)
+            => section == ScenarioSection.Before ? scriptId + ":before" : section == ScenarioSection.Battle ? scriptId : HasStartPart || HasBeforePart ? scriptId + ":clear" : scriptId;
+        /// <summary>구간 경계를 맞춘다(편집기용): 입장 후 구간 시작 단계가 없으면 맨 앞에(입장 전 구간 비움), 클리어 후 구간 시작 단계가 없으면
+        /// 예전 시작 시점대로 입장 후 구간 시작 바로 뒤(Battle Won)나 맨 뒤에 넣고, 같은 경계가 두 개 이상이면 첫 번째만 남기며, 순서가 거꾸로면 클리어 경계를 입장 후 경계 뒤로 옮긴다. 바뀌었으면 true.</summary>
+        public bool EnsureSections()
+        {
+            var list = new System.Collections.Generic.List<ScenarioStep>(Steps);
+            bool changed = false;
+            bool legacyWon = settings.startTiming == ScenarioStartTiming.BattleWon;
+            void Dedupe(ScenarioStepType type)
+            {
+                int first = list.FindIndex(s => s.type == type);
+                for (int i = list.Count - 1; i > first && first >= 0; i--) if (list[i].type == type) { list.RemoveAt(i); changed = true; }
+            }
+            Dedupe(ScenarioStepType.BattleSection); Dedupe(ScenarioStepType.ClearSection);
+            if (list.FindIndex(s => s.type == ScenarioStepType.BattleSection) < 0) { list.Insert(0, new ScenarioStep { type = ScenarioStepType.BattleSection }); changed = true; }
+            int battle = list.FindIndex(s => s.type == ScenarioStepType.BattleSection), clear = list.FindIndex(s => s.type == ScenarioStepType.ClearSection);
+            if (clear < 0) { list.Insert(legacyWon ? battle + 1 : list.Count, new ScenarioStep { type = ScenarioStepType.ClearSection }); changed = true; }
+            else if (clear < battle) { var marker = list[clear]; list.RemoveAt(clear); list.Insert(list.FindIndex(s => s.type == ScenarioStepType.BattleSection) + 1, marker); changed = true; }
+            if (settings.startTiming != ScenarioStartTiming.BattleReady) { settings.startTiming = ScenarioStartTiming.BattleReady; changed = true; }
+            if (changed) { steps = list.ToArray(); EnsureStepIds(); }
+            return changed;
+        }
         public void Set(string id, ScenarioStep[] value) { scriptId = id; steps = value ?? Array.Empty<ScenarioStep>(); EnsureStepIds(); }
         /// <summary>대본 설정을 바꾼다(코드·테스트용. 편집기는 직렬화 속성으로 고친다).</summary>
         public void SetOptions(Settings value) => settings = value;

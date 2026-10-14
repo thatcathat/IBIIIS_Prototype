@@ -139,6 +139,10 @@ namespace IBIIIS.Tests
                 var root = System.Array.Find(loaded.GetRootGameObjects(), g => g.GetComponent<GridMapPlayer>() != null);
                 var player = root.GetComponent<GridMapPlayer>(); Assert.AreEqual(first, player.Map);
                 Assert.NotNull(player.SharedPlayerSettings); Assert.NotNull(player.CameraSettings); Assert.NotNull(player.ViewCamera); Assert.NotNull(player.FallbackMaterial);
+                var director = root.GetComponent<ScenarioDirector>();
+                Assert.NotNull(director, "새 맵 씬에 대본 진행기가 붙어 있음"); Assert.AreSame(player, director.Battle, "전투 연결");
+                Assert.IsNull(director.Script, "대본은 비어 있음"); Assert.True(director.PlayOnStart);
+                Assert.False(director.TryAutoStart(), "대본이 없으면 시작하지 않음(오류 없음)");
             }
             finally { EditorSceneManager.ClosePreviewScene(loaded); }
         }

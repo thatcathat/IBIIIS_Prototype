@@ -126,7 +126,11 @@ namespace IBIIIS.Tests
         {
             var steps = AssetDatabase.LoadAssetAtPath<ScenarioScript>(TutorialSetup.Stage2Script).Steps;
             var scenes = ScenarioTimeline.Scenes(steps);
-            Assert.AreEqual(0, scenes[0].start); Assert.AreEqual(steps.Length - 1, scenes[scenes.Count - 1].end);
+            // 클리어 구간 시작 단계(구간 경계)는 어느 장면에도 들지 않는다. 튜토리얼 2단계는 클리어 구간이 비어 있어 맨 끝에 있다.
+            int marker = ScenarioScript.IndexOfClearSection(steps);
+            Assert.AreEqual(steps.Length - 1, marker, "클리어 구간 시작 단계가 맨 끝");
+            Assert.AreEqual(ScenarioScript.IndexOf(steps, ScenarioStepType.BattleSection) + 1, scenes[0].start, "입장 전 구간이 비어 있어 입장 후 경계 바로 뒤부터");
+            Assert.AreEqual(marker - 1, scenes[scenes.Count - 1].end);
             for (int n = 0; n < scenes.Count; n++)
             {
                 if (n > 0) Assert.AreEqual(scenes[n - 1].end + 1, scenes[n].start, "장면이 빈틈없이 이어짐");

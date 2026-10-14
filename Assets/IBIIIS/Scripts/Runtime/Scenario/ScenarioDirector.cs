@@ -6,9 +6,10 @@ using UnityEngine.UIElements;
 
 namespace IBIIIS
 {
-    /// <summary>전투 씬에서 대본(ScenarioScript)을 위에서부터 실행한다. 대사는 미연시 대화창으로 보이고,
-    /// 입력 대기 단계에서는 허용한 행동만 전투에 통과시키며(나머지는 무시) 안내 칸을 점멸·키를 표시한다.
-    /// 대본이 도는 동안 되돌리기·다시 시작·범위 표시는 막는다. 판정은 바꾸지 않고 입력만 걸러 낸다.</summary>
+    /// <summary>전투 씬에서 대본(ScenarioScript)의 '입장 후' 구간을 실행한다(입장 전·클리어 후 구간은 어드벤처씬의 AdventureDialogue가 실행).
+    /// 전투가 준비되면 위에서부터 실행하고, 비었으면 실행하지 않는다. 끝나면 일반 전투(질 수 있고 되돌리기·재시작 가능, 재시작해도 다시 나오지 않음).
+    /// 대사는 미연시 대화창으로 보이고, 입력 대기 단계에서는 허용한 행동만 전투에 통과시키며(나머지는 무시) 안내 칸을 점멸·키를 표시한다.
+    /// 구간이 도는 동안 되돌리기·다시 시작·범위 표시는 막는다. 판정은 바꾸지 않고 입력만 걸러 낸다.</summary>
     public sealed class ScenarioDirector : MonoBehaviour
     {
         /// <summary>대본에서 ID로 부르는 등장 오브젝트(켜고 끄기·감정 표시 대상).</summary>
@@ -28,7 +29,7 @@ namespace IBIIIS
         [SerializeField, Tooltip("필수. 실행할 대본.")] private ScenarioScript script;
         [SerializeField, Tooltip("등장 오브젝트. 대본의 Target ID로 찾습니다.")] private Actor[] actors = Array.Empty<Actor>();
         [SerializeField, Min(0), Tooltip("플레이어 감정 표시 높이(칸). 임시 1.6.")] private float playerEmoteHeight = 1.6f;
-        [SerializeField, Tooltip("체크하면 대본의 시작 시점(대본 설정의 Start Timing)에 자동으로 시작합니다. 끄면 코드에서 Begin()을 불러야 시작합니다.")] private bool playOnStart = true;
+        [SerializeField, Tooltip("체크하면 전투가 준비되면 대본의 입장 후 구간을 자동으로 시작합니다. 끄면 코드에서 Begin()을 불러야 시작합니다.")] private bool playOnStart = true;
         private int index = -1;
         private float skipHeld;
         private bool waitingFirstMove, clicked;
@@ -65,15 +66,17 @@ namespace IBIIIS
         public IEnumerable<string> ActorIds { get { foreach (var actor in actors) yield return actor.id; } }
         // 대본 설정(시작 시점·한 번만·건너뛰기·연출)은 대본 에셋에 있다(IBIIIS Dialogue Editor의 시작 노드에서 편집).
         private ScenarioScript.Settings Options => script != null ? script.Options : default;
-        /// <summary>'한 번만'이 켜져 있고 이 대본을 이미 끝까지 봤으면 true(자동으로 시작하지 않는다).</summary>
-        public bool AlreadySeen => script != null && Options.onlyOnce && ProgressStore.IsSeen(script.Id);
+        /// <summary>'한 번만'이 켜져 있고 그 구간을 이미 끝까지 봤으면 true(자동으로 시작하지 않는다).</summary>
+        private bool Seen => script != null && Options.onlyOnce && ProgressStore.IsSeen(script.SeenId(ScenarioSection.Battle));
+        /// <summary>입장 후 구간이 비었거나 '한 번만'으로 이미 봤으면 true(자동으로 시작하지 않는다).</summary>
+        public bool AlreadySeen => script != null && (!script.HasStartPart || Seen);
         /// <summary>클리어 결과 팝업을 미룰지. 승리한 전투에서 이 진행기가 대본을 진행 중이거나 곧 시작할 때 true.</summary>
         public bool HoldsWonResult
         {
             get
             {
                 if (!isActiveAndEnabled || battle == null || battle.Session == null || battle.Session.Phase != BattlePhase.Won) return false;
-                return IsRunning || (!Finished && WaitsForWin && script != null && !AlreadySeen);
+                return IsRunning;
             }
         }
         /// <summary>battle의 승리 결과를 미루는 진행기가 있으면 true(결과 팝업이 대본이 끝날 때까지 기다린다). 승리한 뒤에만 찾는다.</summary>
@@ -83,14 +86,13 @@ namespace IBIIIS
             foreach (var director in FindObjectsByType<ScenarioDirector>(FindObjectsSortMode.None)) if (director.battle == battle && director.HoldsWonResult) return true;
             return false;
         }
-        private bool WaitsForWin => playOnStart && script != null && Options.startTiming == ScenarioStartTiming.BattleWon;
         public IReadOnlyList<string> ActiveEmotes { get { var list = new List<string>(); foreach (var e in emotes) list.Add(e.Text); return list; } }
         private GameUiSettings Ui => battle != null && battle.SharedPlayerSettings != null ? battle.SharedPlayerSettings.GameUi : null;
         public void Configure(GridMapPlayer value, ScenarioScript tutorial, Actor[] cast = null) { battle = value; script = tutorial; actors = cast ?? Array.Empty<Actor>(); }
 
         private void Update()
         {
-            if (ShouldAutoStart()) Begin();
+            TryAutoStart(); // 테스트와 같은 경로: 시작할 구간(전투 시작·클리어)을 골라 시작한다
             Tick(Time.unscaledDeltaTime);
             TickSkip(Keyboard.current != null && Keyboard.current.escapeKey.isPressed, Time.unscaledDeltaTime);
             if (dialogue != null) dialogue.SkipProgress = SkipHint;
@@ -102,21 +104,21 @@ namespace IBIIIS
         }
         private void LateUpdate() => RenderEmotes();
 
-        // 자동 시작 조건. '한 번만'으로 이미 본 대본은 시작하지 않고 끝난 것으로 둔다.
+        // 자동 시작 조건: 전투가 준비되면 입장 후 구간을 시작한다. 비었거나 '한 번만'으로 이미 봤으면 끝난 것으로 둔다.
         private bool ShouldAutoStart()
         {
             if (IsRunning || Finished || !playOnStart || battle == null || battle.Session == null || script == null) return false;
-            if (Options.startTiming == ScenarioStartTiming.BattleWon && (battle.Session.Phase != BattlePhase.Won || battle.Session.IsBusy || battle.IsPresenting)) return false;
             if (AlreadySeen) { Finished = true; return false; }
             return true;
         }
-        /// <summary>자동 시작 조건을 확인해 맞으면 시작한다(테스트용, Play 중에는 매 프레임 같은 확인을 한다). 시작했으면 true.</summary>
+        /// <summary>자동 시작 조건을 확인해 맞으면 입장 후 구간을 시작한다(Play 중 매 프레임과 테스트가 같은 경로). 시작했으면 true.</summary>
         public bool TryAutoStart() { if (!ShouldAutoStart()) return false; Begin(); return IsRunning; }
-        /// <summary>대본을 처음부터 시작한다.</summary>
+        /// <summary>입장 후 구간을 처음부터 시작한다(비어 있으면 아무것도 하지 않음).</summary>
         public void Begin()
         {
             if (battle == null || script == null) { Debug.LogError($"[IBIIIS] {name}: 대본 진행기에 전투(Battle) 또는 대본(Script)이 연결되지 않았습니다.", this); return; }
-            IsRunning = true; Finished = false; index = -1;
+            if (!script.HasStartPart) { Finished = true; return; }
+            IsRunning = true; Finished = false; index = script.BattleStart - 1;
             battle.AllowUndoRestart = false; battle.AllowRangeToggle = false;
             if (Options.hideEnemyAlerts) battle.AlertsEnabled = false;
             if (Options.scriptControlsDanger) battle.DangerIdleEnabled = false;
@@ -225,7 +227,8 @@ namespace IBIIIS
         {
             EndStep();
             index++;
-            if (index >= script.Steps.Length) { Finish(); return; }
+            // 입장 후 구간 끝: 클리어 후 구간 시작 단계(경계) 또는 대본 끝.
+            if (index >= script.ClearBoundary) { Finish(); return; }
             StartStep(script.Steps[index]);
         }
         private void EndStep()
@@ -346,17 +349,20 @@ namespace IBIIIS
             if (dialogue == null) dialogue = DialogueController.Play(Ui, null);
             return dialogue;
         }
+        // 입장 후 구간을 마친다. 그 구간의 감정 표시·자세도 끝내고(구간 경계에서 표시가 끝난다) 일반 전투로 돌려준다.
         private void Finish()
         {
             IsRunning = false; Finished = true; MarkSeen();
             EnsureDialogue().Hide();
+            foreach (var e in emotes) e.View?.RemoveFromHierarchy(); emotes.Clear();
+            if (poseUntilLine || battle.PoseSprite != null) { poseUntilLine = false; battle.EndPose(); }
             Restore();
         }
-        // '한 번만' 대본을 끝까지 봤다고 기록한다. 저장에 실패해도 진행은 막지 않는다(다음에 다시 나올 수 있음).
+        // '한 번만' 구간을 끝까지 봤다고 기록한다. 저장에 실패해도 진행은 막지 않는다(다음에 다시 나올 수 있음).
         private void MarkSeen()
         {
             if (script == null || !Options.onlyOnce) return;
-            try { ProgressStore.MarkSeen(script.Id); }
+            try { ProgressStore.MarkSeen(script.SeenId(ScenarioSection.Battle)); }
             catch (Exception e) { Debug.LogException(e); }
         }
         private void Restore() { battle.CommandFilter = null; battle.SetGuideCells(null); battle.AllowUndoRestart = true; battle.AllowRangeToggle = true; battle.AlertsEnabled = true; battle.DangerIdleEnabled = true; }

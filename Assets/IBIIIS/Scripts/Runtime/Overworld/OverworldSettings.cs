@@ -11,6 +11,7 @@ namespace IBIIIS
         public const float DefaultRollDistance = 1.5f, DefaultRollDuration = .35f, DefaultRollEaseOut = 1, DefaultRollRecovery = .2f, DefaultEvadeCooldown = .25f;
         public const float DefaultStrideLength = .9f, DefaultRunStrideLength = 1.3f, DefaultWalkHopScale = .5f, DefaultStopSquashScale = .6f;
         public const int DefaultDustEverySteps = 3;
+        public const float DefaultContactGraceSeconds = 1.5f, DefaultReturnClearance = .6f;
         [SerializeField, Min(.1f), Tooltip("플레이어 이동 속도(칸/초). 1칸 = 1 Unity 단위. 임시 기본값 3.5.")] private float moveSpeed = DefaultMoveSpeed;
         [SerializeField, Tooltip("선택. 카메라 Projection·내려다보는 각도·화각. 비우면 카메라의 현재 값을 유지합니다. 기본은 미니맵 전용 OverworldCameraSettings(화각 30)이며, 전투와 같게 하려면 GlobalCameraSettings를 연결합니다.")]
         private MapCameraSettings cameraSettings;
@@ -56,6 +57,11 @@ namespace IBIIIS
         public MapCameraSettings CameraSettings => cameraSettings;
         public float CameraViewHeight => Mathf.Max(1, cameraViewHeight);
         public float CameraFollowSharpness => Mathf.Max(0, cameraFollowSharpness);
+        [Header("어드벤처씬 적")]
+        [SerializeField, Min(0), Tooltip("전투에서 돌아온 뒤 적에 닿아도 다시 들어가지 않는 시간(초). 임시 1.5.")] private float contactGraceSeconds = DefaultContactGraceSeconds;
+        [SerializeField, Min(0), Tooltip("전투에서 돌아올 때 적의 닿음 거리 바깥으로 더 떨어뜨리는 거리(칸). 적과 겹치지 않게 합니다. 임시 0.6.")] private float returnClearance = DefaultReturnClearance;
+        public float ContactGraceSeconds => Mathf.Max(0, contactGraceSeconds);
+        public float ReturnClearance => Mathf.Max(0, returnClearance);
         public UnityEngine.InputSystem.InputActionAsset InputActions => inputActions;
         [SerializeField, Tooltip("선택. 게임 화면 UI(미니맵 안내·결과 팝업) 설정. 전투 Player Settings와 같은 에셋을 연결합니다. 비우면 임시 IMGUI 표시를 씁니다.")]
         private GameUiSettings gameUi;

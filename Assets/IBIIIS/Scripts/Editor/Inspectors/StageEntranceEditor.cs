@@ -6,10 +6,33 @@ using UnityEngine.UIElements;
 
 namespace IBIIIS.Editor
 {
-    /// <summary>스테이지 입구 Inspector. 전투 씬을 씬 에셋으로 고르게 하고, ID 누락·중복과 빌드 씬 목록 누락을 알려 준다.</summary>
+    /// <summary>스테이지 입구 Inspector(StageLinkEditor와 같음).</summary>
     [CustomEditor(typeof(StageEntrance)), CanEditMultipleObjects]
-    public sealed class StageEntranceEditor : UnityEditor.Editor
+    public sealed class StageEntranceEditor : StageLinkEditor { }
+    /// <summary>어드벤처씬 적 Inspector. 입구와 같은 검사에, 진입 대화 대본이 전투 씬 진행기의 대본과 같은지 알려 준다.</summary>
+    [CustomEditor(typeof(StageEnemy)), CanEditMultipleObjects]
+    public sealed class StageEnemyEditor : StageLinkEditor
     {
+        protected override void AddExtra(VisualElement status)
+        {
+            var enemy = (StageEnemy)target;
+            if (enemy.Script == null || string.IsNullOrEmpty(enemy.BattleScenePath)) return;
+            var directors = DialogueScriptScenes.DirectorsInProject().FindAll(e => e.ScenePath == enemy.BattleScenePath);
+            if (directors.Count == 0)
+                status.Add(new HelpBox("전투 씬에 대본 진행기가 없어 대본의 '입장 후' 구간은 실행되지 않습니다(입장 전·클리어 후 구간은 어드벤처씬에서 실행).", HelpBoxMessageType.Info));
+            else if (!directors.Exists(e => e.Script == enemy.Script))
+            {
+                status.Add(new HelpBox($"전투 씬 진행기의 대본({(directors[0].Script != null ? directors[0].Script.name : "없음")})이 이 적의 진입 대화 대본({enemy.Script.name})과 다릅니다. '입장 후' 구간은 전투 씬 진행기의 대본으로 실행됩니다.", HelpBoxMessageType.Warning));
+                status.Add(new Button(() => { DialogueScriptScenes.Connect(directors[0], enemy.Script, out string problem); if (problem != null) EditorUtility.DisplayDialog("전투 씬에 연결", problem, "확인"); }) { text = "전투 씬 진행기에 이 대본 연결" });
+            }
+        }
+        protected override string ExtraKey => ((StageEnemy)target).Script != null ? ((StageEnemy)target).Script.name : "";
+    }
+    /// <summary>전투 스테이지 연결(입구·어드벤처씬 적) Inspector 공통. 전투 씬을 씬 에셋으로 고르게 하고, ID 누락·중복과 빌드 씬 목록 누락을 알려 준다.</summary>
+    public abstract class StageLinkEditor : UnityEditor.Editor
+    {
+        protected virtual void AddExtra(VisualElement status) { }
+        protected virtual string ExtraKey => "";
         public override VisualElement CreateInspectorGUI()
         {
             var root = new VisualElement();
@@ -40,17 +63,17 @@ namespace IBIIIS.Editor
             string shown = null;
             void Refresh()
             {
-                var entrance = (StageEntrance)target;
-                if (entrance == null) return;
+                var entrance = target as IStageLink;
+                if (entrance == null || target == null) return;
                 var duplicate = FindDuplicate(entrance);
                 var path = entrance.BattleScenePath;
                 int index = string.IsNullOrEmpty(path) ? -2 : SceneUtilityIndex(path);
                 bool disabled = index >= 0 && !EditorBuildSettings.scenes[index].enabled;
                 bool hasId = !string.IsNullOrEmpty(entrance.StageId);
-                string key = $"{entrance.Problem}|{(duplicate != null ? duplicate.name : null)}|{entrance.StageId}|{path}|{index}|{disabled}|{hasId && entrance.IsCleared}";
+                string key = $"{entrance.Problem}|{(duplicate != null ? duplicate.name : null)}|{entrance.StageId}|{path}|{index}|{disabled}|{hasId && entrance.IsCleared}|{ExtraKey}";
                 if (key == shown) return;
                 shown = key; status.Clear();
-                if (entrance.Problem != null) status.Add(new HelpBox(entrance.Problem + " 이 입구는 상호작용하지 않습니다.", HelpBoxMessageType.Error));
+                if (entrance.Problem != null) status.Add(new HelpBox(entrance.Problem + " 전투에 들어가지 않습니다.", HelpBoxMessageType.Error));
                 if (duplicate != null) status.Add(new HelpBox($"Stage Id '{entrance.StageId}'를 '{duplicate.name}'도 쓰고 있습니다. 클리어 기록이 섞이므로 ID를 다르게 하세요.", HelpBoxMessageType.Error));
                 if (index == -1)
                 {
@@ -62,6 +85,7 @@ namespace IBIIIS.Editor
                     status.Add(new HelpBox("이 전투 씬은 빌드 씬 목록에 있지만 꺼져 있습니다. 빌드한 게임에서는 들어갈 수 없습니다.", HelpBoxMessageType.Info));
                     status.Add(new Button(() => { EnableInBuild(index); Refresh(); }) { text = "빌드 씬 목록에서 켜기" });
                 }
+                AddExtra(status);
                 if (hasId)
                 {
                     var record = new TextField("클리어 기록") { value = entrance.IsCleared ? "클리어함" : "클리어 안 함", isReadOnly = true };
@@ -74,11 +98,12 @@ namespace IBIIIS.Editor
             Refresh();
             return root;
         }
-        private static StageEntrance FindDuplicate(StageEntrance entrance)
+        // 같은 Stage Id를 쓰는 다른 입구·적(열린 씬). 클리어 기록이 섞인다.
+        private MonoBehaviour FindDuplicate(IStageLink entrance)
         {
             if (string.IsNullOrEmpty(entrance.StageId)) return null;
-            foreach (var other in Object.FindObjectsByType<StageEntrance>(FindObjectsInactive.Include, FindObjectsSortMode.None))
-                if (other != entrance && other.StageId == entrance.StageId) return other;
+            foreach (var other in Object.FindObjectsByType<MonoBehaviour>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+                if (other != target && other is IStageLink link && link.StageId == entrance.StageId) return other;
             return null;
         }
         private static int SceneUtilityIndex(string path)

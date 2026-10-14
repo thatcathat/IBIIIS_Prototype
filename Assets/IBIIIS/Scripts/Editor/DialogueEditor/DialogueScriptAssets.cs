@@ -49,7 +49,8 @@ namespace IBIIIS.Editor
             return other != null ? $"이미 '{other.name}' 대본이 쓰는 ID입니다." : null;
         }
         /// <summary>빈 대본의 시작 내용: 빈 지문 한 줄.</summary>
-        public static ScenarioStep[] BlankSteps() => new[] { new ScenarioStep { type = ScenarioStepType.Line, line = DialogueLine.Narrate("") } };
+        // 빈 대본: 입장 전 비어 있음, 입장 후 구간에 지문 한 줄, 클리어 후 비어 있음.
+        public static ScenarioStep[] BlankSteps() => new[] { new ScenarioStep { type = ScenarioStepType.BattleSection }, new ScenarioStep { type = ScenarioStepType.Line, line = DialogueLine.Narrate("") }, new ScenarioStep { type = ScenarioStepType.ClearSection } };
         /// <summary>대본 에셋을 만든다. 단계는 복사본이며 단계 ID는 새로 받는다(원본은 바뀌지 않음). 경로에 이미 파일이 있거나 ID를 쓸 수 없으면 만들지 않고 null과 이유를 돌려준다.</summary>
         public static ScenarioScript Create(string path, string id, ScenarioStep[] steps, out string problem)
         {

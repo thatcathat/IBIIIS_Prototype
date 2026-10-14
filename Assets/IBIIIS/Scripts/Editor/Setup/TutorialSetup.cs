@@ -313,7 +313,9 @@ namespace IBIIIS.Editor
                     scarecrow.SetActive(false);
                     actors.Add(new ScenarioDirector.Actor { id = "scarecrow", target = scarecrow, height = 1.6f, blocksCell = true, cell = new Vector2Int(7, 2) });
                 }
-                var director = battle.gameObject.AddComponent<ScenarioDirector>();
+                // 테스트 씬 생성이 빈 진행기를 붙여 두므로 그것을 쓴다.
+                var director = battle.GetComponent<ScenarioDirector>();
+                if (director == null) director = battle.gameObject.AddComponent<ScenarioDirector>();
                 director.Configure(battle, script, actors.ToArray());
                 EditorUtility.SetDirty(director);
                 if (!EditorSceneManager.SaveScene(scene)) throw new System.IO.IOException($"튜토리얼 씬 저장 실패: {created}");

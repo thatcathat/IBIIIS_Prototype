@@ -132,6 +132,7 @@ namespace IBIIIS
         private void Close()
         {
             closing = true;
+            run.Result = Result; // 돌아간 뒤 클리어 후 대화를 보일지 어드벤처씬이 판단한다
             try { StageFlow.Return(); }
             catch (Exception e) { closing = false; problem = UiText.ResultReturnFailed.Text; Debug.LogException(e); }
         }

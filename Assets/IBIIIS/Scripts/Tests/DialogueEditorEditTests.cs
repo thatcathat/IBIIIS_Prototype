@@ -117,5 +117,55 @@ namespace IBIIIS.Tests
             Assert.AreEqual(3, issues.Count(i => i.Error));
             Assert.IsEmpty(DialogueScriptEdits.Validate(Sample()), "정상 대본은 문제 없음");
         }
+        private static ScenarioStep Clear() => new ScenarioStep { type = ScenarioStepType.ClearSection };
+        [Test] public void ClearSectionSplitsScenesAndEndsDisplays()
+        {
+            var shown = Emote(); shown.untilEnd = true;
+            var steps = new[] { shown, Line("가"), Clear(), Line("나"), Line("다") };
+            CollectionAssert.AreEqual(new[] { (0, 1), (3, 4) }, ScenarioTimeline.Scenes(steps), "클리어 구간 시작 단계는 어느 장면에도 들지 않고 장면을 끊는다");
+            Assert.AreEqual(3, DialogueScriptEdits.Columns(steps).Count);
+            var span = ScenarioTimeline.SpanOf(steps, 0).Value;
+            Assert.AreEqual((1, ScenarioSpanEnd.ScriptEnd), (span.End, span.EndKind), "표시는 구간 경계에서 끝난다");
+            Assert.IsNull(DialogueScriptEdits.MoveDisplayEdge(steps, 0, false, 2, out _), "표시를 클리어 구간으로 늘리지 않음");
+            Assert.IsNull(DialogueScriptEdits.MoveDisplayEdge(steps, 0, true, 1, out _), "표시를 클리어 구간으로 옮기지 않음");
+            var before = DialogueScriptEdits.InsertBeforeColumn(steps, 1, Line("새"), out int at);
+            Assert.AreEqual(3, at); Assert.AreEqual("?가#새나다", Texts(before), "클리어 구간 첫 세로줄 앞에 넣으면 클리어 구간에 들어간다");
+            var twice = new[] { Line("가"), Clear(), Clear() };
+            Assert.AreEqual(1, DialogueScriptEdits.Validate(twice).Count(i => i.Error), "클리어 구간 시작 단계가 두 개면 오류");
+        }
+        [Test] public void OldScriptsGetAClearSectionByTheirStartTiming()
+        {
+            var script = ScriptableObject.CreateInstance<ScenarioScript>();
+            try
+            {
+                script.Set("old", new[] { Line("가"), Line("나") });
+                Assert.AreEqual(2, script.ClearBoundary, "예전 전투 준비 시 대본: 전체가 전투 시작 구간");
+                Assert.IsTrue(script.HasStartPart); Assert.IsFalse(script.HasClearPart);
+                Assert.IsTrue(script.EnsureSections()); Assert.AreEqual(0, script.BattleMarker, "맨 앞에 입장 후 구간 시작(입장 전 비움)"); Assert.AreEqual(3, script.ClearMarker, "맨 뒤에 클리어 후 구간 시작");
+                Assert.IsFalse(script.HasBeforePart); Assert.IsTrue(script.HasStartPart); Assert.IsFalse(script.HasClearPart);
+                Assert.IsFalse(script.EnsureSections(), "다시 해도 그대로");
+
+                script.Set("old-clear", new[] { Line("가") });
+                var o = script.Options; o.startTiming = ScenarioStartTiming.BattleWon; script.SetOptions(o);
+                Assert.AreEqual(-1, script.ClearBoundary, "예전 클리어 시 대본: 전체가 클리어 구간");
+                Assert.IsFalse(script.HasStartPart); Assert.IsTrue(script.HasClearPart);
+                Assert.IsTrue(script.EnsureSections()); Assert.AreEqual(0, script.BattleMarker); Assert.AreEqual(1, script.ClearMarker, "입장 후 구간 바로 뒤에 클리어 후 구간 시작");
+                Assert.AreEqual(ScenarioStartTiming.BattleReady, script.Options.startTiming, "시작 시점은 더 쓰지 않음");
+                Assert.IsTrue(script.HasClearPart); Assert.IsFalse(script.HasStartPart);
+
+                script.Set("dup", new[] { Line("가"), Clear(), Line("나"), Clear() });
+                Assert.IsTrue(script.EnsureSections()); Assert.AreEqual(4, script.Steps.Length, "두 번째 클리어 후 경계는 지우고 입장 후 경계를 맨 앞에");
+                Assert.AreEqual(ScenarioStepType.BattleSection, script.Steps[0].type);
+                script.Set("three", new[] { Line("전"), new ScenarioStep { type = ScenarioStepType.BattleSection }, Line("후"), Clear(), Line("끝") });
+                Assert.IsFalse(script.EnsureSections(), "세 구간이 다 있으면 그대로");
+                script.Range(ScenarioSection.Before, out int b0, out int b1); script.Range(ScenarioSection.Battle, out int m0, out int m1); script.Range(ScenarioSection.Clear, out int c0, out int c1);
+                Assert.AreEqual((0, 1, 2, 3, 4, 5), (b0, b1, m0, m1, c0, c1), "구간 범위");
+                Assert.AreEqual("three:before", script.SeenId(ScenarioSection.Before)); Assert.AreEqual("three", script.SeenId(ScenarioSection.Battle)); Assert.AreEqual("three:clear", script.SeenId(ScenarioSection.Clear));
+                Assert.AreEqual(ScenarioSection.Before, ScenarioScript.SectionOf(script.Steps, 0)); Assert.AreEqual(ScenarioSection.Battle, ScenarioScript.SectionOf(script.Steps, 2)); Assert.AreEqual(ScenarioSection.Clear, ScenarioScript.SectionOf(script.Steps, 4));
+                var bad = new[] { Line("전"), Emote(), new ScenarioStep { type = ScenarioStepType.BattleSection }, Line("후") };
+                Assert.AreEqual(1, DialogueScriptEdits.Validate(bad).Count(i => i.Error), "어드벤처씬 구간의 감정 표시는 오류");
+            }
+            finally { Object.DestroyImmediate(script); }
+        }
     }
 }

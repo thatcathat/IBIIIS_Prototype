@@ -46,6 +46,8 @@ namespace IBIIIS.Editor
             newOwner = owner;
             var columns = Columns(steps);
             if (target < 0 || target >= columns.Count) return null;
+            // 감정 표시·자세는 구간(입장 전·입장 후·클리어 후)을 넘어 옮기지 않는다(구간 사이에 씬이 바뀜).
+            if (ScenarioScript.SectionOf(steps, owner) != ScenarioScript.SectionOf(steps, columns[target].from)) return null;
             var span = ScenarioTimeline.SpanOf(steps, owner);
             int startColumn = ColumnOf(columns, owner), endColumn = span != null ? ColumnOf(columns, span.Value.End) : startColumn;
             var ids = Enumerable.Range(0, steps.Length).ToList(); var items = new List<ScenarioStep>(steps);
@@ -127,6 +129,15 @@ namespace IBIIIS.Editor
             ids.Insert(at, Created);
             return Build(ids, new List<ScenarioStep>(steps), step);
         }
+        /// <summary>세로줄 column 바로 앞에 단계를 넣는다(그 세로줄과 같은 구간에 들어간다). 기다리는 단계면 새 세로줄이 된다. at은 넣은 위치.</summary>
+        public static ScenarioStep[] InsertBeforeColumn(ScenarioStep[] steps, int column, ScenarioStep step, out int at)
+        {
+            var columns = Columns(steps);
+            at = column >= 0 && column < columns.Count ? columns[column].from : steps.Length;
+            var ids = Enumerable.Range(0, steps.Length).ToList();
+            ids.Insert(at, Created);
+            return Build(ids, new List<ScenarioStep>(steps), step);
+        }
         /// <summary>세로줄 column 뒤에 단계를 넣는다(-1이면 맨 앞). 기다리는 단계면 새 세로줄이 된다. at은 넣은 위치.</summary>
         public static ScenarioStep[] InsertAfterColumn(ScenarioStep[] steps, int column, ScenarioStep step, out int at)
         {
@@ -173,6 +184,14 @@ namespace IBIIIS.Editor
         public static List<Issue> Validate(ScenarioStep[] steps)
         {
             var issues = new List<Issue>();
+            bool clearSeen = false, battleSeen = false;
+            for (int i = 0; i < steps.Length; i++)
+            {
+                if (steps[i].type == ScenarioStepType.ClearSection) { if (clearSeen) issues.Add(new Issue(i, "클리어 후 구간 시작 단계가 두 개 이상(첫 번째만 씀)", true)); clearSeen = true; }
+                else if (steps[i].type == ScenarioStepType.BattleSection) { if (battleSeen) issues.Add(new Issue(i, "입장 후 구간 시작 단계가 두 개 이상(첫 번째만 씀)", true)); battleSeen = true; }
+                else if (!AdventureDialogue.Runs(steps[i].type) && ScenarioScript.SectionOf(steps, i) != ScenarioSection.Battle)
+                    issues.Add(new Issue(i, "어드벤처씬 구간(입장 전·클리어 후)에서는 실행하지 않음(대사·지문·클리어 기록만)", true));
+            }
             var markers = new HashSet<int>();
             for (int i = 0; i < steps.Length; i++) { var span = ScenarioTimeline.SpanOf(steps, i); if (span != null && span.Value.Marker >= 0) markers.Add(span.Value.Marker); }
             for (int i = 0; i < steps.Length; i++)

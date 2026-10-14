@@ -102,6 +102,8 @@ namespace IBIIIS.Editor
                     {
                         foreach (var stage in root.GetComponentsInChildren<StageEntrance>(true))
                             if (!string.IsNullOrEmpty(stage.StageId) && !string.IsNullOrEmpty(stage.SourceName)) list.Add(new LocalizedEntry(GameText.StagesTable, stage.StageId, stage.SourceName, null, $"스테이지 이름 · {sceneName}"));
+                        foreach (var enemy in root.GetComponentsInChildren<StageEnemy>(true))
+                            if (!string.IsNullOrEmpty(enemy.StageId) && !string.IsNullOrEmpty(enemy.SourceName)) list.Add(new LocalizedEntry(GameText.StagesTable, enemy.StageId, enemy.SourceName, null, $"스테이지 이름(어드벤처씬 적) · {sceneName}"));
                         foreach (var npc in root.GetComponentsInChildren<NpcSpeaker>(true))
                         {
                             if (string.IsNullOrEmpty(npc.NpcId))
@@ -124,7 +126,7 @@ namespace IBIIIS.Editor
         private static bool SceneMentions(string path)
         {
             var text = System.IO.File.ReadAllText(path);
-            foreach (var type in new[] { typeof(StageEntrance), typeof(NpcSpeaker) })
+            foreach (var type in new[] { typeof(StageEntrance), typeof(StageEnemy), typeof(NpcSpeaker) })
             {
                 var script = AssetDatabase.FindAssets(type.Name + " t:MonoScript").Select(AssetDatabase.GUIDToAssetPath).FirstOrDefault(p => System.IO.Path.GetFileNameWithoutExtension(p) == type.Name);
                 if (script != null && text.Contains(AssetDatabase.AssetPathToGUID(script))) return true;

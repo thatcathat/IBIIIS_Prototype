@@ -21,6 +21,30 @@ MonoBehaviour:
     hideEnemyAlerts: 1
     scriptControlsDanger: 1
   steps:
+  - id: df002af8b12045998c4042f72db1217c
+    type: 17
+    line:
+      id: 
+      speaker: {fileID: 0}
+      expression: 
+      nameOverride: 
+      text: 
+    actions: 0
+    direction: {x: 0, y: 0}
+    cell: {x: 0, y: 0}
+    seconds: 0
+    keys: 
+    target: 
+    text: 
+    active: 0
+    scenePath: 
+    prefab: {fileID: 0}
+    sprite: {fileID: 0}
+    motion: 0
+    endMotion: 0
+    untilAction: 0
+    untilEnd: 0
+    display: 0
   - id: 0dccc635caea41dba0bc09f6abd29b5b
     type: 0
     line:
@@ -1168,6 +1192,30 @@ MonoBehaviour:
     text: 
     active: 0
     scenePath: Assets/IBIIIS/Scenes/Battle/Tutorial2/Tutorial2.unity
+    prefab: {fileID: 0}
+    sprite: {fileID: 0}
+    motion: 0
+    endMotion: 0
+    untilAction: 0
+    untilEnd: 0
+    display: 0
+  - id: afcdc5479eaa4ba6a6a8508cacca797a
+    type: 16
+    line:
+      id: 
+      speaker: {fileID: 0}
+      expression: 
+      nameOverride: 
+      text: 
+    actions: 0
+    direction: {x: 0, y: 0}
+    cell: {x: 0, y: 0}
+    seconds: 0
+    keys: 
+    target: 
+    text: 
+    active: 0
+    scenePath: 
     prefab: {fileID: 0}
     sprite: {fileID: 0}
     motion: 0

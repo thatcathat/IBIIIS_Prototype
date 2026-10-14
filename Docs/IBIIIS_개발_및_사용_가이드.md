@@ -6,7 +6,7 @@
 
 프로젝트를 실행하고, 외형을 교체하고, 맵과 적·오브젝트를 다루는 실제 절차를 기록한다. 개발 시에는 구현 구조와 새 기능의 연결 지점을 확인하는 데 사용한다.
 
-맵 편집기, 전투 프로토타입(이동·대시·구르기·대기, 적 3종, 충돌·승패, 되돌리기), 맵 자동 검증을 구현했다. 미니맵(Overworld)은 main에 들어와 있으며 시험 중이다. 전투 규칙과 적 배치 절차는 [전투 및 적 배치 가이드](IBIIIS_전투_및_적배치_가이드.md)를 따른다. 아래 표에서 미작성으로 표시한 항목은 아직 사용할 수 있는 절차로 해석하지 않는다.
+맵 편집기, 전투 프로토타입(이동·대시·구르기·대기, 적 3종, 충돌·승패, 되돌리기), 맵 자동 검증을 구현했다. 어드벤처씬(Overworld)은 main에 들어와 있으며 시험 중이다. 전투 규칙과 적 배치 절차는 [전투 및 적 배치 가이드](IBIIIS_전투_및_적배치_가이드.md)를 따른다. 아래 표에서 미작성으로 표시한 항목은 아직 사용할 수 있는 절차로 해석하지 않는다.
 
 ## 검증 역할
 
@@ -42,7 +42,7 @@
 | 수치 변경 | 아래 공용 플레이어 설정, 전투 및 적 배치 가이드의 충돌 연출 | 플레이어·적 이동 시간과 연출 수치는 기록. 그 밖의 수치는 미작성 |
 | 패턴 조합 | 전투 및 적 배치 가이드의 행동 목록 | 행동 목록 편집 구현. `Turn`을 쓰는 패턴은 미정 |
 | 새 행동 구현 | 전투 및 적 배치 가이드의 행동 목록 | 코드 위치 기록. 등록·검증 절차 미작성 |
-| 미니맵·스테이지 연결 | 아래 미니맵(Overworld) 프로토타입 | 구현·자동 테스트 통과, 테스트 씬 생성. 플레이 사용자 확인 대기 |
+| 어드벤처씬·스테이지 연결 | 아래 어드벤처씬(Overworld) 프로토타입 | 구현·자동 테스트 통과, 테스트 씬 생성. 플레이 사용자 확인 대기 |
 
 ## 기능별 설명 양식
 
@@ -71,9 +71,9 @@
 | `Scripts/Runtime/Feedback/EnemyAlert.cs`, `EnemyAlertSettings.cs`, `BattleDialogue.cs` | 적 인식 말풍선(플레이어 말 → 적 대답, 적 혼잣말, 표시 전용) |
 | `Scripts/Runtime/Core/CameraFacingSprite.cs` | 캐릭터 그림을 카메라와 나란히 세우는 공통 규칙(플레이어·적·NPC) |
 | `Scripts/Runtime/Core/MapSolver.cs` | 맵 클리어 가능 여부 탐색 |
-| `Scripts/Runtime/Overworld/Overworld*.cs`, `NpcSpeaker.cs`, `StageEntrance.cs` | 미니맵 자유 이동·걷기 손맛(`OverworldMotion`)·따라가는 카메라·입력·상호작용 대상(NPC 말풍선, 스테이지 입구) |
-| `Scripts/Runtime/Feedback/MotionEffects.cs`, `BreathingSprite.cs` | 전투·미니맵 공용 손맛 자세 계산과 먼지·잔상·소리, NPC 숨쉬기 |
-| `Scripts/Runtime/Core/StageFlow.cs`, `StageResultPopup.cs`, `ProgressStore.cs` | 미니맵 ↔ 전투 씬 전환, 결과 팝업, 클리어 기록 저장 |
+| `Scripts/Runtime/Overworld/Overworld*.cs`, `NpcSpeaker.cs`, `StageEntrance.cs` | 어드벤처씬 자유 이동·걷기 손맛(`OverworldMotion`)·따라가는 카메라·입력·상호작용 대상(NPC 말풍선, 스테이지 입구) |
+| `Scripts/Runtime/Feedback/MotionEffects.cs`, `BreathingSprite.cs` | 전투·어드벤처씬 공용 손맛 자세 계산과 먼지·잔상·소리, NPC 숨쉬기 |
+| `Scripts/Runtime/Core/StageFlow.cs`, `StageResultPopup.cs`, `ProgressStore.cs` | 어드벤처씬 ↔ 전투 씬 전환, 결과 팝업, 클리어 기록 저장 |
 | `Scripts/Runtime/Localization/GameLanguage.cs`, `GameText.cs`, `UiText.cs`, `Scripts/Editor/Localization/` | 다국어: 게임 언어 선택·저장, 번역 표에서 글 찾기, 화면 문구 목록, 번역 표 동기화·CSV 내보내기·가져오기. 아래 다국어 항목 |
 | `Scripts/Editor/` | MapEditorWindow·MapCanvas·UXML/USS(맵 편집기), MapEditorSetup(새 맵·씬 생성), GridMapPreview(Scene 미리보기), 각종 기본 에셋 생성 메뉴 |
 
@@ -88,7 +88,7 @@ Unity의 프로젝트 구성 가이드(unity.com/kr/how-to/organizing-your-proje
 - **예외 2 — 최상위 이름**: 위키독스 예시의 `_Project` 역할은 `Assets/IBIIIS/`가 한다(이름은 바꾸지 않음). 에셋 스토어·외부 플러그인을 들이면 `Assets/ThirdParty/<이름>/`처럼 따로 두고, 고친 부분은 문서에 적어 업데이트 때 다시 적용한다.
 - **진행 상황**: 1단계 코드(`Scripts/`)·2단계 데이터(`ScriptableObjects/`)·3단계 씬(`Scenes/`)·4단계 그림·프리팹·이펙트·소리(`Art/`·`Prefabs/`·`VFX/`·`Audio/`) 완료(2026-10-13).
 - **코드**: `Scripts/Runtime`(어셈블리 `IBIIIS.Runtime`, 네임스페이스 `IBIIIS`), `Scripts/Editor`(`IBIIIS.Editor`), `Scripts/Tests`(`IBIIIS.Tests`). 하위 폴더는 기능별이며 네임스페이스는 바꾸지 않는다.
-  - Runtime: `Core`(격자 판정·맵 데이터·클리어 기록·씬 전환·카메라 정면 규칙), `Battle`(전투 화면·입력·플레이어·적·동반 캐릭터), `Feedback`(손맛·충돌 연출·적 인식 말풍선), `Scenario`(대본·진행기·대화창), `Overworld`(미니맵), `UI`(게임 UI 설정·HUD·결과 팝업·타이틀), `Localization`(게임 언어·번역 글 찾기·화면 문구 목록)
+  - Runtime: `Core`(격자 판정·맵 데이터·클리어 기록·씬 전환·카메라 정면 규칙), `Battle`(전투 화면·입력·플레이어·적·동반 캐릭터), `Feedback`(손맛·충돌 연출·적 인식 말풍선), `Scenario`(대본·진행기·대화창), `Overworld`(어드벤처씬), `UI`(게임 UI 설정·HUD·결과 팝업·타이틀), `Localization`(게임 언어·번역 글 찾기·화면 문구 목록)
   - Editor: `MapEditor`(맵 에디터·새 맵·미리보기·검증, 화면 파일 `UI/`), `DialogueEditor`(IBIIIS Dialogue Editor), `Inspectors`(Inspector·Drawer), `Setup`(기본 에셋 생성 메뉴와 경로 상수 `AssetPaths`), `Localization`(번역 표 동기화·CSV)
 - **이름**: 파일·폴더 이름에 공백을 쓰지 않고 PascalCase로 쓴다(`Tutorial1Script`, `PlayerSpriteImport`). 시험용은 `Test`를 붙인다. 고유 ID는 이름과 별개로 에셋 안에 둔다(적 ID, 대본 ID, 단계 ID).
 - **실험**: 정식이 아닌 씬·에셋은 `Assets/Sandbox/`에 두고 빌드 씬 목록에 넣지 않는다.
@@ -102,13 +102,13 @@ Unity의 프로젝트 구성 가이드(unity.com/kr/how-to/organizing-your-proje
 | `Assets/IBIIIS/Art/Sprites` | 그림(스프라이트): `Player/`(플레이어 그림 전부), `Enemies/`(`<적 ID>.png`), `NPC/`, `Shared/`(발밑 그림자·방향 화살표), `Overworld/`(클리어 깃발), `Tutorial/`(튜토리얼 임시 그림) |
 | `Assets/IBIIIS/Art/Portraits` | 대화 초상화 그림 |
 | `Assets/IBIIIS/Prefabs/Characters` | `Player/`(PlayerVisual, OverworldPlayer), `Enemies/`(`<적 ID>.prefab`), `NPC/`, `Shared/`(GroundShadow·FacingArrow 공용 프리팹) |
-| `Assets/IBIIIS/Prefabs/Overworld`, `Prefabs/Environments` | 미니맵 클리어 깃발, 환경 장식 프리팹 |
+| `Assets/IBIIIS/Prefabs/Overworld`, `Prefabs/Environments` | 어드벤처씬 클리어 깃발, 환경 장식 프리팹 |
 | `Assets/IBIIIS/VFX`, `Audio/SFX` | 연출 이펙트(충돌 별·착지 먼지 그림과 프리팹)·효과음 |
 | `Assets/IBIIIS/ScriptableObjects/Tiles` | 이동 바닥 종류(TileDefinition) |
 | `Assets/IBIIIS/ScriptableObjects/Dialogue/Characters` | 대화 인물(DialogueCharacter). 초상화 그림은 `Art/Portraits` |
-| `Assets/IBIIIS/Materials` | 공용 재질(PrototypeUnlit, 미니맵 임시 재질) |
-| `Assets/IBIIIS/Scenes` | 씬: `Title.unity`, `OverworldTest.unity`(미니맵 테스트), `Battle/<맵>/`(전투 맵 데이터와 씬 한 쌍) |
-| `Assets/IBIIIS/ScriptableObjects/Scenarios` | 모든 대본: `Tutorial/`(Tutorial1Script·Tutorial2Script), `NPC/`(미니맵 NPC 대화 DialogueScript). IBIIIS Dialogue Editor의 새 대본 기본 위치 |
+| `Assets/IBIIIS/Materials` | 공용 재질(PrototypeUnlit, 어드벤처씬 임시 재질) |
+| `Assets/IBIIIS/Scenes` | 씬: `Title.unity`, `OverworldTest.unity`(어드벤처씬 테스트), `Battle/<맵>/`(전투 맵 데이터와 씬 한 쌍) |
+| `Assets/IBIIIS/ScriptableObjects/Scenarios` | 모든 대본: `Tutorial/`(Tutorial1Script·Tutorial2Script), `NPC/`(어드벤처씬 NPC 대화 DialogueScript). IBIIIS Dialogue Editor의 새 대본 기본 위치 |
 | `Assets/IBIIIS/Scenes/Battle/<맵 이름>/` | GridMap(.asset)과 연결 씬(.unity) 한 쌍. 샘플과 사용자 맵 모두 여기에 둔다 |
 | `Assets/IBIIIS/Resources/IBIIIS` | 이름으로 로드하는 기본 재질(DefaultGround). 이동 금지 |
 | `Assets/IBIIIS/ScriptableObjects/Localization` | 다국어: `LocalizationSettings`, `Locales/`(Korean·English), `Tables/`(번역 표. 표 묶음마다 `<표>`·`<표> Shared Data`·`<표>_ko`·`<표>_en` 에셋), `TranslationRecord`(번역할 때 본 원문 기록) |
@@ -122,7 +122,7 @@ Unity의 프로젝트 구성 가이드(unity.com/kr/how-to/organizing-your-proje
 - `새 맵`의 저장 대화상자는 `Scenes/Battle`에서 열린다. `Scenes/Battle` 바로 아래에 이름을 지정하면 `Scenes/Battle/<이름>/` 폴더를 만들어 맵·씬 쌍을 넣는다. Play 중이거나 이름 없는 씬이 열려 있으면 폴더를 만들기 전에 거부하고, 생성이 실패하면 이번에 만든 빈 폴더를 지운다. 다른 폴더를 고르면 그 폴더에 생성한다. `새 바닥`은 `Tiles`, `새 환경 프리팹`은 `Prefabs/Environments`에서 열린다.
 - 2026-10-06 폴더 구조 정리 후 씬·프리팹·에셋·재질의 GUID 참조를 조사해 끊긴 참조가 없음을 확인했다. 삭제된 `Wall.asset`을 가리키던 팔레트 참조 3건(StarterMap·TestMap·TestMap3)은 이 맵들이 사용자에 의해 삭제되어(2026-10-09 작업 트리 기준) 남아 있지 않다. 삭제된 바닥 참조가 다시 생기면 아래 '삭제된 바닥 참조 정리'로 지운다.
 - `Assets/Logs/MapScenePreview.png`(어디서도 참조하지 않는 캡처)는 2026-10-13 프로젝트 정리 때 지웠다(사용자 승인, git 기록에서 되살릴 수 있음).
-- Unity 템플릿 기본 입력 `Assets/InputSystem_Actions.inputactions`도 2026-10-13 지웠다(사용자 결정). 게임은 쓰지 않았고 프로젝트 전역 입력(Project-wide Actions) 등록만 있어 등록을 풀고 지웠다. 게임 입력은 `ScriptableObjects/Settings/IBIIISInput`(전투)·`OverworldInput`(미니맵)이다. Project Settings > Input System Package에 전역 입력이 없다는 안내가 보여도 정상이다. 전투·미니맵 입력은 사용자 확인 대기([플레이 확인 목록](IBIIIS_플레이_확인_목록.md) B-13·O-10).
+- Unity 템플릿 기본 입력 `Assets/InputSystem_Actions.inputactions`도 2026-10-13 지웠다(사용자 결정). 게임은 쓰지 않았고 프로젝트 전역 입력(Project-wide Actions) 등록만 있어 등록을 풀고 지웠다. 게임 입력은 `ScriptableObjects/Settings/IBIIISInput`(전투)·`OverworldInput`(어드벤처씬)이다. Project Settings > Input System Package에 전역 입력이 없다는 안내가 보여도 정상이다. 전투·어드벤처씬 입력은 사용자 확인 대기([플레이 확인 목록](IBIIIS_플레이_확인_목록.md) B-13·O-10).
 - **그림 가져오기 프리셋**: `ScriptableObjects/Settings/Presets/PlayerSpriteImport.preset`(스프라이트, PPU 500, 발밑 기준점, 밉맵 없음)과 `EnemySpriteImport.preset`(같은 설정, PPU 600)을 Project Settings > Preset Manager의 TextureImporter 기본값에 폴더 조건으로 걸었다(`Art/Sprites/Player/**`, `Art/Sprites/Enemies/**`). 이 폴더에 새 PNG를 넣으면 처음 가져올 때 자동으로 적용된다(이미 있는 그림은 바꾸지 않음). 그림마다 다른 값(스프라이트 이름·영역·내부 ID)은 프리셋에서 뺐다. 규격을 바꾸려면 프리셋 에셋을 고친다. `IBIIIS > Create Default Player Visual`의 그림 설정 맞추기는 그대로 남아 있다. 새 그림 자동 적용은 사용자 확인 대기([플레이 확인 목록](IBIIIS_플레이_확인_목록.md) A-02).
 - **버전 관리**: `.meta`는 모두 커밋하고 직렬화는 Force Text다. 루트의 `.gitattributes`가 텍스트 파일을 LF로(커밋 때 줄바꿈 경고 없음), 씬·프리팹·에셋·`.meta`를 Unity Smart Merge로, 그림·소리·글꼴·문서를 바이너리로 정한다. 새 C# 파일도 LF로 만든다(Project Settings > Editor > Line Endings For New Scripts = Unix). 루트의 `.editorconfig`가 VS Code·Rider 등 편집기도 LF로 저장하게 한다. 작업 폴더의 CRLF 파일 163개를 2026-10-13 LF로 맞췄다(내용 변화 없음). Smart Merge 도구 연결은 PC마다 한 번 git 설정에 해야 한다(이 PC는 2026-10-13 설정함):
 
@@ -153,7 +153,7 @@ Unity의 프로젝트 구성 가이드(unity.com/kr/how-to/organizing-your-proje
 
 1. Unity `6000.3.23f1`에서 프로젝트를 연다. 메뉴 `IBIIIS > Map Editor`로 전용 창을 연다. Scene 창이나 Play 모드는 필요 없다.
 2. 상단 맵 슬롯에 `Assets/IBIIIS/Scenes/Battle/ProtoTypeMap/ProtoTypeMap.asset`을 넣는다. 샘플은 11×11칸, 적 6이다. 이전 샘플 StarterMap은 2026-10-09에 사용자가 삭제했다. `IBIIIS > Create Starter Map`은 StarterMap이 없으면 12×10칸의 빈 연습 맵을 새로 만들고, 있으면 덮어쓰지 않고 연다.
-3. `새 맵`에서 이름과 저장 위치를 지정하면 같은 폴더에 `이름.asset`(GridMap)과 `이름.unity`(해당 맵을 연결한 씬)를 함께 생성한다. 둘 중 하나라도 같은 이름이 있으면 공통 이름에 번호를 붙여 기존 파일을 보존한다. 기본 크기는 12×12이고 모든 칸이 비어 있다. 시작 위치도 아직 없으므로 편집용 씬만 생성하고, Play 전에는 바닥과 시작 위치를 지정해야 한다. 씬에는 공용 플레이어·카메라 설정과 기본 머티리얼을 자동 연결한다. 생성된 씬은 Project에서 선택되며 더블클릭해 연다. 현재 열린 씬을 자동으로 교체하지 않는다. 이름 없는 씬이 열려 있으면 먼저 저장하라는 안내가 나오며 맵만 생성하지 않는다. 씬 생성 실패 시 이번에 만든 맵·씬을 정리한다.
+3. `새 맵`에서 이름과 저장 위치를 지정하면 같은 폴더에 `이름.asset`(GridMap)과 `이름.unity`(해당 맵을 연결한 씬)를 함께 생성한다. 둘 중 하나라도 같은 이름이 있으면 공통 이름에 번호를 붙여 기존 파일을 보존한다. 기본 크기는 12×12이고 모든 칸이 비어 있다. 시작 위치도 아직 없으므로 편집용 씬만 생성하고, Play 전에는 바닥과 시작 위치를 지정해야 한다. 씬에는 공용 플레이어·카메라 설정과 기본 머티리얼을 자동 연결하고, `Grid Map Player`에 대본 진행기(`ScenarioDirector`)를 빈 채로 붙인다(`Battle` 연결, `Script` 비움, 자동 시작 켬. 2026-10-15 사용자 결정). 대본이 비어 있으면 시작하지 않고 전투·결과 팝업이 평소대로 진행되며, Inspector에는 경고가 아닌 안내가 보인다. 대화를 넣으려면 IBIIIS Dialogue Editor의 `씬에 연결`로 대본만 꽂는다. 이전에 만든 맵(ProtoTypeMap·PrototypeMap2)에는 붙이지 않았다. 생성된 씬은 Project에서 선택되며 더블클릭해 연다. 현재 열린 씬을 자동으로 교체하지 않는다. 이름 없는 씬이 열려 있으면 먼저 저장하라는 안내가 나오며 맵만 생성하지 않는다. 씬 생성 실패 시 이번에 만든 맵·씬을 정리한다.
 4. 왼쪽 도구 레일에서 `칠하기 B`를 선택하고 클릭·드래그한다. `지우기 E`는 이동 영역만 제거하고 배경 바닥은 남긴다. 빈칸은 이동 불가다. 드래그 한 번은 Undo 한 번으로 복구한다. 하단 `칠하기` 탭의 바닥 견본에서 종류를 선택해 칠한다. 이동 불가 타일은 등록·배치할 수 없다.
 5. `시작 위치` 도구로 이동 가능한 칸을 클릭한다. 노란 테두리가 시작 위치다. 시작 칸을 지우면 시작 위치도 해제되고 재지정 안내가 나온다. 다시 칠하기만 해서는 시작 위치가 복원되지 않는다. 잘못된 시작 위치는 플레이 준비 검증에서 거부한다.
 6. 가운데 버튼 드래그로 화면 이동, 휠로 확대·축소, 오른쪽 클릭(또는 `선택 V` 도구)으로 칸을 선택해 하단 `선택한 칸`에서 정보를 본다. `화면 맞춤`(F)은 맵 전체가 보이게 맞춘다. 격자 위쪽은 +Y이며 런타임의 +Z와 대응한다.
@@ -218,7 +218,7 @@ Unity의 프로젝트 구성 가이드(unity.com/kr/how-to/organizing-your-proje
 
 ### 공용 카메라 설정
 
-- `Assets/IBIIIS/ScriptableObjects/Settings/GlobalCameraSettings.asset`을 선택해 Inspector에서 편집한다. Orthographic 끔 = Perspective, Rotation = `(40, 0, 0)`, Field Of View = `50`이 현재 값이다(사용자가 2026-10-07 75에서 50으로 변경). 정면은 좌우 회전 Y=0을 의미하며, X는 바닥을 내려다보는 각도다. 미니맵 카메라는 따로 `OverworldCameraSettings`를 쓴다(아래 미니맵 편집 항목).
+- `Assets/IBIIIS/ScriptableObjects/Settings/GlobalCameraSettings.asset`을 선택해 Inspector에서 편집한다. Orthographic 끔 = Perspective, Rotation = `(40, 0, 0)`, Field Of View = `50`이 현재 값이다(사용자가 2026-10-07 75에서 50으로 변경). 정면은 좌우 회전 Y=0을 의미하며, X는 바닥을 내려다보는 각도다. 어드벤처씬 카메라는 따로 `OverworldCameraSettings`를 쓴다(아래 어드벤처씬 편집 항목).
 - `ProtoTypeMap.unity`와 새로 생성하는 테스트 씬은 이 에셋을 참조한다. 별도로 만든 기존 씬은 Grid Map Player의 Camera Settings에 같은 에셋을 연결하고 Auto Fit Camera를 켜면 함께 적용된다.
 - Perspective에서는 맵 크기·화각·화면 비율에 따라 거리를, Orthographic에서는 Size를 계산한다. 그리드 범위와 플레이어 표시 높이를 포함하며 임의로 매우 크게 만든 외형까지 자동으로 맞추지는 않는다.
 - Auto Fit Camera를 끄면 씬 Camera의 개별 설정을 유지한다. 공용 값은 설정 에셋에, 설정 참조와 개별 카메라 값은 씬에 저장한다.
@@ -246,9 +246,9 @@ Unity의 프로젝트 구성 가이드(unity.com/kr/how-to/organizing-your-proje
 
 ### 전투 입력(Input Actions)
 
-1. 키 배치는 `Assets/IBIIIS/ScriptableObjects/Settings/IBIIISInput.inputactions`의 액션 맵 `Battle`에서 관리하고 `IBIIIS > Player Settings`의 `Input Actions` 슬롯으로 연결한다. 메뉴 `IBIIIS > Create Default Input Actions`는 파일이 없을 때만 기본 배치를 만들고 설정 슬롯이 비어 있을 때만 연결한다(기존 파일·연결은 덮어쓰지 않음). 파일은 있는데 JSON 오류 등으로 가져오기에 실패했으면 기본 배치로 덮어쓰지 않고 Console에 `[IBIIIS] 입력 파일을 불러오지 못했습니다` 오류를 남긴다. Import 오류를 고친 뒤 다시 실행한다(미니맵 입력 파일도 같다).
+1. 키 배치는 `Assets/IBIIIS/ScriptableObjects/Settings/IBIIISInput.inputactions`의 액션 맵 `Battle`에서 관리하고 `IBIIIS > Player Settings`의 `Input Actions` 슬롯으로 연결한다. 메뉴 `IBIIIS > Create Default Input Actions`는 파일이 없을 때만 기본 배치를 만들고 설정 슬롯이 비어 있을 때만 연결한다(기존 파일·연결은 덮어쓰지 않음). 파일은 있는데 JSON 오류 등으로 가져오기에 실패했으면 기본 배치로 덮어쓰지 않고 Console에 `[IBIIIS] 입력 파일을 불러오지 못했습니다` 오류를 남긴다. Import 오류를 고친 뒤 다시 실행한다(어드벤처씬 입력 파일도 같다).
 2. 에셋을 더블클릭해 열어 액션별 바인딩을 바꾸거나 추가한다. 액션: `MoveUp/Down/Left/Right`, `DashModifier`(누른 채 이동하면 대시), `RollUpLeft/UpRight/DownLeft/DownRight`(Q/E/Z/C), `Wait`, `Undo`, `Restart`, `ToggleRanges`. 모두 Button 타입이며 필수다. 이름을 바꾸거나 지우면 경고를 남기고 기본 배치로 동작한다.
-3. 현재 기본 바인딩은 키보드뿐이다. 게임패드 등은 같은 액션에 바인딩을 추가하면 된다(조합 배치는 미정이라 추가하지 않았다). 실행 시 에셋 사본을 만들어 쓰므로 원본에 실행 상태가 남지 않는다. 화면의 안내 문구는 각 액션의 첫 번째 바인딩을 표시한다. 미니맵 `Move`는 2D Vector Composite(WASD 등)로 연결해야 하며, 키 하나를 직접 연결하면 경고를 한 번 남기고 그 이동 입력을 무시한다.
+3. 현재 기본 바인딩은 키보드뿐이다. 게임패드 등은 같은 액션에 바인딩을 추가하면 된다(조합 배치는 미정이라 추가하지 않았다). 실행 시 에셋 사본을 만들어 쓰므로 원본에 실행 상태가 남지 않는다. 화면의 안내 문구는 각 액션의 첫 번째 바인딩을 표시한다. 어드벤처씬 `Move`는 2D Vector Composite(WASD 등)로 연결해야 하며, 키 하나를 직접 연결하면 경고를 한 번 남기고 그 이동 입력을 무시한다.
 4. 코드: `Scripts/Runtime/Battle/BattleInput.cs`(명령 변환·기본 배치), `Scripts/Editor/Setup/InputSetup.cs`(에셋 생성). 입력 처리는 게임 규칙과 분리되어 `GridMapPlayer`가 명령만 받아 실행한다. 템플릿의 `Assets/InputSystem_Actions.inputactions`는 쓰지 않는다.
 
 ### 맵 자동 검증
@@ -268,16 +268,16 @@ Unity의 프로젝트 구성 가이드(unity.com/kr/how-to/organizing-your-proje
 
 ## 게임 화면 UI (UI Toolkit)
 
-전투 HUD, 스테이지 결과 팝업, 미니맵 조작·상호작용 안내를 UI Toolkit으로 그린다(2026-10-11, 이전 IMGUI 디버그 HUD 대체). 표시 전용이며 판정에는 관여하지 않는다.
+전투 HUD, 스테이지 결과 팝업, 어드벤처씬 조작·상호작용 안내를 UI Toolkit으로 그린다(2026-10-11, 이전 IMGUI 디버그 HUD 대체). 표시 전용이며 판정에는 관여하지 않는다.
 
-- **에셋**: `Assets/IBIIIS/ScriptableObjects/Settings/GameUiSettings.asset`이 화면 설정을 모은다. `Panel Settings`(`UI/GamePanelSettings.asset`, 1920×1080 기준, 가로·세로 절반씩 맞춤, 테마 `UI/GameRuntimeTheme.tss`), 화면 구성 `UI/BattleHud.uxml`·`UI/ResultPopup.uxml`·`UI/OverworldHud.uxml`, 회피기 아이콘(`UI/EvasionIcon.png`, 임시 »), `Show Debug Info`(전투 단계·칸 좌표를 HUD 왼쪽 아래에 표시, 기본 끔). 전투 `GlobalPlayerSettings`와 미니맵 `OverworldSettings`의 `Game Ui` 슬롯이 같은 에셋을 가리킨다. 메뉴 `IBIIIS > Create Default Game UI`가 없는 에셋만 만들고 빈 슬롯만 채운다.
+- **에셋**: `Assets/IBIIIS/ScriptableObjects/Settings/GameUiSettings.asset`이 화면 설정을 모은다. `Panel Settings`(`UI/GamePanelSettings.asset`, 1920×1080 기준, 가로·세로 절반씩 맞춤, 테마 `UI/GameRuntimeTheme.tss`), 화면 구성 `UI/BattleHud.uxml`·`UI/ResultPopup.uxml`·`UI/OverworldHud.uxml`, 회피기 아이콘(`UI/EvasionIcon.png`, 임시 »), `Show Debug Info`(전투 단계·칸 좌표를 HUD 왼쪽 아래에 표시, 기본 끔). 전투 `GlobalPlayerSettings`와 어드벤처씬 `OverworldSettings`의 `Game Ui` 슬롯이 같은 에셋을 가리킨다. 메뉴 `IBIIIS > Create Default Game UI`가 없는 에셋만 만들고 빈 슬롯만 채운다.
 - **모양 바꾸기**: 색·크기·여백·글꼴은 `UI/GameUi.uss`, 배치는 UXML(UI Builder로 열 수 있음)에서 바꾼다. 요소 이름(name)은 코드가 찾는 키이므로 유지한다. 이름이 빠지면 Console에 어떤 화면의 어떤 이름이 없는지 경고하고 그 표시만 생략한다.
 - **글꼴**: `UI/Fonts/NotoSansKR-Regular.otf`·`NotoSansKR-Bold.otf`(Noto Sans KR, SIL OFL 1.1, 출처·라이선스는 같은 폴더 README). USS의 `-unity-font-definition`으로 지정한다.
-- **전투 HUD**: 왼쪽 위 스테이지 이름(미니맵에서 들어오면 입구의 Display Name, 아니면 맵 이름)·남은 적(남은/전체)·행동 횟수(되돌리기하면 줄어듦). 오른쪽 위 회피기 아이콘: 쓸 수 있으면 밝게, 쿨타임 중이면 회색에 남은 일반 행동 수(현재 규칙상 1)를 숫자로 표시한다. 왼쪽 아래 조작 안내(현재 키 배치). 오른쪽 아래 버튼 `되돌리기`·`다시 시작`·`범위 표시 켬/끔`은 마우스로 누를 수 있고 키와 같은 기능을 부른다. 행동·연출 중에는 꺼지고, 되돌릴 행동이 없으면 `되돌리기`가 꺼진다.
-- **결과 팝업**: 화면을 어둡게 덮고 가운데에 결과(`클리어!` 노랑·`패배` 빨강·`확인 필요`)와 스테이지 이름(문제가 있으면 그 안내도), `확인` 버튼(Enter도 가능)을 보인다. 본문은 이름 뒤에 조사가 붙는 문장("…을(를) 클리어했습니다")을 쓰지 않는다(다국어 대비, 사용자 결정 2026-10-13). 오류의 자세한 내용(예외 메시지·씬 경로)은 팝업 대신 Console에 남긴다. 저장 실패·재시도 규칙은 위 미니맵 항목과 같다.
-- **미니맵 안내**: 왼쪽 위 조작 안내와 클리어 수, 상호작용 대상의 기준점 아래에 `[F] 말 걸기`·`[F] 이름 입장` 안내가 따라붙는다.
+- **전투 HUD**: 왼쪽 위 스테이지 이름(어드벤처씬에서 들어오면 입구의 Display Name, 아니면 맵 이름)·남은 적(남은/전체)·행동 횟수(되돌리기하면 줄어듦). 오른쪽 위 회피기 아이콘: 쓸 수 있으면 밝게, 쿨타임 중이면 회색에 남은 일반 행동 수(현재 규칙상 1)를 숫자로 표시한다. 왼쪽 아래 조작 안내(현재 키 배치). 오른쪽 아래 버튼 `되돌리기`·`다시 시작`·`범위 표시 켬/끔`은 마우스로 누를 수 있고 키와 같은 기능을 부른다. 행동·연출 중에는 꺼지고, 되돌릴 행동이 없으면 `되돌리기`가 꺼진다.
+- **결과 팝업**: 화면을 어둡게 덮고 가운데에 결과(`클리어!` 노랑·`패배` 빨강·`확인 필요`)와 스테이지 이름(문제가 있으면 그 안내도), `확인` 버튼(Enter도 가능)을 보인다. 본문은 이름 뒤에 조사가 붙는 문장("…을(를) 클리어했습니다")을 쓰지 않는다(다국어 대비, 사용자 결정 2026-10-13). 오류의 자세한 내용(예외 메시지·씬 경로)은 팝업 대신 Console에 남긴다. 저장 실패·재시도 규칙은 위 어드벤처씬 항목과 같다.
+- **어드벤처씬 안내**: 왼쪽 위 조작 안내와 클리어 수, 상호작용 대상의 기준점 아래에 `[F] 말 걸기`·`[F] 이름 입장` 안내가 따라붙는다.
 - **설정이 없을 때**: Game UI 설정이나 해당 화면 구성이 비어 있으면 그 화면만 이전 IMGUI 임시 표시로 대신하고 게임 진행은 막지 않는다.
-- 개발 검증: 컴파일 완료, EditMode 147/147 통과(신규: HUD 값·회피기 회색과 남은 턴·버튼이 대기 중에만 같은 기능 실행·빠진 요소 경고, 플레이어의 HUD 값이 행동·되돌리기·회피 쿨타임을 따름, 팝업·미니맵 화면 요소와 기본 설정 에셋, 팝업 내용·보이지 않을 때 확인 무시). Play에서 코드로 진행해 미니맵 안내·상호작용 안내 위치, 입구 진입 후 전투 HUD, 대시 뒤 회색 아이콘과 숫자 1, 패배 팝업이 한글 글꼴로 그려지는 것을 스크린샷으로 확인했다.
+- 개발 검증: 컴파일 완료, EditMode 147/147 통과(신규: HUD 값·회피기 회색과 남은 턴·버튼이 대기 중에만 같은 기능 실행·빠진 요소 경고, 플레이어의 HUD 값이 행동·되돌리기·회피 쿨타임을 따름, 팝업·어드벤처씬 화면 요소와 기본 설정 에셋, 팝업 내용·보이지 않을 때 확인 무시). Play에서 코드로 진행해 어드벤처씬 안내·상호작용 안내 위치, 입구 진입 후 전투 HUD, 대시 뒤 회색 아이콘과 숫자 1, 패배 팝업이 한글 글꼴로 그려지는 것을 스크린샷으로 확인했다.
 - 사용자 확인 대기: [플레이 확인 목록](IBIIIS_플레이_확인_목록.md) B-10·O-03.
 
 ## 다국어 (Localization, 2026-10-13)
@@ -298,14 +298,14 @@ Unity Localization 패키지(`com.unity.localization` 1.5.13, 의존 패키지 A
 
 ## 미연시 대화창 (대화 시스템 1단계, 2026-10-12)
 
-하단 대화 상자와 그 뒤 좌우 초상화로 대화를 보여 준다. 튜토리얼 대본 진행의 기반이며, 지금은 미니맵 NPC가 쓴다. 표시 전용이며 판정과 무관하다.
+하단 대화 상자와 그 뒤 좌우 초상화로 대화를 보여 준다. 튜토리얼 대본 진행의 기반이며, 지금은 어드벤처씬 NPC가 쓴다. 표시 전용이며 판정과 무관하다.
 
 - **인물** `DialogueCharacter`(`Assets > Create > IBIIIS > Dialogue Character`, 기본 `Assets/IBIIIS/ScriptableObjects/Dialogue/Characters/`): `Character Id`(고정 ID), `Display Name`, `Name Color`, `Side`(왼쪽/오른쪽, 플레이어는 왼쪽), 기본 `Portrait`, 표정별 `Expressions`(ID와 초상화). 초상화 임시 규격 제안: 투명 PNG, 상반신, 높이 약 1024px, 기준점 아래 가운데(미정, 그림이 정해지면 확정). 기본 인물 3명(플레이어·어시 파리·마을 사람)은 코드로 그린 임시 실루엣을 쓴다.
 - **대화** `DialogueScript`(`Assets > Create > IBIIIS > Dialogue Script`, 기본 `Assets/IBIIIS/ScriptableObjects/Scenarios/NPC/`): `Script Id`(고정 ID)와 줄 목록. 줄마다 `Speaker`(비우면 지문 — 이름표 없이 기울어진 회색 글씨), `Expression`(선택, 표정 ID), `Name Override`(선택, 예: `???(어씨파리)`), `Text`.
 - **진행**: 글자가 초당 `Dialogue Text Speed`(Game UI 설정, 임시 30)자씩 나온다. F·Enter·Space 또는 대화 상자 클릭으로 넘기며, 글자가 나오는 중이면 전체를 바로 보이고 다 나왔으면 다음 줄, 마지막 줄 다음에 닫힌다. 다 나오면 오른쪽 아래 ▼가 깜빡인다. 대화를 연 프레임의 입력과 닫은 프레임의 말 걸기 입력은 무시해 F 한 번에 열리고 바로 넘어가거나 다시 열리지 않는다.
 - **좌우 초상화**: 인물은 처음 말할 때 자기 쪽에 서고 다른 인물이 그쪽에서 말하면 바뀐다. 말하는 쪽은 밝게, 듣는 쪽은 어둡게 조금 내려간다. 지문일 때는 둘 다 어둡다. 초상화가 없는 인물은 이름표만 보인다.
 - **모양**: `Assets/IBIIIS/UI/DialogueBox.uxml`(요소 이름 `portrait-left`·`portrait-right`·`box`·`name`·`text`·`next` 유지)과 `GameUi.uss`의 `dialogue-*`·`portrait` 스타일. Game UI 설정의 `Dialogue Box` 슬롯에 연결된다(`IBIIIS > Create Default Game UI`). 설정이 없으면 화면 아래 임시 IMGUI 상자로 대신한다.
-- **기본 에셋**: 메뉴 `IBIIIS > Create Default Dialogue`가 임시 초상화·기본 인물 3명·확인용 대화를 없을 때만 만들고, 미니맵 NPC 프리팹의 `Dialogue` 슬롯이 비어 있으면 확인용 대화를 연결한다.
+- **기본 에셋**: 메뉴 `IBIIIS > Create Default Dialogue`가 임시 초상화·기본 인물 3명·확인용 대화를 없을 때만 만들고, 어드벤처씬 NPC 프리팹의 `Dialogue` 슬롯이 비어 있으면 확인용 대화를 연결한다.
 - **코드**: `Scripts/Runtime/Scenario/DialogueCharacter.cs`, `DialogueScript.cs`, `DialogueRunner.cs`(진행 로직), `DialogueView.cs`(화면), `DialogueController.cs`(씬에서 띄우기·입력), `NpcSpeaker`의 `Dialogue` 슬롯, `OverworldPlayer.SetInputLocked`, `Scripts/Editor/Setup/DialogueSetup.cs`.
 - 개발 검증: 컴파일 완료, EditMode 154/154 통과(신규 5: 글자 진행·넘김·끝 알림 한 번, 인물이 자기 쪽에 서고 말하는 쪽 강조·표정 초상화와 없는 표정의 기본 초상화, 빈 대화는 바로 끝, 화면에 이름표·지문 표시·초상화 강조·표정 그림·끝나면 숨김, NPC 대화 시작·대화 중 다시 말 걸기 불가·끝나면 다시 가능).
 - 사용자 확인: G-10 ✅(2026-10-13, 임시 초상화). 대기: [플레이 확인 목록](IBIIIS_플레이_확인_목록.md) O-02.
@@ -339,7 +339,7 @@ Unity Localization 패키지(`com.unity.localization` 1.5.13, 의존 패키지 A
   - 장면 머리(2026-10-13): 접기 단추(▼/▶), 장면 번호, 장면을 끝내는 방식(종류 색 꼬리표와 요약, 마지막 장면은 `대본 끝`), 단계 범위·순간 수, 이 장면의 검사 문제 수(오류 빨강·주의 노랑). 머리를 누르면 장면을 접고 펼친다. 접은 장면은 대사 수만 보이고 그 안에는 끌어 놓을 수 없다. 접은 상태는 창을 다시 열어도 유지되고, `검사` 목록에서 접힌 장면의 단계로 이동하면 자동으로 펼친다.
   - 세로줄 구분(2026-10-13): 장면 머리 아래 눈금에 순간 번호(대본 전체에서 몇 번째 순간인지)를 보인다. 고른 단계가 있는 세로줄은 배경과 번호가 푸르게 보인다(번갈아 칠하는 줄무늬는 부산스러워 뺐다, 사용자 결정 2026-10-13). 끄는 동안 놓을 범위는 세로줄 전체 높이가 노랗게 칠해진다.
   - 확대·축소(2026-10-13): Ctrl(⌘)+마우스 휠로 마우스가 가리키는 곳을 기준으로 확대·축소한다. 그냥 휠은 스크롤이며, 세로로 다 보이면 가로로 움직인다(Shift+휠은 항상 가로). 위쪽 막대의 `−`·`+`로 한 단계씩, 배율 표시(예: `100%`)를 누르면 100%로 돌아간다. `전체 맞춤`은 대본 전체를, `장면 맞춤`은 고른 단계의 장면(고른 단계가 없으면 지금 화면 위쪽에 보이는 장면)을 창에 맞춘다. 배율은 30%~200%이고 창을 다시 열어도 유지된다. 확대·축소해도 끌기·놓을 자리·우클릭은 그대로 동작한다. 계산은 `Scripts/Editor/DialogueEditor/DialogueZoom.cs`(자동 테스트 대상).
-  - 확대·축소 개발 검증(2026-10-13): Unity 컴파일 오류 없음, EditMode 213/213 통과(신규 3: 배율 범위와 휠 한 칸, 마우스 아래 내용 유지, 영역 맞춤). 확인용 창(대본 복사본)에서 50%일 때 화면 크기·스크롤 범위가 절반이 되고 노드 위치에서 놓을 세로줄을 그대로 찾음, `전체 맞춤` 뒤 스크롤 막대 없이 전체가 들어옴, `장면 맞춤`으로 2번째 장면이 창 안에 들어옴, 휠 스크롤(세로로 넘치면 세로·세로로 다 보이면 가로·Shift+휠은 가로·Ctrl+휠은 확대)을 휠 입력을 흉내 내 확인했다. 실제 휠 조작은 사용자 확인 대기([플레이 확인 목록](IBIIIS_플레이_확인_목록.md) E-14).
+  - 확대·축소 개발 검증(2026-10-13): Unity 컴파일 오류 없음, EditMode 213/213 통과(신규 3: 배율 범위와 휠 한 칸, 마우스 아래 내용 유지, 영역 맞춤). 확인용 창(대본 복사본)에서 50%일 때 화면 크기·스크롤 범위가 절반이 되고 노드 위치에서 놓을 세로줄을 그대로 찾음, `전체 맞춤` 뒤 스크롤 막대 없이 전체가 들어옴, `장면 맞춤`으로 2번째 장면이 창 안에 들어옴, 휠 스크롤(세로로 넘치면 세로·세로로 다 보이면 가로·Shift+휠은 가로·Ctrl+휠은 확대)을 휠 입력을 흉내 내 확인했다. 수정(2026-10-15): 스크롤한 뒤 노드·세로줄을 누르면 스크롤이 처음으로 돌아가던 문제(사용자 보고)를 고쳤다 — 다시 그릴 때 새 내용 크기가 정해진 뒤 스크롤을 되돌린다. 확인용 창에서 (600, 150)으로 스크롤하고 단계를 고른 뒤에도 위치가 유지됨을 확인. 실제 휠 조작은 사용자 확인 대기([플레이 확인 목록](IBIIIS_플레이_확인_목록.md) E-14).
   - 비주얼 개선 개발 검증(2026-10-13): Unity 컴파일 오류 없음, EditMode 210/210 통과. 사용자 창과 별개의 확인용 창 2개에 두 튜토리얼 대본의 복사본을 열어, 1단계 장면 5·세로줄 36·장면 안 연결선 31·`↓`/`↳` 꼬리표 각 4·장면 사이 ▼ 4, 2단계 장면 4·세로줄 40·연결선 36·꼬리표 각 3으로 그려지고(이전 확인: 첫 장면을 접으면 그 세로줄 16개가 숨음) 배치·그리기 중 콘솔 오류가 없음을 확인했다. 실제 보기 편한지는 사용자 확인 대기([플레이 확인 목록](IBIIIS_플레이_확인_목록.md) E-08).
   - 세로줄 하나가 플레이어가 보는 한 순간이다(사용자 결정). 진행기가 기다리지 않고 바로 넘기는 단계(감정 표시·자세·켜기·끄기·적 합류·클리어 기록)는 바로 뒤의 기다리는 단계(대사·입력 대기·이름 입력·기다림·씬 전환)와 같은 세로줄에 속한다. 뒤에 기다리는 단계가 없으면 그 단계들만으로 세로줄을 만든다. 감정 표시·자세는 노드 없이 아래 트랙 막대로만 보이고(막대 시작 세로줄 = 그 단계 위치, 막대를 눌러 편집), 켜기·끄기·적 합류·클리어 기록은 기다리는 단계 노드 위에 실행 순서대로 작은 한 줄 노드로 쌓는다(사용자 결정). 자세 그림이 비어 있어 건너뛰는 자세는 막대 대신 빨간 경고로 보인다. 규칙은 `ScenarioTimeline.IsInstant`·`Moments`이며, 실제 진행이 바로 넘어가는 단계에서 멈추지 않는지 자동 테스트로 확인한다.
   - 노드 위쪽 색 띠와 머리 글자로 종류를 보인다(대사·지문 회색, 자세 분홍, 감정 표시 청록, 입력 주황, 등장·적 합류 초록, 기다림·씬 전환·기록 회색). 대사 노드는 넓게(화자 초상화·이름(인물의 `Name Color`)·표정 ID와 본문 세 줄까지, 전체는 마우스를 올려 봄), 나머지는 작게 보인다. 초상화는 대사의 표정 ID 초상화, 없으면 인물의 기본 초상화다. 오른쪽 위 숫자는 단계 번호다.
@@ -373,24 +373,28 @@ Unity Localization 패키지(`com.unity.localization` 1.5.13, 의존 패키지 A
   - 데이터는 대본 에셋(`ScenarioScript`) 그대로다. 범위 계산은 `Scripts/Runtime/Scenario/ScenarioTimeline.cs` 한 곳에 있고, 실제 두 튜토리얼 대본을 진행해 단계마다 보이는 자세·감정 표시가 이 계산과 같은지 자동 테스트로 확인한다. 진행 규칙을 바꾸면 이 파일도 함께 고친다.
   - 코드: `Scripts/Editor/DialogueEditor/DialogueEditorWindow.cs`(창과 Inspector 버튼), `Scripts/Editor/DialogueEditor/DialogueScriptEdits.cs`(편집 규칙). 선택지·분기는 없다(대본이 일직선). 대화창 미리 보기·여기부터 실행은 아직 없다(필요할 때 추가). 화면의 보기 편함과 마우스 조작감은 사용자 확인 대기([플레이 확인 목록](IBIIIS_플레이_확인_목록.md) E-08~E-12).
 - **좌표**: 칸은 맵 좌표(열, 행), (0,0)이 맵 왼쪽 아래다. 기획서는 행 0이 맨 위이므로 옮길 때 행을 뒤집는다(행 = 맵 높이 − 1 − 기획서 행).
-- **진행기** `ScenarioDirector`(전투 씬 오브젝트에 붙임): `Battle`(Grid Map Player), `Script`, `Actors`(대본이 ID로 부르는 등장 오브젝트와 감정 표시 높이. `Blocks Cell`을 체크하면 켤 때 `Cell` 칸으로 옮기고 그 칸을 막으며 끄면 푼다 — 허수아비처럼 공격하지 않고 칸만 막는 오브젝트), `Player Emote Height`(임시 1.6칸), `Play On Start`(자동 시작. 끄면 코드에서 `Begin()`). 진행기에는 씬 연결만 있고, 대본 설정은 대본 에셋에 있다(아래 대본 설정). Inspector 아래에 연결된 대본의 설정을 읽기 전용으로 보이고 `IBIIIS Dialogue Editor에서 대본 설정 열기` 버튼이 있다. 대본이 도는 동안 되돌리기·다시 시작·범위 표시(키·HUD 버튼)를 막고 버튼을 숨기며, 끝나면 푼다. 대사를 닫은 프레임에는 전투 입력을 받지 않아 대사를 넘긴 Space·Enter가 대기 등으로 읽히지 않는다.
-- **대본 설정**(2026-10-13, 대본 에셋 `ScenarioScript`의 `Settings`): IBIIIS Dialogue Editor 맨 위의 `▶ 시작` 노드를 누르면 아래 칸에서 편집한다(바로 저장·Ctrl+Z). 이 대본을 쓰는 모든 씬에 적용된다. 시작 노드에는 시작 시점과 켜진 설정이 작은 표시로 보인다.
-  - `시작 시점`(Start Timing): `전투 준비 시`(Battle Ready, 전투가 준비되는 대로 — 튜토리얼) 또는 `클리어 시`(Battle Won, 적을 모두 물리치고 충돌 연출이 끝난 뒤 — 클리어 대화). 진행기의 `Play On Start`를 끄면 쓰지 않는다.
-  - `처음 한 번만`(Only Once): 끝까지 본 대본은 다시 자동 시작하지 않는다. `건너뛰기 허용`(Allow Skip)·`건너뛰기 누르는 시간`(임시 0.6초): 아래 대사 건너뛰기.
-  - `적 인식 말풍선 숨김`(Hide Enemy Alerts): 대본이 도는 동안 적 인식 말풍선을 띄우지 않는다(튜토리얼에서 켬). `위험 그림을 대본이 정함`(Script Controls Danger): 대본 중 인식 범위 안의 위험 그림을 자동으로 보이지 않고 Pose 단계로만 보인다.
-  - 새 대본의 기본값: 전투 준비 시, 한 번만 끔, 건너뛰기 켬(0.6초), 적 말풍선 숨김 켬, 위험 그림 대본이 정함 켬. 이전에 진행기에 있던 기본값과 같다.
-  - 이전: 이 설정은 2026-10-13까지 진행기에 있었다. 진행기가 있는 씬은 Tutorial1·Tutorial2 두 개였고 값이 모두 위 기본값과 같아(적 말풍선 숨김 켬, 나머지 기본) 두 튜토리얼 대본에 기본값이 그대로 적용된다(자동 테스트로 확인). 씬 파일에 남은 옛 `hideEnemyAlerts` 줄은 쓰지 않으며 씬을 다시 저장하면 사라진다.
-  - 같은 대본을 씬마다 다른 시작 시점으로 쓸 수는 없다. 필요하면 `대본 복제`로 나눈다.
+- **진행기** `ScenarioDirector`(전투 씬 오브젝트에 붙임): `Battle`(Grid Map Player), `Script`, `Actors`(대본이 ID로 부르는 등장 오브젝트와 감정 표시 높이. `Blocks Cell`을 체크하면 켤 때 `Cell` 칸으로 옮기고 그 칸을 막으며 끄면 푼다 — 허수아비처럼 공격하지 않고 칸만 막는 오브젝트), `Player Emote Height`(임시 1.6칸), `Play On Start`(자동 시작. 끄면 코드에서 `Begin()`). 진행기에는 씬 연결만 있고, 대본 설정은 대본 에셋에 있다(아래 대본 설정). Inspector 아래에 연결된 대본의 설정을 읽기 전용으로 보이고 `IBIIIS Dialogue Editor에서 대본 설정 열기` 버튼이 있다. 구간이 도는 동안 되돌리기·다시 시작·범위 표시(키·HUD 버튼)를 막고 버튼을 숨기며, 끝나면 푼다. 대사를 닫은 프레임에는 전투 입력을 받지 않아 대사를 넘긴 Space·Enter가 대기 등으로 읽히지 않는다.
+- **세 구간: 입장 전·입장 후·클리어 후**(2026-10-15 사용자 결정, 기획서 7.2 진입 대화): 대본 하나에 세 구간이 기본으로 있다. 비어 있는 구간은 실행하지 않는다.
+  - `입장 전`: 어드벤처씬에서 이 대본을 진입 대화로 연결한 적(아래 어드벤처씬의 적)에 닿으면 보여 준 뒤 전투씬으로 들어간다. 비어 있으면 닿자마자 들어간다.
+  - `입장 후`: 전투씬에서 전투가 준비되면 대본 진행기(`ScenarioDirector`)가 실행한다. 비어 있으면 바로 일반 전투다. 튜토리얼처럼 전투를 대본이 이끌려면 이 구간 안에 입력 대기·자유 진행 단계를 넣는다. 끝나면 일반 전투(대본의 입력 제한·패배 방지 없음, 질 수 있고 되돌리기·재시작 가능)이고, 재시작해도 다시 나오지 않는다. 이 구간에서 띄운 감정 표시·자세는 구간이 끝나면 함께 끝난다.
+  - `클리어 후`: 적을 이기고 결과 팝업(`클리어!`)을 닫아 어드벤처씬으로 돌아온 뒤 보여 준다. 지고 돌아오면 보이지 않는다. 전투씬을 어드벤처씬 없이 바로 Play하면 보이지 않는다.
+  - 어드벤처씬 구간(입장 전·클리어 후)은 대사·지문과 클리어 기록 단계만 실행한다(`AdventureDialogue`). 그 밖의 단계(입력 대기·감정 표시·자세 등)는 경고를 남기고 건너뛰며, Dialogue Editor의 `검사`가 오류로 알린다. 대화 중에는 플레이어가 움직이지 않는다.
+  - IBIIIS Dialogue Editor: 위에서부터 `▶ 입장 전`·`▶ 입장 후`·`▶ 클리어 후` 노드와 그 구간의 장면이 보인다. 빈 구간에는 「비어 있음」과 `첫 대사 추가` 단추가 있다. 어드벤처씬 구간의 장면은 맨 아래 줄에 「어드벤처씬 구간: 대사·지문·클리어 기록만 실행」이 보이고, 세로줄 우클릭 메뉴도 대사·지문·클리어 기록만 보인다. 세로줄은 구간 사이로 옮길 수 있고 감정 표시·자세 막대는 구간을 넘어 옮기지 못한다. 세로줄 우클릭 `앞에 새 세로줄`은 그 세로줄과 같은 구간에 넣는다.
+  - 데이터: 단계 목록 안의 `입장 후 구간 시작`(BattleSection)·`클리어 후 구간 시작`(ClearSection) 단계가 경계다(Dialogue Editor에서는 `▶ 입장 후`·`▶ 클리어 후` 노드로만 보이고 옮기거나 지울 수 없음). 경계가 없는 예전 대본은 예전 `시작 시점` 값대로 읽는다(`클리어 시`면 전체가 클리어 후 구간, 아니면 전체가 입장 후 구간). Dialogue Editor로 열면 경계 단계를 넣어 저장한다. 2026-10-15에 Tutorial1Script·Tutorial2Script·PrototypeMap 대본을 그렇게 바꿨다(튜토리얼은 입장 전·클리어 후가 비어 동작 같음. PrototypeMap 대본의 클리어 구간 대사는 이제 어드벤처씬에서 돌아온 뒤 나온다).
+  - 새 대본(`새 대본`)은 빈 입장 전, 지문 한 줄(입장 후), 빈 클리어 후로 만든다.
+- **대본 설정**(대본 에셋 `ScenarioScript`의 `Settings`, 세 구간 공통): 구간 노드를 누르면 아래 칸에서 편집한다(바로 저장·Ctrl+Z). 이 대본을 쓰는 모든 씬에 적용된다. `▶ 입장 전` 노드에는 켜진 설정이 작은 표시로 보인다.
+  - `처음 한 번만(구간마다)`(Only Once): 구간마다 끝까지 본 구간은 다시 시작하지 않는다. `건너뛰기 허용`(Allow Skip)·`건너뛰기 누르는 시간`(임시 0.6초): 아래 대사 건너뛰기(전투씬 구간).
+  - `적 인식 말풍선 숨김`(Hide Enemy Alerts)·`위험 그림을 대본이 정함`(Script Controls Danger): 입장 후 구간이 도는 동안의 전투 연출.
+  - 새 대본의 기본값: 한 번만 끔, 건너뛰기 켬(0.6초), 적 말풍선 숨김 켬, 위험 그림 대본이 정함 켬.
+  - 예전 `시작 시점`(Start Timing) 설정은 없앴다(세 구간으로 대신함). 값은 예전 대본을 읽을 때만 쓴다.
   - 연결된 씬: 시작 노드를 고르면 아래 칸에 이 대본을 쓰는 진행기(열린·닫힌 씬)마다 씬·오브젝트 이름, 자동 시작이 꺼졌는지, 등장 오브젝트(Actors) ID가 보인다. 열린 씬은 `진행기 선택`, 닫힌 씬은 `씬 열기`(바뀐 씬은 저장할지 먼저 묻는다). 전투·Actors·자동 시작은 진행기 Inspector에서 고친다.
   - 없는 대상 ID 경고: 대본의 감정 표시·켜고 끄기·감정 표시 끝이 부르는 대상 ID(`player` 제외)가 연결된 진행기의 Actors에 없으면, 시작 노드에 `⚠ 없는 대상 ID` 표시가, `검사` 목록에 그 단계의 주의가, 연결된 씬 칸에 경고가 뜬다(진행기는 그 단계를 경고만 남기고 건너뛴다). 닫힌 씬은 씬 파일을 읽어 Actors를 확인한다.
-- **클리어 대화**(2026-10-13): 전투 맵을 깼을 때만 대화를 보이려면 전투 씬에 빈 오브젝트를 만들어 `ScenarioDirector`를 붙이고 `Battle`(그 씬의 Grid Map Player)·`Script`(IBIIIS Dialogue Editor의 `새 대본`으로 만든 대본, `씬에 연결`로 꽂아도 됨)를 연결한 뒤, Dialogue Editor의 `▶ 시작` 노드에서 `시작 시점`을 `클리어 시`로 둔다. 처음 깰 때만 보이려면 `처음 한 번만`을 켠다.
-  - 그 전까지 전투는 평소대로다(대본의 입력 제한·패배 방지 없음, 되돌리기·재시작 가능). 승리하고 충돌 연출이 끝나면 대본이 시작되고, 그동안 되돌리기·재시작은 막힌다. 패배하면 시작하지 않는다.
-  - 미니맵에서 들어온 전투면 클리어 기록은 승리 때 바로 저장하고, `클리어!` 팝업은 대본이 끝난 뒤 뜬다. 대본 마지막에 `씬 이동`(LoadScene)이 있으면 팝업 없이 그 씬으로 간다.
-  - 한 씬에 진행기를 여러 개 둘 수 있다(예: 시작 시점이 `전투 준비 시`인 대본 + `클리어 시`인 대본). 같은 `Battle`을 가리키면 된다.
-  - `처음 한 번만`의 본 기록은 대본 ID로 클리어 기록 파일에 남는다(형식은 [데이터 관리 문서](IBIIIS_데이터_관리_문서.md)의 클리어 기록). 끝까지 보거나 `씬 이동` 단계에 닿았을 때 남기며, 중간에 Play를 끄면 다음에 다시 나온다. `Reset Clear Records`가 함께 지운다.
+- **진입 대화 만들기**: 어드벤처씬의 적(`Stage Enemy`)의 `Script`에 대본을 넣고, 같은 대본을 그 적이 들어가는 전투씬의 진행기에도 연결한다(새 맵은 `Grid Map Player`에 빈 진행기가 붙어 있음. 적 Inspector의 `전투 씬 진행기에 이 대본 연결` 단추 또는 Dialogue Editor의 `씬에 연결`). Dialogue Editor에서 각 구간 아래 `첫 대사 추가`로 대사를 쓴다. 처음 한 번만 보이려면 `처음 한 번만`을 켠다.
+  - `처음 한 번만`의 본 기록은 구간별로 클리어 기록 파일에 남는다: 입장 후 구간은 대본 ID, 입장 전은 `대본 ID:before`, 클리어 후는 `대본 ID:clear`(클리어 후 구간만 있는 대본은 대본 ID — 예전 클리어 대본과 같은 기록). 형식은 [데이터 관리 문서](IBIIIS_데이터_관리_문서.md)의 클리어 기록. 구간 끝까지 보거나 `씬 전환` 단계에 닿았을 때 남기며, 중간에 Play를 끄면 다음에 다시 나온다. `Reset Clear Records`가 함께 지운다.
+- 개발 검증(세 구간·어드벤처씬 진입, 2026-10-15): Unity 컴파일 오류 0, EditMode 220/220 통과. 새 테스트: 전투씬 진행기가 입장 후 구간만 실행하고(입장 전 구간 건너뜀, 매 프레임 경로 `Update`로 확인) 이겨도 클리어 후 구간을 실행하지 않으며 결과 팝업을 미루지 않음·재시작해도 다시 안 나옴, 어드벤처씬에서 입장 전·클리어 후 구간을 한 번씩 보여 주고 구간별 본 기록·대사 없는 구간의 클리어 기록 실행, 적 닿음 거리·높이 무시·접촉 무시 시간·클리어한 적, 돌아올 자리(닿음 거리 + 여유, 같은 자리면 앞쪽), 적에 닿으면 입장 전 대화 동안 이동을 막고 끝나면 전투씬으로 들어가려 함(시험용 없는 씬이라 실패 후 다시 닿을 수 있음), 돌아올 때 대본·결과를 가져감, 근접 대화 구역에 들어온 순간만·한 번만, 세 구간 경계 넣기·범위·본 기록 ID·어드벤처 구간의 전투 단계 오류. 이전 두 구간 수정(매 프레임 자동 시작이 승리 뒤 전투 시작 구간을 다시 실행해 무한 반복)도 이 구조에서 같은 테스트로 막는다. 확인용 창에서 세 구간 대본·예전 대본이 세 시작 노드와 빈 구간 안내, 어드벤처씬 구간 표시로 그려지고 콘솔 오류가 없음을 확인. 실제 플레이는 사용자 확인 대기([플레이 확인 목록](IBIIIS_플레이_확인_목록.md) O-11·O-12·O-14~O-17).
 - **대사 건너뛰기**(2026-10-13): 대사가 보이는 동안 Esc를 대본 설정의 `건너뛰기 누르는 시간`(임시 0.6초) 누르고 있으면 다음 입력 대기 단계(행동·네 방향·칸 도착·칸 누르기·이름 입력·자유 전투) 또는 대본 끝까지 대사와 기다리기 단계를 건너뛴다. 사이의 감정 표시·자세·켜고 끄기·적 합류·클리어 기록·씬 이동 단계는 평소대로 실행된다. 한 번 건너뛴 뒤에는 Esc를 뗐다가 다시 눌러야 또 건너뛴다. 대본마다 대본 설정의 `건너뛰기 허용`으로 끌 수 있다(기본 켬, 튜토리얼 포함). 건너뛸 수 있는 대사가 보이는 동안 대화 상자 오른쪽 위에 흐린 안내 「Esc 길게: 건너뛰기」(번역 표 `UI`의 `dialogue.skip`)가 나오고, Esc를 누르고 있으면 그 아래 노란 막대가 차며 안내가 진해진다. 위치·크기·색은 `UI/GameUi.uss`의 `dialogue-skip*`, 화면 구성은 `UI/DialogueBox.uxml`의 `skip`·`skip-text`·`skip-fill`. 입력 대기·이름 입력·NPC 대화에서는 보이지 않는다.
 - 개발 검증(대본 설정·시작 노드, 2026-10-13): Unity 컴파일 오류 없음, EditMode 209/209 통과(새 테스트 2개: 대상 ID 모으기에서 player·자세 끝·대사 제외와 Actors에 없는 ID의 주의, 두 튜토리얼 대본이 씬의 Actors를 모두 찾고 옮긴 설정이 이전 진행기 값과 같음·새 대본 기본값. 씬 파일에서 Actors ID·자동 시작 읽기). 확인용 창을 따로 띄워 Tutorial2Script에서 시작 노드(`▶ 시작`, `건너뛰기 0.6초`·`적 말풍선 숨김`·`연결 씬 1` 표시), 설정 칸 6개, 연결된 씬(Tutorial2, Actors `fly`)이 그려지는 것을 확인. 실제 편집 조작은 사용자 확인 대기([플레이 확인 목록](IBIIIS_플레이_확인_목록.md) E-13).
-- 개발 검증(클리어 대화·한 번만·건너뛰기·NPC 클리어 후 대사, 2026-10-13): Unity 컴파일 오류 없음, EditMode 207/207 통과(새 테스트 5개, 건너뛰기 안내 추가 뒤 207/207 다시 통과: 승리 전 시작 안 함·승리 뒤 시작·팝업 미룸·끝나면 팝업과 되돌리기 복원·한 번만, 패배 시 시작 안 함, 이전 저장 파일 읽기·본 기록 유지, NPC 클리어 후 대사, 건너뛰기가 입력 대기에서 멈춤·안내는 대사에서만 보임. 대화창 UXML에 안내 요소 3개가 있음을 불러와 확인). 실제 화면은 [플레이 확인 목록](IBIIIS_플레이_확인_목록.md) G-13 ✅(2026-10-13), O-11~O-13 사용자 확인 대기.
+- 개발 검증(클리어 대화·한 번만·건너뛰기·NPC 클리어 후 대사, 2026-10-13, 2026-10-15 두 구간 구조에서도 같은 테스트 통과): Unity 컴파일 오류 없음, EditMode 207/207 통과(새 테스트 5개, 건너뛰기 안내 추가 뒤 207/207 다시 통과: 승리 전 시작 안 함·승리 뒤 시작·팝업 미룸·끝나면 팝업과 되돌리기 복원·한 번만, 패배 시 시작 안 함, 이전 저장 파일 읽기·본 기록 유지, NPC 클리어 후 대사, 건너뛰기가 입력 대기에서 멈춤·안내는 대사에서만 보임. 대화창 UXML에 안내 요소 3개가 있음을 불러와 확인). 실제 화면은 [플레이 확인 목록](IBIIIS_플레이_확인_목록.md) G-13 ✅(2026-10-13), O-11~O-13 사용자 확인 대기.
 - **대화창 확장**: 입력을 기다리는 안내 줄은 넘길 수 없고(▼ 없음) 아래에 키 표시(예: `Shift` + `W`)가 깜빡인다. 대본의 대사는 한 줄씩 이어 보여도 좌우에 선 인물이 유지된다. 이름 입력 칸은 대화 상자 안에 나오며 확인 버튼·Enter로 확정한다.
 - **전투 쪽 확장**(`GridMapPlayer`): `CommandFilter`(허용 판정, 키 입력과 `TryPlayerCommand`가 거침), `AllowUndoRestart`·`AllowRangeToggle`, `CommandRejected` 알림, `SetGuideCells`(0.5초마다 깜빡이는 노란 테두리), `TryGetCell`(화면 좌표 → 칸), `PlayPose`·`EndPose`(자세 그림, `PlayerVisual.OverrideSprite` 사용. 논리 위치·판정은 바뀌지 않음).
 - **전투 판정 확장**(3단계, `GridSession`): `TryAddEnemy`(입력 대기 중 적 합류, 다음 행동부터 움직이고 판정에 참여, 합류 전 행동을 되돌리면 빠짐), `SetBlocked`(실행 중 막힌 칸, 플레이어·적 모두 못 들어가고 적은 벽처럼 돌아섬), `Predict`(행동 결과를 상태 복사본으로 미리 계산, 현재 상태는 바뀌지 않음). 규칙 요약은 [전투 및 적 배치 가이드](IBIIIS_전투_및_적배치_가이드.md)에 있다. `GridMapPlayer.SpawnEnemy`·`SetCellBlocked`·`CellWorldPosition`이 외형과 함께 처리한다.
@@ -440,15 +444,15 @@ Unity Localization 패키지(`com.unity.localization` 1.5.13, 의존 패키지 A
 5. 자동 검증: 방향·동작별 선택, 구르기 프레임 전환, 빈 슬롯 경고, 카메라 정면 회전.
 6. 사용자 확인: [플레이 확인 목록](IBIIIS_플레이_확인_목록.md) B-05 ✅(2026-10-13).
 
-## 미니맵(Overworld) 프로토타입
+## 어드벤처씬(Overworld) 프로토타입
 
-main에 들어와 있는 시험 기능이다. 규칙은 [기획서](IBIIIS_게임시스템_기획서.md)의 미니맵 항목을 따른다.
+main에 들어와 있는 시험 기능이다. 규칙은 [기획서](IBIIIS_게임시스템_기획서.md)의 어드벤처씬 항목을 따른다.
 
 ### 테스트 씬 만들기
 
 1. Unity에서 메뉴 `IBIIIS > Overworld > Create Overworld Test Scene`을 누른다. 이름 없는 씬이 열려 있으면 먼저 저장하라는 안내가 나온다. 현재 열린 씬은 바꾸지 않는다.
 2. 다음을 만든다. 이미 있는 에셋·연결은 덮어쓰지 않는다.
-   - `Assets/IBIIIS/ScriptableObjects/Settings/OverworldSettings.asset`: 이동 속도, 카메라, 입력 설정. 비어 있는 카메라 설정에는 미니맵 전용 `ScriptableObjects/Settings/OverworldCameraSettings.asset`(처음 만들 때 GlobalCameraSettings의 각도를 따르고 화각만 30), 비어 있는 입력에는 아래 입력 에셋을 연결한다.
+   - `Assets/IBIIIS/ScriptableObjects/Settings/OverworldSettings.asset`: 이동 속도, 카메라, 입력 설정. 비어 있는 카메라 설정에는 어드벤처씬 전용 `ScriptableObjects/Settings/OverworldCameraSettings.asset`(처음 만들 때 GlobalCameraSettings의 각도를 따르고 화각만 30), 비어 있는 입력에는 아래 입력 에셋을 연결한다.
    - `Assets/IBIIIS/ScriptableObjects/Settings/OverworldInput.inputactions`: 액션 맵 `Overworld`(Move = WASD·방향키, Interact = F, Dash = Shift(누르고 있으면 달리기), Roll = Space). 이미 있는 파일에 Dash·Roll이 없으면 그 둘만 기본 키로 추가하고 다른 바인딩은 그대로 둔다. 가져오기에 실패한 파일은 덮어쓰지 않는다. 실행 중에도 예전 파일에 없는 Dash·Roll은 경고 없이 기본 키로 채워 쓴다.
    - `Assets/IBIIIS/Prefabs/Characters/NPC/NPC.prefab`과 임시 실루엣 `NPC_Placeholder.png`: NPC 기본 프리팹(아래 NPC 추가). 메뉴 `IBIIIS > Overworld > Create NPC Prefab`으로 따로 만들 수도 있다.
    - `Assets/IBIIIS/Prefabs/Overworld/ClearedFlag.prefab`과 임시 그림 `ClearedFlag.png`: 카메라를 바라보는 클리어 깃발 스프라이트.
@@ -466,22 +470,30 @@ main에 들어와 있는 시험 기능이다. 규칙은 [기획서](IBIIIS_게�
 - 상호작용 대상 범위에 들어가면 대상 위에 `[F] 말 걸기`, `[F] 프로토타입 스테이지 입장` 같은 안내가 나온다. 범위가 겹치면 가장 가까운 대상 하나만 고른다.
 - NPC: `Dialogue`(대화 에셋)를 연결한 NPC는 F를 누르면 미연시 대화창(아래 미연시 대화창 항목)으로 대화하고, 대화가 끝날 때까지 플레이어가 움직이지 않는다. 연결하지 않은 NPC는 이전처럼 F를 누를 때마다 머리 위 말풍선에 `Lines`를 한 줄씩 보이고 마지막 줄 다음·범위를 벗어나면 닫히며, 말하는 동안에도 움직일 수 있다. 기본 NPC 프리팹에는 확인용 대화(`Dialogue/Scripts/VillagerGreeting.asset`)를 연결해 두었다.
 - 스테이지 입구: F를 누르면 연결된 전투 씬으로 바뀐다. 전투는 기존 규칙·조작 그대로다.
-  - 승리: 충돌 연출이 끝나면 클리어 기록을 저장하고 `클리어!` 팝업을 띄운다. 전투 씬에 클리어 대화(대본 설정의 시작 시점이 `클리어 시`인 대본을 연결한 진행기)가 있으면 팝업은 대화가 끝난 뒤 뜬다. 저장에 실패하면 팝업에 이유를 표시하고, 첫 `확인`에서 한 번 더 저장을 시도한다. 또 실패하면 안내 후 다음 `확인`에서 저장 없이 돌아간다.
+  - 승리: 충돌 연출이 끝나면 클리어 기록을 저장하고 `클리어!` 팝업을 띄운다(전투씬 대본이 입장 후 구간을 진행 중이면 그 구간이 끝난 뒤). 저장에 실패하면 팝업에 이유를 표시하고, 첫 `확인`에서 한 번 더 저장을 시도한다. 또 실패하면 안내 후 다음 `확인`에서 저장 없이 돌아간다.
   - 패배: 진행 중인 충돌 연출이 끝나면 `패배` 팝업을 띄운다(플레이어는 그 자리에서 패배 그림).
-  - `확인` 버튼(또는 Enter)을 누르면 미니맵의 들어갔던 위치·방향으로 돌아온다.
+  - `확인` 버튼(또는 Enter)을 누르면 어드벤처씬의 들어갔던 위치·방향으로 돌아온다.
   - 팝업이 떠 있는 동안에도 전투의 되돌리기(Backspace/U)·재시작(R)은 동작하며, 그러면 팝업이 사라지고 전투를 계속한다. 이미 저장한 클리어 기록은 유지된다.
-- 전투 씬을 미니맵 없이 바로 Play하면 팝업 없이 기존과 같이 동작한다.
-- 입구에 연결된 전투 맵에 설정 오류가 있어 전투를 시작하지 못하면 `확인 필요` 팝업("전투를 시작하지 못했습니다. Console의 [IBIIIS] 오류(맵 설정)를 확인하세요.")이 뜨고, `확인`으로 미니맵에 돌아온다(2026-10-09, 이전에는 팝업 없이 전투 씬에 갇혔다). 자동 테스트로 확인했고 실제 화면은 사용자 확인 대기([플레이 확인 목록](IBIIIS_플레이_확인_목록.md) O-07).
+- 전투 씬을 어드벤처씬 없이 바로 Play하면 팝업 없이 기존과 같이 동작한다.
+- 입구에 연결된 전투 맵에 설정 오류가 있어 전투를 시작하지 못하면 `확인 필요` 팝업("전투를 시작하지 못했습니다. Console의 [IBIIIS] 오류(맵 설정)를 확인하세요.")이 뜨고, `확인`으로 어드벤처씬에 돌아온다(2026-10-09, 이전에는 팝업 없이 전투 씬에 갇혔다). 자동 테스트로 확인했고 실제 화면은 사용자 확인 대기([플레이 확인 목록](IBIIIS_플레이_확인_목록.md) O-07).
 - 화면 왼쪽 위에 조작 안내와 클리어한 스테이지 수가 나온다. 클리어한 입구는 초록 깃발(Cleared Indicator)이 켜지고 안내에 `(클리어)`가 붙는다.
 
 ### 편집 항목
 
 - **Overworld Settings**(`IBIIIS > Overworld > Overworld Settings`): 이 메뉴는 설정 에셋이 없을 때만 만들고, 그때만 빈 슬롯(카메라·입력·손맛)에 기본 에셋을 연결한다. 이미 있는 에셋을 열 때는 사용자가 비운 슬롯을 다시 채우지 않는다(입력 파일의 빠진 Dash·Roll 보충만 한다). 빈 슬롯 채우기는 `Create Overworld Test Scene`을 실행할 때 한다. 항목: `Move Speed`(칸/초, 임시 3.5), `Camera Settings`(각도·화각, 기본 `OverworldCameraSettings`: 회전 40°·화각 30, 비우면 카메라 현재 값), `Camera View Height`(플레이어 위치에서 화면 세로로 보이는 범위, 칸, 임시 14), `Camera Follow Sharpness`(0이면 지연 없음, 임시 8), `Input Actions`, 달리기·구르기(`Run Speed` 6칸/초, `Run Stride Length` 1.3칸, `Roll Distance` 1.5칸, `Roll Duration` 0.35초, `Roll Ease Out` 1(0이면 일정한 속도), `Roll Recovery` 0.2초, `Evade Cooldown` 0.25초, 모두 임시). 걷기 손맛(아래 항목) 값도 여기에 있다.
-- **미니맵 카메라 화각**(2026-10-07): 화각 75에서는 화면 가장자리 바닥이 늘어나 보이는 왜곡이 커서 미니맵만 화각 30으로 좁혔다(전투는 별도의 GlobalCameraSettings, 현재 50). 카메라 거리는 `Camera View Height`와 화각으로 자동 계산하므로(화각 30이면 약 26칸, 75면 약 9칸) 화각을 바꿔도 화면에 담기는 범위는 같고 왜곡만 줄어든다. 화각은 `Assets/IBIIIS/ScriptableObjects/Settings/OverworldCameraSettings.asset`의 Field Of View에서, 보이는 범위는 `Camera View Height`에서 바꾼다. 이전의 `Camera Distance`(거리 직접 지정)는 이 항목으로 바뀌었고, 기본 14칸은 이전 거리 9·화각 75와 거의 같은 범위다. Orthographic을 켜면 Size가 보이는 범위의 절반으로 맞춰진다. 전투와 같게 하려면 `Camera Settings`에 GlobalCameraSettings를 연결한다.
+- **어드벤처씬 카메라 화각**(2026-10-07): 화각 75에서는 화면 가장자리 바닥이 늘어나 보이는 왜곡이 커서 어드벤처씬만 화각 30으로 좁혔다(전투는 별도의 GlobalCameraSettings, 현재 50). 카메라 거리는 `Camera View Height`와 화각으로 자동 계산하므로(화각 30이면 약 26칸, 75면 약 9칸) 화각을 바꿔도 화면에 담기는 범위는 같고 왜곡만 줄어든다. 화각은 `Assets/IBIIIS/ScriptableObjects/Settings/OverworldCameraSettings.asset`의 Field Of View에서, 보이는 범위는 `Camera View Height`에서 바꾼다. 이전의 `Camera Distance`(거리 직접 지정)는 이 항목으로 바뀌었고, 기본 14칸은 이전 거리 9·화각 75와 거의 같은 범위다. Orthographic을 켜면 Size가 보이는 범위의 절반으로 맞춰진다. 전투와 같게 하려면 `Camera Settings`에 GlobalCameraSettings를 연결한다.
 - **NPC 추가**: `Assets/IBIIIS/Prefabs/Characters/NPC/NPC.prefab`을 씬에 끌어다 놓고, 루트의 `NpcSpeaker`에서 `Display Name`, `Lines`(항목 하나가 말풍선 한 번), `Radius`(상호작용 거리, 칸), `Label Height`(말풍선 높이, 칸)를 정한다. 그림은 자식 `Visual`의 SpriteRenderer 스프라이트를, 크기는 `Visual`의 Scale(현재 1.5)을 바꾼다. 막힘은 루트의 보이지 않는 CapsuleCollider, 말 걸기 범위는 바닥 평면 거리로 판정하므로 그림·크기를 바꿔도 달라지지 않는다. NPC마다 다른 그림을 오래 쓸 거라면 프리팹 변형(Prefab Variant)으로 만든다. 지금은 정면 한 장만 쓰며 돌아보기는 없다.
   - **클리어 후 대사**(2026-10-13): `NpcSpeaker`의 `클리어 후` 묶음에 `Cleared Stage Id`(클리어 기록 ID — 스테이지 입구의 `Stage Id` 또는 대본 클리어 기록 단계의 ID)와 `Cleared Lines`(말풍선) 또는 `Cleared Dialogue`(대화창)를 넣으면, 그 기록이 있을 때 기본 대사 대신 이것을 쓴다. 규칙은 기본 대사와 같다(대화 에셋이 있으면 대화창, 없으면 말풍선). ID가 비었거나 클리어 후 대사·대화가 둘 다 비면 항상 기본 대사다. 말을 거는 순간의 기록으로 고른다.
 - **카메라 바라보기**: 플레이어·적·NPC 그림은 모두 카메라 회전과 같은 회전으로 세워진다(`CameraFacingSprite`). NPC는 Play 중 매 프레임 맞추며, 편집 중 Scene에서는 똑바로 서 있는 상태로 보인다.
-- **스테이지 입구 추가**: 오브젝트에 `StageEntrance`를 붙이고 `Stage Id`(필수, 클리어 기록 키. 정한 뒤 바꾸지 않음), `Display Name`, `Battle Scene`(필수, 맵과 함께 만든 전투 씬), `Cleared Indicator`(선택, 보통 자식으로 둔 `Prefabs/Overworld/ClearedFlag.prefab`을 꺼 둔 채 연결)를 정한다. Inspector가 ID 누락·중복과 빌드 씬 목록 누락(추가 버튼)·목록에 있지만 꺼짐(켜기 버튼)을 알려 준다. 에디터 Play에서는 빌드 씬 목록에 없어도 들어갈 수 있으나 빌드한 게임에서는 `빌드 씬 목록에 추가`가 필요하다. 미니맵 씬도 같다.
+- **어드벤처씬의 적**(2026-10-15, 기획서 7.2): 메뉴 `GameObject > IBIIIS > Stage Enemy (어드벤처씬 적)`(Hierarchy 우클릭에도 있음)로 Scene 뷰 가운데 바닥에 만든다(기본 적 그림 `Art/Sprites/Enemies/Enemy001.png`을 자식 `Visual`에 1.5배로 세움, Stage Id는 `stage-N`으로 제안). 루트의 `StageEnemy`에서 `Stage Id`(필수, 클리어 기록 키. 정한 뒤 바꾸지 않음), `Display Name`, `Battle Scene`(필수), `Script`(선택, 진입 대화 대본), `Contact Radius`(닿음 판정 거리, 칸, 임시 0.8)를 정한다. Inspector는 입구와 같은 검사(ID 누락·입구와의 중복 포함, 빌드 씬 목록)에, 전투 씬 진행기의 대본이 이 적의 대본과 다르면 경고와 연결 단추를 보인다. 고르면 Scene 뷰에 닿음 거리 원이 보인다.
+  - 닿음: 플레이어 발밑과 적 위치의 바닥 평면 거리가 `Contact Radius` 이하이면 닿은 것이다(Collider와 무관, 높이 무시). 걷기·달리기 중에 닿으면 들어가고, 구르는 중에는 들어가지 않으며, 구르기 뒤 일어나는 중(`Roll Recovery`)에는 들어간다. 대화창이 떠 있는 동안에는 판정하지 않는다.
+  - 닿으면 대본의 입장 전 구간을 보여 준 뒤(없으면 바로) 전투씬으로 들어간다. 결과 팝업·복귀는 입구와 같다.
+  - 이기면 그 적은 어드벤처씬에서 사라지고 다시 도전할 수 없다(클리어 기록이 있으면 씬을 열 때 꺼짐). 이겨서 돌아오면 대본의 클리어 후 구간을 보여 준다.
+  - 돌아오는 자리: 적에서 닿았을 때 플레이어가 있던 쪽으로 `Contact Radius` + `Return Clearance`(Overworld Settings, 임시 0.6칸)만큼 떨어진 곳(같은 자리였으면 적의 앞쪽). 돌아온 뒤 `Contact Grace Seconds`(임시 1.5초) 동안은 적에 닿아도 들어가지 않는다(기획서 7.2 에이전트 제안·사용자 승인, 수치는 기획서 7.5 미정).
+  - 이전 방식의 스테이지 입구(F)는 그대로 쓸 수 있다.
+  - 시험 배치(2026-10-15, 에이전트가 OverworldTest 씬에 배치·저장): `Enemy_ProtoTypeMap`(위치 (0, 0, 6), Stage Id `stage-prototype-enemy-01`, 이름 `프로토타입 스테이지`, 전투 `Scenes/Battle/ProtoTypeMap/ProtoTypeMap.unity`, 진입 대화 `ScriptableObjects/Scenarios/PrototypeMap/PrototypeMap.asset` — 전투씬 진행기와 같은 대본, 그림 Enemy001·발밑 그림자). `DialogueZone_Test`(위치 (-6, 0, -4), 3×3칸, Zone Id `zone-test-01`, `Only Once` 끔 — 들어올 때마다 나옴, 대화 `ScriptableObjects/Scenarios/Zone/ZoneTest.asset`의 임시 지문 한 줄). 기존 입구 `Stage_ProtoTypeMap`(F)은 그대로이며 Stage Id가 달라 클리어 기록이 따로다.
+- **근접 대화 구역**(2026-10-15, 기획서 7.2): 메뉴 `GameObject > IBIIIS > Dialogue Zone (근접 대화 구역)`으로 만든다. `DialogueZone`에서 `Zone Id`(필수 — '한 번만'의 본 기록 키, `zone-N`으로 제안), `Dialogue`(필수, 대화 에셋 `Dialogue Script` — NPC 대화와 같은 형식으로 Inspector에서 편집), `Size`(바닥 평면 사각형 크기, 칸, 기본 3×3, 오브젝트 위치가 가운데), `Only Once`(기본 켬)를 정한다. 플레이어가 구역 밖에서 안으로 들어오는 순간 대화창으로 보여 주고(그동안 이동을 막음), 안에 계속 있으면 다시 시작하지 않는다. 씬을 시작할 때 이미 안에 있으면 들어온 것으로 보지 않는다. 본 기록은 `zone:Zone Id`로 남는다. Scene 뷰에 하늘색 사각형으로 보인다. 근접 대화는 Dialogue Editor의 대본이 아니라 대화 에셋을 쓴다(에이전트 선택 — 대본으로 바꿀지는 남은 결정).
+- **스테이지 입구 추가**: 오브젝트에 `StageEntrance`를 붙이고 `Stage Id`(필수, 클리어 기록 키. 정한 뒤 바꾸지 않음), `Display Name`, `Battle Scene`(필수, 맵과 함께 만든 전투 씬), `Cleared Indicator`(선택, 보통 자식으로 둔 `Prefabs/Overworld/ClearedFlag.prefab`을 꺼 둔 채 연결)를 정한다. Inspector가 ID 누락·중복과 빌드 씬 목록 누락(추가 버튼)·목록에 있지만 꺼짐(켜기 버튼)을 알려 준다. 에디터 Play에서는 빌드 씬 목록에 없어도 들어갈 수 있으나 빌드한 게임에서는 `빌드 씬 목록에 추가`가 필요하다. 어드벤처씬도 같다.
 - **클리어 기록**: `IBIIIS > Overworld > Reset Clear Records`로 모두 지우고, `Show Save File`로 파일 위치를 연다. 저장 형식은 [데이터 관리 문서](IBIIIS_데이터_관리_문서.md)를 따른다.
 
 ### 걷기 손맛
@@ -489,21 +501,21 @@ main에 들어와 있는 시험 기능이다. 규칙은 [기획서](IBIIIS_게�
 - 플레이어: 걸은 거리 `Stride Length`(임시 0.9칸)마다 한 걸음으로 세어 걸음마다 낮게 한 번 뛰고 발소리를 낸다. `Dust Every Steps`(임시 3)걸음마다 발밑 먼지가 뒤로 퍼진다. 움직이기 시작할 때 짧게 웅크리고, 멈추면 착지처럼 납작해지며 먼지가 난다. 멈춰 있으면 숨쉬기를 한다. 벽·NPC에 막혀 거의 못 움직이면 그쪽으로 한 번 부딪히고, 계속 밀어도 다시 부딪히지 않는다(손을 뗐다 다시 밀면 다시 부딪힘). 막혀 있을 때는 누른 방향을 바라보는 대기 그림이다.
 - 걸음 주기는 시간이 아니라 걸은 거리로 세므로 프레임 속도·이동 속도가 바뀌어도 발과 이동이 맞는다.
 - NPC: `NPC.prefab`의 `Visual`에 붙은 `BreathingSprite`가 숨쉬기를 한다. NPC마다 시작 시점이 달라 함께 움직이지 않는다. `Amount Scale`(0이면 끔)로 NPC별 크기를 조절한다.
-- 공용 값(뜀 높이·웅크림·늘어남·착지 납작함·먼지 그림·발소리·부딪힘·숨쉬기 크기와 주기)은 전투와 같은 `Assets/IBIIIS/ScriptableObjects/Settings/MotionFeedback.asset`에서 읽는다. 이 에셋의 `Enabled`를 끄면 전투·미니맵·NPC 숨쉬기가 모두 꺼진다.
-- 미니맵 전용 값(`OverworldSettings`의 걷기 손맛): `Motion Feedback`(공용 에셋 연결), `Stride Length`, `Walk Hop Scale`(전투 1칸 뜀 대비 배율, 임시 0.5, 0이면 걸음 뜀 끔), `Footsteps`(걸음·멈춤 발소리. 구르기 착지 발소리는 이 설정과 무관하게 난다), `Dust Every Steps`(0이면 걸음 먼지 끔), `Stop Squash Scale`(임시 0.6, 0이면 멈춤 반응·먼지 끔), `Breathing`, `Wall Bump`. 값은 Play 시작 시 읽지 않고 매 프레임 읽으므로 Play 중에도 바로 반영된다.
-- 미니맵 플레이어의 바라보는 방향은 `OverworldPlayer`가 직접 관리한다. 자식에 `PlayerVisual`이 없어도 구르기 방향·전투 복귀 방향은 맞고, 먼지·발소리도 그대로 나며 그림 방향과 손맛 자세만 표시하지 않는다(시작 시 경고). 카메라에 Overworld Settings가 없으면 시작 시 경고하고 카메라 현재 각도·화각과 기본 범위를 쓴다.
-- 표시 전용이다. 이동·충돌·말 걸기 범위에 영향을 주지 않는다. 미니맵은 일반 게임 시간(`Time.deltaTime`)으로 움직인다.
+- 공용 값(뜀 높이·웅크림·늘어남·착지 납작함·먼지 그림·발소리·부딪힘·숨쉬기 크기와 주기)은 전투와 같은 `Assets/IBIIIS/ScriptableObjects/Settings/MotionFeedback.asset`에서 읽는다. 이 에셋의 `Enabled`를 끄면 전투·어드벤처씬·NPC 숨쉬기가 모두 꺼진다.
+- 어드벤처씬 전용 값(`OverworldSettings`의 걷기 손맛): `Motion Feedback`(공용 에셋 연결), `Stride Length`, `Walk Hop Scale`(전투 1칸 뜀 대비 배율, 임시 0.5, 0이면 걸음 뜀 끔), `Footsteps`(걸음·멈춤 발소리. 구르기 착지 발소리는 이 설정과 무관하게 난다), `Dust Every Steps`(0이면 걸음 먼지 끔), `Stop Squash Scale`(임시 0.6, 0이면 멈춤 반응·먼지 끔), `Breathing`, `Wall Bump`. 값은 Play 시작 시 읽지 않고 매 프레임 읽으므로 Play 중에도 바로 반영된다.
+- 어드벤처씬 플레이어의 바라보는 방향은 `OverworldPlayer`가 직접 관리한다. 자식에 `PlayerVisual`이 없어도 구르기 방향·전투 복귀 방향은 맞고, 먼지·발소리도 그대로 나며 그림 방향과 손맛 자세만 표시하지 않는다(시작 시 경고). 카메라에 Overworld Settings가 없으면 시작 시 경고하고 카메라 현재 각도·화각과 기본 범위를 쓴다.
+- 표시 전용이다. 이동·충돌·말 걸기 범위에 영향을 주지 않는다. 어드벤처씬은 일반 게임 시간(`Time.deltaTime`)으로 움직인다.
 - 코드: `Scripts/Runtime/Overworld/OverworldMotion.cs`(걸은 거리 → 걸음·자세), `Scripts/Runtime/Feedback/MotionEffects.cs`(전투와 공유하는 `MotionPoses`·`MotionEffects`), `Scripts/Runtime/Feedback/BreathingSprite.cs`, `OverworldPlayer.Update`에서 `PlayerVisual.SetPose`로 적용. 기존 NPC 프리팹에는 `IBIIIS > Overworld > Create NPC Prefab`이 숨쉬기가 없을 때만 붙인다.
 
 ### 구조와 시간 분리
 
-- 미니맵은 `MovementWorldTime`(전투의 입력 대기 중 시간 정지)에 참여하지 않고 일반 게임 시간으로 움직인다. 전투 씬이 정리되며 시간이 복구되지 않은 채 멈춰 있으면 미니맵 플레이어가 1로 되돌리고 경고를 남긴다.
-- 전투 씬과 `GridMapPlayer`는 미니맵을 모른다. 입구가 만든 `StageResultPopup`(씬 전환 사이에 유지)이 전투 씬의 `GridMapPlayer` 상태를 읽어 결과를 띄우고, 미니맵으로 돌아가면 사라진다. 돌아갈 씬과 위치는 `StageFlow`가 기억한다.
+- 어드벤처씬은 `MovementWorldTime`(전투의 입력 대기 중 시간 정지)에 참여하지 않고 일반 게임 시간으로 움직인다. 전투 씬이 정리되며 시간이 복구되지 않은 채 멈춰 있으면 어드벤처씬 플레이어가 1로 되돌리고 경고를 남긴다.
+- 전투 씬과 `GridMapPlayer`는 어드벤처씬을 모른다. 입구가 만든 `StageResultPopup`(씬 전환 사이에 유지)이 전투 씬의 `GridMapPlayer` 상태를 읽어 결과를 띄우고, 어드벤처씬으로 돌아가면 사라진다. 돌아갈 씬과 위치는 `StageFlow`가 기억한다.
 - 조작 안내·상호작용 안내·결과 팝업은 게임 화면 UI(UI Toolkit)로 그린다. NPC 말풍선은 아직 IMGUI 임시 화면이며 정식 대화창이 정해지면 교체한다.
 
 ### 검증
 
-- 개발 검증: Unity 컴파일 완료, 콘솔 오류 0, EditMode 100/100 통과. 테스트 씬 생성 함수를 실행해 `Scenes/OverworldTest.unity`를 만들고, 열려 있던 씬이 바뀌거나 수정되지 않았음을 확인했다. 생성된 씬에서 플레이어(미니맵 플레이어 프리팹·설정·PlayerVisual 연결), 카메라(대상·MainCamera 태그·공용 카메라 각도), NPC(대사·안내 문구), 스테이지 입구(ID·전투 씬 경로·설정 오류 없음), 설정 에셋(카메라·입력 연결, 필수 액션 누락 없음)을 확인했다. 첫 실행에서 `Overworld` 폴더가 없으면 씬 경로를 만들지 못하던 결함을 찾아 고쳤다. NPC 2D 전환: NPC 프리팹·실루엣(256×256, PPU 256, 기준점 아래 중앙)을 만들고 기존 테스트 씬의 캡슐 NPC를 위치·이름·대사를 유지한 채 프리팹으로 바꿔 저장했으며, 쓰지 않게 된 `Placeholder_NPC.mat`을 지웠다. 클리어 깃발 2D 전환: 깃발 프리팹·그림(256×256, PPU 256, 기준점 아래 중앙)을 만들고 테스트 씬의 큐브 깃발을 같은 자리(바닥 높이)·꺼진 상태로 바꿔 입구에 다시 연결했으며, 쓰지 않게 된 `Placeholder_Cleared.mat`을 지웠다. EditMode 103/103 통과. 걷기 손맛: 전투 손맛 코드에서 자세 계산과 먼지·잔상·소리를 공용으로 분리한 뒤 기존 103개가 그대로 통과함을 먼저 확인했고, 미니맵 걷기·NPC 숨쉬기를 더해 EditMode 107/107 통과. 홀드식 달리기: 대시를 2.5칸 튀어 나가는 동작에서 Shift를 누르고 있는 동안 달리기로 바꿨다. EditMode 115/115 통과(달리기 보폭·걷기 전환 시 걸음 박자 유지, Shift 누르고 있기·떼기 입력, 구르기 손맛만 남긴 모션). Play 모드 개발 검증(입력 주입, 0.02초 프레임): 걷기 3.50칸/초, W·D+Shift 6.00칸/초(위로는 `c_move_back`, 옆으로는 `c_dash_right`), Shift를 떼면 3.50칸/초, Shift만 누르면 정지, Space 구르기 정상, 콘솔 오류 없음. 구르기 막힘 판정(2026-10-09): 막힘을 고정 거리(0.01칸) 이하 무시로 판단하던 탓에 약 860fps 이상에서는 벽 앞 구르기가 끝까지 이어졌다. 걷기·구르기·벽 부딪힘이 같은 `OverworldMotion.IsBlocked`를 쓰고, CharacterController가 무시하는 최소 이동량(`minMoveDistance` × 1.5)만 제외하도록 고쳤다. 구르기 계획(`OverworldEvade`)은 구르기 전용으로 정리했다(폐기된 2.5칸 대시 경로 제거). 자동 테스트: 0.001초·0.02초 프레임 모두 벽 앞은 막힘·빈 공간과 벽을 따라 미끄러짐은 막힘 아님·최소 이동 미만은 판단하지 않음, 구르기 거리가 프레임 분할과 무관·쿨다운. 높은 프레임에서의 실제 벽 앞 구르기는 사용자 확인 대기(플레이 확인 목록 O-09). 구르기 감속·회복: EditMode 114/114 통과(신규 1: 시간 절반에 거리 3/4·첫 구간 속도 평균의 약 2배·끝 구간 거의 정지, 프레임을 나눠도 총 1.5칸, 회복 중 쿨다운이 줄지 않고 회복 뒤 이어서 감소, 감속 0은 일정한 속도). Play 모드 개발 검증(입력 주입, 0.02초 프레임): 구르기 18프레임·총 1.500칸, 프레임당 이동이 걷기(0.07칸)의 약 2.4배에서 0.001칸까지 줄어듦, 회복 0.2초(11프레임) 동안 D를 누른 채 Shift·Space·F를 눌러도 이동·동작 없음, 회복 뒤 바로 걷기 재개, 콘솔 오류 없음. 미니맵 화각 30 전환: 미니맵 전용 카메라 설정을 만들어 연결하고 테스트 씬 카메라를 갱신했으며, 화각 75·30 모두 플레이어가 화면 가운데이고 세로 14칸이 화면 높이에 맞는지 자동 테스트로 확인했다(EditMode 108/108). 테스트 씬 카메라로 화각 30·75 화면을 캡처해 비교했다. Play 모드 개발 검증(코드로 이동량·시간을 넣음): 실제 `OverworldTest` 씬에서 3칸 걷기 = 3걸음·먼지 1회, 그림 최고 0.125칸 뜀(전투 0.25의 절반), 멈출 때 납작함 1.11배·먼지, 2초 뒤 먼지 정리·원위치, NPC 숨쉬기 크기 변화, 콘솔 오류 없음을 확인했다. 실제 키보드로 걸어 본 느낌은 확인하지 않았다.
+- 개발 검증: Unity 컴파일 완료, 콘솔 오류 0, EditMode 100/100 통과. 테스트 씬 생성 함수를 실행해 `Scenes/OverworldTest.unity`를 만들고, 열려 있던 씬이 바뀌거나 수정되지 않았음을 확인했다. 생성된 씬에서 플레이어(어드벤처씬 플레이어 프리팹·설정·PlayerVisual 연결), 카메라(대상·MainCamera 태그·공용 카메라 각도), NPC(대사·안내 문구), 스테이지 입구(ID·전투 씬 경로·설정 오류 없음), 설정 에셋(카메라·입력 연결, 필수 액션 누락 없음)을 확인했다. 첫 실행에서 `Overworld` 폴더가 없으면 씬 경로를 만들지 못하던 결함을 찾아 고쳤다. NPC 2D 전환: NPC 프리팹·실루엣(256×256, PPU 256, 기준점 아래 중앙)을 만들고 기존 테스트 씬의 캡슐 NPC를 위치·이름·대사를 유지한 채 프리팹으로 바꿔 저장했으며, 쓰지 않게 된 `Placeholder_NPC.mat`을 지웠다. 클리어 깃발 2D 전환: 깃발 프리팹·그림(256×256, PPU 256, 기준점 아래 중앙)을 만들고 테스트 씬의 큐브 깃발을 같은 자리(바닥 높이)·꺼진 상태로 바꿔 입구에 다시 연결했으며, 쓰지 않게 된 `Placeholder_Cleared.mat`을 지웠다. EditMode 103/103 통과. 걷기 손맛: 전투 손맛 코드에서 자세 계산과 먼지·잔상·소리를 공용으로 분리한 뒤 기존 103개가 그대로 통과함을 먼저 확인했고, 어드벤처씬 걷기·NPC 숨쉬기를 더해 EditMode 107/107 통과. 홀드식 달리기: 대시를 2.5칸 튀어 나가는 동작에서 Shift를 누르고 있는 동안 달리기로 바꿨다. EditMode 115/115 통과(달리기 보폭·걷기 전환 시 걸음 박자 유지, Shift 누르고 있기·떼기 입력, 구르기 손맛만 남긴 모션). Play 모드 개발 검증(입력 주입, 0.02초 프레임): 걷기 3.50칸/초, W·D+Shift 6.00칸/초(위로는 `c_move_back`, 옆으로는 `c_dash_right`), Shift를 떼면 3.50칸/초, Shift만 누르면 정지, Space 구르기 정상, 콘솔 오류 없음. 구르기 막힘 판정(2026-10-09): 막힘을 고정 거리(0.01칸) 이하 무시로 판단하던 탓에 약 860fps 이상에서는 벽 앞 구르기가 끝까지 이어졌다. 걷기·구르기·벽 부딪힘이 같은 `OverworldMotion.IsBlocked`를 쓰고, CharacterController가 무시하는 최소 이동량(`minMoveDistance` × 1.5)만 제외하도록 고쳤다. 구르기 계획(`OverworldEvade`)은 구르기 전용으로 정리했다(폐기된 2.5칸 대시 경로 제거). 자동 테스트: 0.001초·0.02초 프레임 모두 벽 앞은 막힘·빈 공간과 벽을 따라 미끄러짐은 막힘 아님·최소 이동 미만은 판단하지 않음, 구르기 거리가 프레임 분할과 무관·쿨다운. 높은 프레임에서의 실제 벽 앞 구르기는 사용자 확인 대기(플레이 확인 목록 O-09). 구르기 감속·회복: EditMode 114/114 통과(신규 1: 시간 절반에 거리 3/4·첫 구간 속도 평균의 약 2배·끝 구간 거의 정지, 프레임을 나눠도 총 1.5칸, 회복 중 쿨다운이 줄지 않고 회복 뒤 이어서 감소, 감속 0은 일정한 속도). Play 모드 개발 검증(입력 주입, 0.02초 프레임): 구르기 18프레임·총 1.500칸, 프레임당 이동이 걷기(0.07칸)의 약 2.4배에서 0.001칸까지 줄어듦, 회복 0.2초(11프레임) 동안 D를 누른 채 Shift·Space·F를 눌러도 이동·동작 없음, 회복 뒤 바로 걷기 재개, 콘솔 오류 없음. 어드벤처씬 화각 30 전환: 어드벤처씬 전용 카메라 설정을 만들어 연결하고 테스트 씬 카메라를 갱신했으며, 화각 75·30 모두 플레이어가 화면 가운데이고 세로 14칸이 화면 높이에 맞는지 자동 테스트로 확인했다(EditMode 108/108). 테스트 씬 카메라로 화각 30·75 화면을 캡처해 비교했다. Play 모드 개발 검증(코드로 이동량·시간을 넣음): 실제 `OverworldTest` 씬에서 3칸 걷기 = 3걸음·먼지 1회, 그림 최고 0.125칸 뜀(전투 0.25의 절반), 멈출 때 납작함 1.11배·먼지, 2초 뒤 먼지 정리·원위치, NPC 숨쉬기 크기 변화, 콘솔 오류 없음을 확인했다. 실제 키보드로 걸어 본 느낌은 확인하지 않았다.
 - 자동 테스트로 확인한 항목: 이동 입력별 스프라이트 방향(W 뒤, S 앞, A/D와 대각선 4종 옆, 데드존), 클리어 기록 저장·다시 읽기·중복 방지·빈 ID 거부·초기화, 형식이 잘못된 저장 파일의 `.corrupt` 보존, 저장 실패 시 클리어로 표시하지 않고 다시 시도 가능, 잠긴 파일·사본 생성 실패 시 원본을 덮어쓰지 않고 저장 거부, 복귀 위치를 돌아갈 씬에서 한 번만 돌려줌, 지켜보는 전투에서 승리하면 결과 팝업이 클리어 기록을 한 번 저장하고 되돌려도 기록 유지, 없는 전투 씬·빈 경로로는 진입하지 않음(진행 정보·팝업 없음), 가장 가까운 상호작용 대상 선택(높이 무시·범위 밖·대사 없는 NPC 제외), 말풍선 줄 넘김·닫힘, 걸음 수·자세가 프레임 분할과 무관함(1프레임 대 97프레임), 멈춤 납작함→숨쉬기·벽 부딪힘은 막힐 때 한 번만, 걷기 손맛 항목별 끄기와 공용 Enabled 끄기, NPC 숨쉬기는 크기만 바꾸고 위치는 그대로, 그림이 카메라와 나란히 서는지, NPC 프리팹의 그림·크기를 바꿔도 막힘 Collider·말 걸기 범위가 그대로인지(루트에는 렌더러 없음, 그림자 있음), 클리어 깃발이 클리어 기록이 있을 때만 켜지고 초기화하면 꺼지는지, 기본 키(W+A 정규화, F, 방향키)와 `Overworld` 맵이 없는 입력 에셋의 기본 배치 대체.
 - 사용자 확인 대기: [플레이 확인 목록](IBIIIS_플레이_확인_목록.md) O-01~O-10.
-- 알려진 제한: 전투 중 미니맵으로 그냥 나가는 메뉴는 없다(승패 후에만 복귀). 걷기는 이동 그림 1장에 뜀·납작함 손맛을 더한 것이며 걷기 프레임 애니메이션은 없다. NPC 그림(실루엣)·클리어 깃발·입구 발판은 임시이며 NPC는 정면 한 장만 쓴다.
+- 알려진 제한: 전투 중 어드벤처씬으로 그냥 나가는 메뉴는 없다(승패 후에만 복귀). 걷기는 이동 그림 1장에 뜀·납작함 손맛을 더한 것이며 걷기 프레임 애니메이션은 없다. NPC 그림(실루엣)·클리어 깃발·입구 발판은 임시이며 NPC는 정면 한 장만 쓴다.

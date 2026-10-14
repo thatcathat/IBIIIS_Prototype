@@ -13,10 +13,42 @@ MonoBehaviour:
   m_Name: Tutorial2Script
   m_EditorClassIdentifier: IBIIIS.Runtime::IBIIIS.TutorialScript
   scriptId: tutorial_2
+  settings:
+    startTiming: 0
+    onlyOnce: 0
+    allowSkip: 1
+    skipHoldSeconds: 0.6
+    hideEnemyAlerts: 1
+    scriptControlsDanger: 1
   steps:
+  - id: 9e8d3be683c2431ab2d230303d4c5d43
+    type: 17
+    line:
+      id: 
+      speaker: {fileID: 0}
+      expression: 
+      nameOverride: 
+      text: 
+    actions: 0
+    direction: {x: 0, y: 0}
+    cell: {x: 0, y: 0}
+    seconds: 0
+    keys: 
+    target: 
+    text: 
+    active: 0
+    scenePath: 
+    prefab: {fileID: 0}
+    sprite: {fileID: 0}
+    motion: 0
+    endMotion: 0
+    untilAction: 0
+    untilEnd: 0
+    display: 0
   - id: 9d80885150ef4078ad96bb3d92a0bc18
     type: 0
     line:
+      id: 
       speaker: {fileID: 0}
       expression: 
       nameOverride: 
@@ -41,6 +73,7 @@ MonoBehaviour:
   - id: 93e442b3486e40bb937f6072925a5374
     type: 0
     line:
+      id: 
       speaker: {fileID: 11400000, guid: 62cbb598f2f40c249b3713c3d307662c, type: 2}
       expression: 
       nameOverride: 
@@ -64,6 +97,7 @@ MonoBehaviour:
   - id: a4616ba67c484a828ac844bb53720044
     type: 0
     line:
+      id: 
       speaker: {fileID: 11400000, guid: 62cbb598f2f40c249b3713c3d307662c, type: 2}
       expression: 
       nameOverride: 
@@ -87,6 +121,7 @@ MonoBehaviour:
   - id: 17c7bb0ea5794e278b79cd04f2cb54c7
     type: 0
     line:
+      id: 
       speaker: {fileID: 11400000, guid: 1b570bab0e1d3ed40920b9225d59155c, type: 2}
       expression: 
       nameOverride: 
@@ -110,6 +145,7 @@ MonoBehaviour:
   - id: da340d29ff9b428f8ebbe1a77e5124ee
     type: 0
     line:
+      id: 
       speaker: {fileID: 11400000, guid: bd9c43e83beda0543960025aa730ad98, type: 2}
       expression: 
       nameOverride: 
@@ -134,6 +170,7 @@ MonoBehaviour:
   - id: 935ec3adf5084d5aa4752afb74bcf012
     type: 0
     line:
+      id: 
       speaker: {fileID: 11400000, guid: bd9c43e83beda0543960025aa730ad98, type: 2}
       expression: 
       nameOverride: 
@@ -158,6 +195,7 @@ MonoBehaviour:
   - id: ba8622296244470e802d03832369e355
     type: 0
     line:
+      id: 
       speaker: {fileID: 11400000, guid: 1b570bab0e1d3ed40920b9225d59155c, type: 2}
       expression: 
       nameOverride: 
@@ -184,6 +222,7 @@ MonoBehaviour:
   - id: 6c22ca67897243dbbf2e08048dcb7696
     type: 0
     line:
+      id: 
       speaker: {fileID: 11400000, guid: bd9c43e83beda0543960025aa730ad98, type: 2}
       expression: 
       nameOverride: 
@@ -209,6 +248,7 @@ MonoBehaviour:
   - id: 64ba5763f5914a189480087c5c1062b4
     type: 0
     line:
+      id: 
       speaker: {fileID: 0}
       expression: 
       nameOverride: 
@@ -232,6 +272,7 @@ MonoBehaviour:
   - id: 01375886600e4f67961370bf8c30273f
     type: 13
     line:
+      id: 
       speaker: {fileID: 0}
       expression: 
       nameOverride: 
@@ -255,6 +296,7 @@ MonoBehaviour:
   - id: dd830769ec5a4abfa9e7bd9204b4fe70
     type: 0
     line:
+      id: 
       speaker: {fileID: 11400000, guid: bd9c43e83beda0543960025aa730ad98, type: 2}
       expression: 
       nameOverride: 
@@ -278,6 +320,7 @@ MonoBehaviour:
   - id: 3f84de23e4da486d9bcdd44fa5a1c243
     type: 0
     line:
+      id: 
       speaker: {fileID: 11400000, guid: 62cbb598f2f40c249b3713c3d307662c, type: 2}
       expression: 
       nameOverride: 
@@ -301,6 +344,7 @@ MonoBehaviour:
   - id: e4a86486e2bb4926b7a4c8ec95014b91
     type: 0
     line:
+      id: 
       speaker: {fileID: 11400000, guid: bd9c43e83beda0543960025aa730ad98, type: 2}
       expression: 
       nameOverride: 
@@ -325,6 +369,7 @@ MonoBehaviour:
   - id: f4ef6c0570f64d4b99e404dec0740bce
     type: 0
     line:
+      id: 
       speaker: {fileID: 11400000, guid: 62cbb598f2f40c249b3713c3d307662c, type: 2}
       expression: 
       nameOverride: 
@@ -348,6 +393,7 @@ MonoBehaviour:
   - id: 2b00b92f0a23460083e118a1d706ddcd
     type: 0
     line:
+      id: 
       speaker: {fileID: 11400000, guid: bd9c43e83beda0543960025aa730ad98, type: 2}
       expression: 
       nameOverride: 
@@ -372,6 +418,7 @@ MonoBehaviour:
   - id: 3a3c80cd69434b8188d567357c4f2edb
     type: 0
     line:
+      id: 
       speaker: {fileID: 11400000, guid: 62cbb598f2f40c249b3713c3d307662c, type: 2}
       expression: 
       nameOverride: 
@@ -395,6 +442,7 @@ MonoBehaviour:
   - id: d177f77ab27a4f84af0df4c94909e761
     type: 2
     line:
+      id: 
       speaker: {fileID: 0}
       expression: 
       nameOverride: 
@@ -418,6 +466,7 @@ MonoBehaviour:
   - id: 777616d1a32b469bb904f9a8b884a5d3
     type: 13
     line:
+      id: 
       speaker: {fileID: 0}
       expression: 
       nameOverride: 
@@ -441,6 +490,7 @@ MonoBehaviour:
   - id: 08dc9cee0db8450a9dfe57a0e00e9bd0
     type: 10
     line:
+      id: 
       speaker: {fileID: 0}
       expression: 
       nameOverride: 
@@ -464,6 +514,7 @@ MonoBehaviour:
   - id: ed9a2f897ac14174a5a5b5f5f14948d3
     type: 10
     line:
+      id: 
       speaker: {fileID: 0}
       expression: 
       nameOverride: 
@@ -487,6 +538,7 @@ MonoBehaviour:
   - id: a00fe0a840f84ef9ad3c726c772c2c76
     type: 0
     line:
+      id: 
       speaker: {fileID: 11400000, guid: bd9c43e83beda0543960025aa730ad98, type: 2}
       expression: 
       nameOverride: 
@@ -510,6 +562,7 @@ MonoBehaviour:
   - id: 483570907f284f1a8180fd024313c007
     type: 0
     line:
+      id: 
       speaker: {fileID: 11400000, guid: 1b570bab0e1d3ed40920b9225d59155c, type: 2}
       expression: 
       nameOverride: 
@@ -534,6 +587,7 @@ MonoBehaviour:
   - id: 5d0a78a03a31479d9a52e2e7f9889ac0
     type: 0
     line:
+      id: 
       speaker: {fileID: 11400000, guid: 3481636955f132a498f3239b0b9ce428, type: 2}
       expression: 
       nameOverride: 
@@ -557,6 +611,7 @@ MonoBehaviour:
   - id: aa8754e46bb04b0aa81b0ceb693662b2
     type: 0
     line:
+      id: 
       speaker: {fileID: 11400000, guid: bd9c43e83beda0543960025aa730ad98, type: 2}
       expression: 
       nameOverride: 
@@ -582,6 +637,7 @@ MonoBehaviour:
   - id: f49980c0f63746bfbab7494814a3a065
     type: 0
     line:
+      id: 
       speaker: {fileID: 11400000, guid: 62cbb598f2f40c249b3713c3d307662c, type: 2}
       expression: 
       nameOverride: 
@@ -605,6 +661,7 @@ MonoBehaviour:
   - id: 94a08c4f1d754fbaaca4c10635cbf14a
     type: 0
     line:
+      id: 
       speaker: {fileID: 11400000, guid: bd9c43e83beda0543960025aa730ad98, type: 2}
       expression: 
       nameOverride: 
@@ -629,6 +686,7 @@ MonoBehaviour:
   - id: 467d50df195d4bc9916254745b208911
     type: 0
     line:
+      id: 
       speaker: {fileID: 11400000, guid: 62cbb598f2f40c249b3713c3d307662c, type: 2}
       expression: 
       nameOverride: 
@@ -654,6 +712,7 @@ MonoBehaviour:
   - id: 1a067be500b248aba5f45e41344c6c87
     type: 2
     line:
+      id: 
       speaker: {fileID: 0}
       expression: 
       nameOverride: 
@@ -677,6 +736,7 @@ MonoBehaviour:
   - id: 01da70d05f29443c8d61657b5b243c67
     type: 11
     line:
+      id: 
       speaker: {fileID: 11400000, guid: 62cbb598f2f40c249b3713c3d307662c, type: 2}
       expression: 
       nameOverride: 
@@ -700,6 +760,7 @@ MonoBehaviour:
   - id: 77b25e93dec548efbc4e18123ef2285a
     type: 0
     line:
+      id: 
       speaker: {fileID: 0}
       expression: 
       nameOverride: 
@@ -725,6 +786,7 @@ MonoBehaviour:
   - id: 605bc2bfd1964ba5873f06a3940e49f7
     type: 0
     line:
+      id: 
       speaker: {fileID: 11400000, guid: bd9c43e83beda0543960025aa730ad98, type: 2}
       expression: 
       nameOverride: 
@@ -748,6 +810,7 @@ MonoBehaviour:
   - id: 42048f78830641d096c5cdc3c00c95cc
     type: 0
     line:
+      id: 
       speaker: {fileID: 11400000, guid: 62cbb598f2f40c249b3713c3d307662c, type: 2}
       expression: 
       nameOverride: 
@@ -772,6 +835,7 @@ MonoBehaviour:
   - id: 680f6905bb0849febb7a49c8faa1e9af
     type: 0
     line:
+      id: 
       speaker: {fileID: 0}
       expression: 
       nameOverride: 
@@ -795,6 +859,7 @@ MonoBehaviour:
   - id: 80ef4893e15a43efb1d8ecdde9d2b2d6
     type: 0
     line:
+      id: 
       speaker: {fileID: 11400000, guid: 62cbb598f2f40c249b3713c3d307662c, type: 2}
       expression: 
       nameOverride: 
@@ -820,6 +885,7 @@ MonoBehaviour:
   - id: 6ad7f61c3d6f41ee98a3150a9db86121
     type: 0
     line:
+      id: 
       speaker: {fileID: 11400000, guid: bd9c43e83beda0543960025aa730ad98, type: 2}
       expression: 
       nameOverride: 
@@ -843,6 +909,7 @@ MonoBehaviour:
   - id: 31b16a9da5a6435aa8d04eeca9e9d3f0
     type: 13
     line:
+      id: 
       speaker: {fileID: 0}
       expression: 
       nameOverride: 
@@ -866,6 +933,7 @@ MonoBehaviour:
   - id: b92bfa9d9c8844a3b838d1a5f6c00d23
     type: 0
     line:
+      id: 
       speaker: {fileID: 11400000, guid: bd9c43e83beda0543960025aa730ad98, type: 2}
       expression: 
       nameOverride: 
@@ -889,6 +957,7 @@ MonoBehaviour:
   - id: 920b90ec80694c2c8598a5b7fff203c5
     type: 0
     line:
+      id: 
       speaker: {fileID: 11400000, guid: 62cbb598f2f40c249b3713c3d307662c, type: 2}
       expression: 
       nameOverride: 
@@ -913,6 +982,7 @@ MonoBehaviour:
   - id: 5d1a505dd9934414bfe0f6b195865a43
     type: 0
     line:
+      id: 
       speaker: {fileID: 11400000, guid: 62cbb598f2f40c249b3713c3d307662c, type: 2}
       expression: 
       nameOverride: 
@@ -936,6 +1006,7 @@ MonoBehaviour:
   - id: f1963584cd6a466fbb5a2b6f29736300
     type: 0
     line:
+      id: 
       speaker: {fileID: 11400000, guid: bd9c43e83beda0543960025aa730ad98, type: 2}
       expression: 
       nameOverride: 
@@ -959,6 +1030,7 @@ MonoBehaviour:
   - id: a735b5f0279041e880bc621da54ae890
     type: 0
     line:
+      id: 
       speaker: {fileID: 11400000, guid: 62cbb598f2f40c249b3713c3d307662c, type: 2}
       expression: 
       nameOverride: 
@@ -984,6 +1056,7 @@ MonoBehaviour:
   - id: 0cdb5996da674902958c71dc7fbe84d4
     type: 0
     line:
+      id: 
       speaker: {fileID: 11400000, guid: 62cbb598f2f40c249b3713c3d307662c, type: 2}
       expression: 
       nameOverride: 
@@ -1008,6 +1081,7 @@ MonoBehaviour:
   - id: 5dff18e1875543819e0b981144db8dae
     type: 0
     line:
+      id: 
       speaker: {fileID: 11400000, guid: bd9c43e83beda0543960025aa730ad98, type: 2}
       expression: 
       nameOverride: 
@@ -1032,6 +1106,7 @@ MonoBehaviour:
   - id: 9f88d82200a84d26b9bba69046484275
     type: 0
     line:
+      id: 
       speaker: {fileID: 0}
       expression: 
       nameOverride: 
@@ -1056,6 +1131,7 @@ MonoBehaviour:
   - id: 43987b471c8f42d89796f202830ba197
     type: 12
     line:
+      id: 
       speaker: {fileID: 0}
       expression: 
       nameOverride: 
@@ -1079,6 +1155,7 @@ MonoBehaviour:
   - id: c1c64351b5b247d1a45168b9110fed82
     type: 9
     line:
+      id: 
       speaker: {fileID: 0}
       expression: 
       nameOverride: 
@@ -1092,6 +1169,30 @@ MonoBehaviour:
     text: 
     active: 0
     scenePath: Assets/IBIIIS/Scenes/OverworldTest.unity
+    prefab: {fileID: 0}
+    sprite: {fileID: 0}
+    motion: 0
+    endMotion: 0
+    untilAction: 0
+    untilEnd: 0
+    display: 0
+  - id: 92cd1a81ee6d4726844fb86a51467920
+    type: 16
+    line:
+      id: 
+      speaker: {fileID: 0}
+      expression: 
+      nameOverride: 
+      text: 
+    actions: 0
+    direction: {x: 0, y: 0}
+    cell: {x: 0, y: 0}
+    seconds: 0
+    keys: 
+    target: 
+    text: 
+    active: 0
+    scenePath: 
     prefab: {fileID: 0}
     sprite: {fileID: 0}
     motion: 0

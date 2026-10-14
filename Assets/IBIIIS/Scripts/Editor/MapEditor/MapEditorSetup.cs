@@ -141,6 +141,8 @@ namespace IBIIIS.Editor
                 playerSettings.FindProperty("playerSettings").objectReferenceValue = EnsurePlayerSettings();
                 playerSettings.FindProperty("cameraSettings").objectReferenceValue = EnsureCameraSettings(); playerSettings.ApplyModifiedPropertiesWithoutUndo();
                 game.GetComponent<GridMapPlayer>().FitCamera();
+                // 대본 진행기를 빈 채로 붙여 둔다(대본이 없으면 시작하지 않고 전투는 평소대로). Dialogue Editor의 '씬에 연결'로 대본만 꽂으면 된다.
+                game.AddComponent<ScenarioDirector>().Configure(game.GetComponent<GridMapPlayer>(), null);
                 MapEnvironmentEditor.Synchronize(game.GetComponent<GridMapPlayer>(), false);
                 if (!EditorSceneManager.SaveScene(scene, path)) throw new IOException("테스트 씬 저장에 실패했습니다.");
             }

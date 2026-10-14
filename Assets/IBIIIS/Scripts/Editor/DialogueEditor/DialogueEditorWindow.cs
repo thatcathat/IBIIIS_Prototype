@@ -60,6 +60,8 @@ namespace IBIIIS.Editor
         [SerializeField] private float zoom = 1;
         private VisualElement zoomRoot, zoomContent;
         private Button zoomLabel;
+        // 다시 그린 뒤 되돌릴 스크롤 위치. 내용 크기(zoomRoot)가 정해진 뒤에 적용한다(그 전에는 스크롤 범위가 0이라 잘림).
+        private Vector2? pendingScroll;
         private readonly List<(int start, int end, VisualElement group)> sceneGroups = new List<(int, int, VisualElement)>();
 
         // ── 끌기 상태 ──
@@ -168,6 +170,8 @@ namespace IBIIIS.Editor
             script = value;
             // 단계 ID가 없는 예전 대본이면 채워 저장한다(선택·복사가 ID를 씀).
             if (script != null && script.EnsureStepIds()) { EditorUtility.SetDirty(script); Save(); }
+            // 전투 시작·클리어 두 구간으로 맞춘다(예전 대본은 시작 시점대로 클리어 구간 시작 단계를 넣어 저장).
+            if (script != null && script.EnsureSections()) { EditorUtility.SetDirty(script); Save(); }
             serialized = script != null ? new SerializedObject(script) : null;
             if (scriptField != null) scriptField.SetValueWithoutNotify(script);
             duplicateButton?.SetEnabled(script != null);
@@ -232,31 +236,43 @@ namespace IBIIIS.Editor
         private void RebuildGraph()
         {
             if (graph == null) return;
-            var scroll = graph.scrollOffset;
+            var scroll = pendingScroll ?? graph.scrollOffset;
+            var previousSize = zoomRoot != null ? zoomRoot.layout.size : Vector2.zero;
             graph.Clear(); columns.Clear(); stepElements.Clear(); links.Clear(); linkLayer = null; sceneGroups.Clear(); zoomRoot = zoomContent = null;
             RefreshIssues();
             if (zoomLabel != null) zoomLabel.text = $"{zoom * 100:0}%";
             if (script == null) { graph.Add(new Label("대본(Scenario Script)을 고르세요. Project 창에서 대본 에셋을 더블클릭해도 열립니다.") { style = { marginLeft = 10, marginTop = 10 } }); return; }
             // 배율은 zoomContent에 걸고(왼쪽 위 기준), 바깥 zoomRoot는 배율을 곱한 크기로 맞춘다(배율은 배치 크기를 바꾸지 않으므로).
             zoomRoot = new VisualElement { style = { overflow = Overflow.Hidden, flexShrink = 0 } };
+            // 새 내용의 크기가 정해지기 전까지 이전 크기를 유지해 스크롤 범위가 잠깐 0이 되지 않게 한다.
+            if (!float.IsNaN(previousSize.x) && previousSize.x > 0) { zoomRoot.style.width = previousSize.x; zoomRoot.style.height = previousSize.y; }
             zoomContent = new VisualElement { style = { position = Position.Absolute, left = 0, top = 0, alignItems = Align.FlexStart, transformOrigin = new TransformOrigin(0, 0, 0) } };
             zoomContent.RegisterCallback<GeometryChangedEvent>(_ => ResizeZoomRoot());
             zoomRoot.Add(zoomContent); graph.Add(zoomRoot);
             ApplyZoom();
-            zoomContent.Add(StartNode());
             var steps = script.Steps;
-            if (steps.Length == 0) { zoomContent.Add(new Button(() => Commit(new[] { NewLine(null) }, "대본 단계 추가", 0)) { text = "첫 대사 추가", style = { marginLeft = 10, marginTop = 10, alignSelf = Align.FlexStart } }); return; }
             var spans = new Dictionary<int, ScenarioSpan>(); var lanes = AssignLanes(steps, spans);
             int primary = Primary;
             var selectedSpan = primary >= 0 && spans.TryGetValue(primary, out var s) ? s : (ScenarioSpan?)null;
             var column = new VisualElement { style = { paddingLeft = 8, paddingTop = 8, paddingBottom = 8, alignItems = Align.FlexStart } };
             var scenes = ScenarioTimeline.Scenes(steps);
-            for (int n = 0; n < scenes.Count; n++)
+            // 구간마다: 시작 노드('▶ 입장 전'·'▶ 입장 후'·'▶ 클리어 후') → 그 구간의 장면들. 빈 구간에는 첫 대사 추가 단추를 둔다.
+            int n = 0;
+            foreach (var section in new[] { ScenarioSection.Before, ScenarioSection.Battle, ScenarioSection.Clear })
             {
-                if (n > 0) column.Add(new Label("▼") { pickingMode = PickingMode.Ignore, style = { fontSize = 9, color = new Color(.5f, .52f, .58f), marginLeft = 22, height = 12, unityTextAlign = TextAnchor.MiddleLeft } });
-                var group = Scene(n, scenes[n], steps, spans, lanes, selectedSpan, n < scenes.Count - 1);
-                sceneGroups.Add((scenes[n].start, scenes[n].end, group));
-                column.Add(group);
+                column.Add(StartNode(section));
+                var inSection = new List<int>();
+                for (int k = 0; k < scenes.Count; k++) if (ScenarioScript.SectionOf(steps, scenes[k].start) == section) inSection.Add(k);
+                if (inSection.Count == 0) { column.Add(EmptySection(section)); continue; }
+                for (int j = 0; j < inSection.Count; j++, n++)
+                {
+                    int k = inSection[j];
+                    bool hasPrev = j > 0, hasNext = j < inSection.Count - 1;
+                    if (hasPrev) column.Add(new Label("▼") { pickingMode = PickingMode.Ignore, style = { fontSize = 9, color = new Color(.5f, .52f, .58f), marginLeft = 22, height = 12, unityTextAlign = TextAnchor.MiddleLeft } });
+                    var group = Scene(k, scenes[k], steps, spans, lanes, selectedSpan, hasPrev, hasNext, section != ScenarioSection.Battle);
+                    sceneGroups.Add((scenes[k].start, scenes[k].end, group));
+                    column.Add(group);
+                }
             }
             // 연결선은 맨 위 층에 그린다(누르기는 아래 노드로 통과).
             linkLayer = new VisualElement { pickingMode = PickingMode.Ignore, style = { position = Position.Absolute, left = 0, top = 0, right = 0, bottom = 0 } };
@@ -264,7 +280,21 @@ namespace IBIIIS.Editor
             column.Add(linkLayer);
             column.RegisterCallback<GeometryChangedEvent>(_ => linkLayer?.MarkDirtyRepaint());
             zoomContent.Add(column);
-            graph.schedule.Execute(() => graph.scrollOffset = scroll);
+            pendingScroll = scroll; RestoreScroll();
+        }
+        // 미뤄 둔 스크롤 위치를 되돌린다(내용 크기가 정해진 다음 프레임에). 크기가 아직이면 ResizeZoomRoot가 다시 부른다.
+        private void RestoreScroll()
+        {
+            if (pendingScroll == null || graph == null) return;
+            var target = pendingScroll.Value;
+            graph.schedule.Execute(() =>
+            {
+                if (pendingScroll == null) return;
+                graph.scrollOffset = target;
+                var view = graph.contentViewport.layout.size; var size = zoomRoot != null ? zoomRoot.layout.size : Vector2.zero;
+                // 내용이 충분히 커서 원하는 위치까지 갔으면 끝낸다(아직 작으면 다음 크기 변화 때 다시 시도).
+                if (float.IsNaN(size.x) || (size.x - view.x >= target.x - 1 && size.y - view.y >= target.y - 1)) pendingScroll = null;
+            });
         }
         // ── 확대·축소 ──
         private void ApplyZoom()
@@ -281,6 +311,7 @@ namespace IBIIIS.Editor
             var size = zoomContent.layout.size;
             if (float.IsNaN(size.x) || float.IsNaN(size.y)) return;
             zoomRoot.style.width = size.x * zoom; zoomRoot.style.height = size.y * zoom;
+            RestoreScroll();
         }
         /// <summary>배율을 바꾼다. point(보이는 영역 기준 위치)를 주면 그곳이 가리키던 내용이 제자리에 남게 스크롤하고, 없으면 보이는 영역 가운데를 기준으로 한다.</summary>
         private void SetZoom(float value, Vector2? point)
@@ -346,13 +377,13 @@ namespace IBIIIS.Editor
         // 노드 대신 트랙 막대로 보이는 단계.
         private static bool IsTrackStep(ScenarioStepType type) => type == ScenarioStepType.Emote || type == ScenarioStepType.Pose || type == ScenarioStepType.EndDisplay;
         private static float NodeWidth(ScenarioStep step) => step.type == ScenarioStepType.Line ? LineNodeWidth : SmallNodeWidth;
-        private VisualElement Scene(int number, (int start, int end) scene, ScenarioStep[] steps, Dictionary<int, ScenarioSpan> spans, Dictionary<int, int> lanes, ScenarioSpan? selectedSpan, bool hasNext)
+        private VisualElement Scene(int number, (int start, int end) scene, ScenarioStep[] steps, Dictionary<int, ScenarioSpan> spans, Dictionary<int, int> lanes, ScenarioSpan? selectedSpan, bool hasPrev, bool hasNext, bool adventure)
         {
             var group = new VisualElement { style = { marginBottom = 2, paddingLeft = 8, paddingRight = 8, paddingTop = 4, paddingBottom = 8, backgroundColor = new Color(1, 1, 1, .03f), borderTopLeftRadius = 8, borderTopRightRadius = 8, borderBottomLeftRadius = 8, borderBottomRightRadius = 8 } };
             SetBorder(group, new Color(.4f, .42f, .48f), 1);
             var last = steps[scene.end];
             bool collapsed = collapsedScenes.Contains(last.id);
-            var header = SceneHeader(number, scene, steps, last, collapsed);
+            var header = SceneHeader(number, scene, steps, last, collapsed, hasPrev);
             group.Add(header);
             // 본문: 순간 번호 눈금 → 위 줄(바로 넘어가는 단계) → 아래 줄(기다리는 단계) → 트랙. 세로줄 배경 띠는 본문 뒤에 깐다.
             var body = new VisualElement { style = { position = Position.Relative } };
@@ -428,10 +459,10 @@ namespace IBIIIS.Editor
                 track.Add(bar);
                 if (span.Start >= scene.start) stepElements[pair.Key] = bar;
             }
-            // 맨 아래 빈 줄: 끌어서 그 범위에 감정 표시·자세를 새로 만든다.
-            var draw = new Label("＋ 여기를 끌어서 감정 표시·자세 추가") { style = { position = Position.Absolute, left = 0, top = rows * TrackRow, width = x, height = TrackRow - 4, color = new Color(.6f, .6f, .65f), fontSize = 10, paddingLeft = 6, unityTextAlign = TextAnchor.MiddleLeft, backgroundColor = new Color(1, 1, 1, .025f), borderTopLeftRadius = 4, borderTopRightRadius = 4, borderBottomLeftRadius = 4, borderBottomRightRadius = 4 } };
+            // 맨 아래 빈 줄: 끌어서 그 범위에 감정 표시·자세를 새로 만든다(전투씬 구간만. 어드벤처씬 구간은 대사만 실행).
+            var draw = new Label(adventure ? "어드벤처씬 구간: 대사·지문·클리어 기록만 실행" : "＋ 여기를 끌어서 감정 표시·자세 추가") { style = { position = Position.Absolute, left = 0, top = rows * TrackRow, width = x, height = TrackRow - 4, color = new Color(.6f, .6f, .65f), fontSize = 10, paddingLeft = 6, unityTextAlign = TextAnchor.MiddleLeft, backgroundColor = new Color(1, 1, 1, .025f), borderTopLeftRadius = 4, borderTopRightRadius = 4, borderBottomLeftRadius = 4, borderBottomRightRadius = 4 } };
             SetBorder(draw, new Color(1, 1, 1, .08f), 1);
-            Draggable(draw, DragKind.Draw, -1, -1);
+            if (!adventure) Draggable(draw, DragKind.Draw, -1, -1);
             track.Add(draw);
             body.Add(track);
             // 접은 장면은 세로줄 계산(끌어 놓을 자리 번호)을 위해 그대로 만들되 보이지 않게 한다.
@@ -440,14 +471,14 @@ namespace IBIIIS.Editor
             return group;
         }
         // 장면 머리: 접기 단추, 장면 번호, 장면을 끝내는 방식(색 꼬리표), 단계 범위·순간 수, 이 장면의 검사 문제 수.
-        private VisualElement SceneHeader(int number, (int start, int end) scene, ScenarioStep[] steps, ScenarioStep last, bool collapsed)
+        private VisualElement SceneHeader(int number, (int start, int end) scene, ScenarioStep[] steps, ScenarioStep last, bool collapsed, bool hasPrev)
         {
             var header = new VisualElement { style = { flexDirection = FlexDirection.Row, alignItems = Align.Center, marginBottom = 4, minHeight = 20 } };
             string key = last.id;
             var fold = new Label(collapsed ? "▶" : "▼") { tooltip = collapsed ? "장면 펼치기" : "장면 접기", style = { width = 16, unityTextAlign = TextAnchor.MiddleCenter, color = new Color(.75f, .77f, .82f), fontSize = 10 } };
             header.Add(fold);
             header.Add(new Label($"장면 {number + 1}") { style = { unityFontStyleAndWeight = FontStyle.Bold, color = new Color(.85f, .87f, .92f), marginRight = 6 } });
-            if (number > 0) header.Add(new Label($"↳ 장면 {number}에서") { style = { fontSize = 10, color = new Color(.6f, .62f, .68f), marginRight = 6 } });
+            if (hasPrev) header.Add(new Label($"↳ 장면 {number}에서") { style = { fontSize = 10, color = new Color(.6f, .62f, .68f), marginRight = 6 } });
             bool ends = ScenarioTimeline.EndsScene(last.type);
             var endColor = ends ? CategoryColor(last.type) : FlowColor;
             header.Add(Pill(ends ? (last.type == ScenarioStepType.LoadScene ? "씬 전환" : TypeName(last.type)) : "대본 끝", endColor));
@@ -496,28 +527,50 @@ namespace IBIIIS.Editor
                 painter.BeginPath(); painter.MoveTo(end + new Vector2(1, 0)); painter.LineTo(end + new Vector2(-5, -3.5f)); painter.LineTo(end + new Vector2(-5, 3.5f)); painter.ClosePath(); painter.Fill();
             }
         }
-        // 맨 앞 시작 노드: 대본 설정(시작 시점·한 번만·건너뛰기·연출)과 연결된 씬 수·대상 ID 경고를 보인다. 누르면 아래에서 편집한다.
-        // 대본마다 하나이고 단계가 아니므로 옮기거나 지우거나 복사하지 않는다.
-        private VisualElement StartNode()
+        // 구간 시작 노드: '▶ 입장 전'(어드벤처씬, 적에 닿았을 때) · '▶ 입장 후'(전투씬, 전투가 준비되면) · '▶ 클리어 후'(어드벤처씬, 이겨서 돌아온 뒤).
+        // 맨 앞 노드에 대본 설정(한 번만·건너뛰기·연출)과 연결된 씬 수·대상 ID 경고를 보인다. 누르면 모두 아래에서 대본 설정을 편집한다(세 구간 공통).
+        // 대본마다 하나씩이고 옮기거나 지우거나 복사하지 않는다.
+        private static string SectionTitle(ScenarioSection section) => section == ScenarioSection.Before ? "▶ 입장 전" : section == ScenarioSection.Battle ? "▶ 입장 후" : "▶ 클리어 후";
+        private VisualElement StartNode(ScenarioSection section)
         {
             var o = script.Options;
-            var node = new VisualElement { style = { flexDirection = FlexDirection.Row, flexWrap = Wrap.Wrap, alignItems = Align.Center, alignSelf = Align.FlexStart, marginLeft = 16, marginTop = 8, paddingLeft = 8, paddingRight = 8, paddingTop = 4, paddingBottom = 4, backgroundColor = startSelected ? new Color(.25f, .33f, .45f) : new Color(.19f, .2f, .23f), borderTopLeftRadius = 12, borderTopRightRadius = 12, borderBottomLeftRadius = 12, borderBottomRightRadius = 12 } };
+            var node = new VisualElement { style = { flexDirection = FlexDirection.Row, flexWrap = Wrap.Wrap, alignItems = Align.Center, alignSelf = Align.FlexStart, marginLeft = 8, marginTop = section == ScenarioSection.Before ? 0 : 16, marginBottom = 4, paddingLeft = 8, paddingRight = 8, paddingTop = 4, paddingBottom = 4, backgroundColor = startSelected ? new Color(.25f, .33f, .45f) : new Color(.19f, .2f, .23f), borderTopLeftRadius = 12, borderTopRightRadius = 12, borderBottomLeftRadius = 12, borderBottomRightRadius = 12 } };
             SetBorder(node, startSelected ? SelectedBorder : new Color(StartColor.r, StartColor.g, StartColor.b, .6f), startSelected ? 2 : 1);
             node.style.borderLeftWidth = 4; node.style.borderLeftColor = StartColor;
-            node.Add(new Label("▶ 시작") { style = { unityFontStyleAndWeight = FontStyle.Bold, color = StartColor, marginRight = 8 } });
-            node.Add(new Label(o.startTiming == ScenarioStartTiming.BattleWon ? "클리어 시" : "전투 준비 시") { style = { color = new Color(.9f, .9f, .92f), marginRight = 6 } });
+            node.Add(new Label(SectionTitle(section)) { style = { unityFontStyleAndWeight = FontStyle.Bold, color = StartColor, marginRight = 8 } });
+            string when = section == ScenarioSection.Before ? "어드벤처씬 · 적에 닿았을 때(전투씬에 들어가기 전)"
+                : section == ScenarioSection.Battle ? "전투씬 · 전투가 준비되면 · 끝나면 일반 전투" : "어드벤처씬 · 이겨서 돌아온 뒤";
+            node.Add(new Label(when) { style = { color = new Color(.9f, .9f, .92f), marginRight = 6 } });
             void Badge(string text, Color color) => node.Add(new Label(text) { style = { fontSize = 10, color = color, marginLeft = 4, paddingLeft = 5, paddingRight = 5, backgroundColor = new Color(1, 1, 1, .06f), borderTopLeftRadius = 6, borderTopRightRadius = 6, borderBottomLeftRadius = 6, borderBottomRightRadius = 6 } });
             var plain = new Color(.75f, .77f, .82f);
+            node.tooltip = (section == ScenarioSection.Before ? "어드벤처씬에서 이 대본을 진입 대화로 연결한 적(Stage Enemy)에 닿으면 이 구간을 보여 준 뒤 전투씬으로 들어갑니다."
+                : section == ScenarioSection.Battle ? "전투가 준비되면 전투씬의 대본 진행기가 이 구간을 실행하고, 끝나면 일반 전투가 됩니다."
+                : "적을 이기고 결과 팝업을 닫아 어드벤처씬으로 돌아오면 이 구간을 보여 줍니다(진 경우에는 보이지 않음).")
+                + " 비어 있으면 건너뜁니다.\n누르면 아래에서 대본 설정(세 구간 공통)과 이 대본을 쓰는 씬을 봅니다.";
+            node.RegisterCallback<PointerDownEvent>(e => { if (e.button != 0) return; selection.Clear(); startSelected = true; graph?.Focus(); RebuildAll(); e.StopPropagation(); });
+            if (section != ScenarioSection.Before) return node;
             if (o.onlyOnce) Badge("한 번만", plain);
             Badge(o.allowSkip ? $"건너뛰기 {o.SkipHold:0.##}초" : "건너뛰기 끔", plain);
             if (o.hideEnemyAlerts) Badge("적 말풍선 숨김", plain);
             if (o.scriptControlsDanger) Badge("위험 그림 대본이", plain);
-            Badge(linked.Count == 0 ? "연결된 씬 없음" : $"연결 씬 {linked.Count}", linked.Count == 0 ? WarnColor : plain);
+            Badge(linked.Count == 0 ? "연결된 전투씬 없음" : $"연결 전투씬 {linked.Count}", linked.Count == 0 ? WarnColor : plain);
             int missing = DialogueScriptScenes.ActorIssues(script.Steps, linked).Count;
             if (missing > 0) Badge($"⚠ 없는 대상 ID {missing}", WarnColor);
-            node.tooltip = "누르면 아래에서 대본 설정(시작 시점·한 번만·건너뛰기·전투 연출)과 이 대본을 쓰는 씬을 봅니다.\n대본마다 하나이며 옮기거나 지울 수 없습니다.";
-            node.RegisterCallback<PointerDownEvent>(e => { if (e.button != 0) return; selection.Clear(); startSelected = true; graph?.Focus(); RebuildAll(); e.StopPropagation(); });
             return node;
+        }
+        // 빈 구간: 첫 대사를 넣는 단추(그 구간 첫 자리).
+        private VisualElement EmptySection(ScenarioSection section)
+        {
+            var box = new VisualElement { style = { flexDirection = FlexDirection.Row, alignItems = Align.Center, marginLeft = 16, marginTop = 2, marginBottom = 2 } };
+            string empty = section == ScenarioSection.Before ? "비어 있음 — 닿으면 바로 전투씬으로" : section == ScenarioSection.Battle ? "비어 있음 — 바로 일반 전투" : "비어 있음 — 돌아와도 대화 없음";
+            box.Add(new Label(empty) { style = { fontSize = 11, color = new Color(.6f, .62f, .68f), unityFontStyleAndWeight = FontStyle.Italic, marginRight = 8 } });
+            box.Add(new Button(() =>
+            {
+                script.Range(section, out int at, out _);
+                Commit(DialogueScriptEdits.InsertSteps(script.Steps, at, new[] { NewLine(LastSpeaker(script.Steps.Length - 1)) }, out at), "대본 단계 추가", at);
+                graph.schedule.Execute(() => BeginInlineEdit(at));
+            }) { text = "첫 대사 추가" });
+            return box;
         }
         private int ColumnStart((int start, int end) scene, Dictionary<int, int> columnOf, int index) => columns.Count - (columnOf.Values.Max() + 1) + columnOf[index];
         // 바로 넘어가는 단계: 한 줄짜리 작은 노드(왼쪽 색 띠 = 종류). 끌어서 다른 세로줄로 옮긴다.
@@ -826,6 +879,21 @@ namespace IBIIIS.Editor
         private void ColumnMenu(ContextualMenuPopulateEvent e, int column)
         {
             if (script == null) return;
+            if (AdventureColumn(column))
+            {
+                // 어드벤처씬 구간(입장 전·클리어 후)은 대사·지문·클리어 기록만 실행한다.
+                e.menu.AppendAction("이 세로줄에 추가/클리어 기록", _ => AddInColumn(column, new ScenarioStep { type = ScenarioStepType.RecordClear }));
+                foreach (var (label, make) in WaitingSteps(column))
+                {
+                    if (label != "대사" && label != "지문") continue;
+                    e.menu.AppendAction("앞에 새 세로줄/" + label, _ => AddColumnBefore(column, make()));
+                    e.menu.AppendAction("뒤에 새 세로줄/" + label, _ => AddColumn(column, make()));
+                }
+                e.menu.AppendSeparator();
+                e.menu.AppendAction("이 세로줄 삭제", _ => DeleteColumn(column));
+                e.StopPropagation();
+                return;
+            }
             e.menu.AppendAction("이 세로줄에 추가/감정 표시", _ => AddInColumn(column, new ScenarioStep { type = ScenarioStepType.Emote, target = "player", text = "!" }));
             e.menu.AppendAction("이 세로줄에 추가/자세", _ => AddInColumn(column, new ScenarioStep { type = ScenarioStepType.Pose }));
             e.menu.AppendAction("이 세로줄에 추가/등장·숨김", _ => AddInColumn(column, new ScenarioStep { type = ScenarioStepType.SetActive, active = true }));
@@ -833,12 +901,17 @@ namespace IBIIIS.Editor
             e.menu.AppendAction("이 세로줄에 추가/클리어 기록", _ => AddInColumn(column, new ScenarioStep { type = ScenarioStepType.RecordClear }));
             foreach (var (label, make) in WaitingSteps(column))
             {
-                e.menu.AppendAction("앞에 새 세로줄/" + label, _ => AddColumn(column - 1, make()));
+                e.menu.AppendAction("앞에 새 세로줄/" + label, _ => AddColumnBefore(column, make()));
                 e.menu.AppendAction("뒤에 새 세로줄/" + label, _ => AddColumn(column, make()));
             }
             e.menu.AppendSeparator();
             e.menu.AppendAction("이 세로줄 삭제", _ => DeleteColumn(column));
             e.StopPropagation();
+        }
+        private bool AdventureColumn(int column)
+        {
+            var columnsNow = DialogueScriptEdits.Columns(script.Steps);
+            return column >= 0 && column < columnsNow.Count && ScenarioScript.SectionOf(script.Steps, columnsNow[column].from) != ScenarioSection.Battle;
         }
         private IEnumerable<(string, System.Func<ScenarioStep>)> WaitingSteps(int column)
         {
@@ -868,6 +941,11 @@ namespace IBIIIS.Editor
         {
             Commit(DialogueScriptEdits.InsertAfterColumn(script.Steps, after, step, out int at), "단계 추가", at);
             if (step.type == ScenarioStepType.Line) graph.schedule.Execute(() => BeginInlineEdit(at)); // 새 대사는 바로 입력
+        }
+        private void AddColumnBefore(int column, ScenarioStep step)
+        {
+            Commit(DialogueScriptEdits.InsertBeforeColumn(script.Steps, column, step, out int at), "단계 추가", at);
+            if (step.type == ScenarioStepType.Line) graph.schedule.Execute(() => BeginInlineEdit(at));
         }
         private void DeleteColumn(int column)
         {
@@ -1083,6 +1161,8 @@ namespace IBIIIS.Editor
                 case ScenarioStepType.FreePlay: return "자유 진행";
                 case ScenarioStepType.RecordClear: return "클리어 기록";
                 case ScenarioStepType.EndDisplay: return "표시 끝";
+                case ScenarioStepType.ClearSection: return "클리어 후 구간 시작";
+                case ScenarioStepType.BattleSection: return "입장 후 구간 시작";
                 default: return type.ToString();
             }
         }
@@ -1214,12 +1294,12 @@ namespace IBIIIS.Editor
         // 시작 노드를 골랐을 때: 대본 설정(바로 저장·Ctrl+Z)과 이 대본을 쓰는 진행기(씬·등장 오브젝트·없는 대상 ID).
         private static readonly (string name, string label)[] SettingLabels =
         {
-            ("startTiming", "시작 시점"), ("onlyOnce", "처음 한 번만"), ("allowSkip", "건너뛰기 허용"), ("skipHoldSeconds", "건너뛰기 누르는 시간(초)"),
+            ("onlyOnce", "처음 한 번만(구간마다)"), ("allowSkip", "건너뛰기 허용"), ("skipHoldSeconds", "건너뛰기 누르는 시간(초)"),
             ("hideEnemyAlerts", "적 인식 말풍선 숨김"), ("scriptControlsDanger", "위험 그림을 대본이 정함"),
         };
         private void StartDetail()
         {
-            detail.Add(new Label("▶ 시작 · 대본 설정") { style = { unityFontStyleAndWeight = FontStyle.Bold, color = StartColor, marginBottom = 2 } });
+            detail.Add(new Label("▶ 대본 설정 (입장 전·입장 후·클리어 후 공통)") { style = { unityFontStyleAndWeight = FontStyle.Bold, color = StartColor, marginBottom = 2 } });
             detail.Add(new Label("이 대본을 쓰는 모든 씬에 적용됩니다. 변경은 바로 대본 에셋에 저장되며 Ctrl+Z로 되돌릴 수 있습니다. 항목에 마우스를 올리면 설명이 나옵니다.") { style = { color = new Color(.65f, .65f, .68f), fontSize = 10, whiteSpace = WhiteSpace.Normal, marginBottom = 4 } });
             var settings = serialized.FindProperty("settings");
             foreach (var (name, label) in SettingLabels)

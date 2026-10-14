@@ -1,4 +1,5 @@
 using UnityEditor;
+using UnityEngine;
 using UnityEditor.UIElements;
 using UnityEngine.UIElements;
 
@@ -33,7 +34,8 @@ namespace IBIIIS.Editor
                 string text = script == null ? null : Summary(director, script);
                 if (text == shown && summary.childCount > 0) return;
                 shown = text; summary.Clear();
-                if (script == null) { summary.Add(new HelpBox("대본(Script)을 연결하세요. 대본 설정은 대본 에셋에 있습니다.", HelpBoxMessageType.Warning)); return; }
+                // 대본이 없는 진행기는 정상 상태(새 맵에 기본으로 붙음): 시작하지 않고 전투는 평소대로 진행된다.
+                if (script == null) { summary.Add(new HelpBox("대본 없음 — 이 씬에서는 대본이 실행되지 않고 전투가 평소대로 진행됩니다. 대화를 넣으려면 Script에 대본을 연결하거나 IBIIIS Dialogue Editor의 '씬에 연결'을 쓰세요.", HelpBoxMessageType.Info)); return; }
                 summary.Add(new HelpBox(text, HelpBoxMessageType.None));
                 summary.Add(new Button(() => DialogueEditorWindow.Open(script).SelectStart()) { text = "IBIIIS Dialogue Editor에서 대본 설정 열기" });
             }
@@ -44,9 +46,10 @@ namespace IBIIIS.Editor
         private static string Summary(ScenarioDirector director, ScenarioScript script)
         {
             var o = script.Options;
-            string timing = o.startTiming == ScenarioStartTiming.BattleWon ? "클리어 시(Battle Won)" : "전투 준비 시(Battle Ready)";
+            string Part(ScenarioSection section) { script.Range(section, out int from, out int to); return script.Has(section) ? $"{to - from}단계" : "비어 있음"; }
+            string parts = $"입장 후(이 씬에서 실행) {Part(ScenarioSection.Battle)} · 입장 전 {Part(ScenarioSection.Before)} · 클리어 후 {Part(ScenarioSection.Clear)}(어드벤처씬에서 실행)";
             return $"대본 설정 ({script.name}) — Dialogue Editor의 시작 노드에서 편집\n" +
-                $"시작: {(director.PlayOnStart ? timing : "자동 시작 꺼짐(코드에서 Begin)")}\n" +
+                $"구간: {parts}{(director.PlayOnStart ? "" : " (자동 시작 꺼짐: 코드에서 Begin)")}\n" +
                 $"한 번만: {Mark(o.onlyOnce)} · 건너뛰기: {(o.allowSkip ? $"켬({o.SkipHold:0.##}초)" : "끔")}\n" +
                 $"적 말풍선 숨김: {Mark(o.hideEnemyAlerts)} · 위험 그림을 대본이 정함: {Mark(o.scriptControlsDanger)}";
         }

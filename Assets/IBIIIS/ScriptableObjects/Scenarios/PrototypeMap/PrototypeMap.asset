@@ -1,0 +1,435 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3e88d472cfafe72408bb437a77c307a9, type: 3}
+  m_Name: PrototypeMap
+  m_EditorClassIdentifier: IBIIIS.Runtime::IBIIIS.ScenarioScript
+  scriptId: prototype_map
+  settings:
+    startTiming: 0
+    onlyOnce: 0
+    allowSkip: 1
+    skipHoldSeconds: 0.6
+    hideEnemyAlerts: 1
+    scriptControlsDanger: 1
+  steps:
+  - id: 29e59876f4af471e886335ab3945d93c
+    type: 0
+    line:
+      id: 
+      speaker: {fileID: 11400000, guid: bd9c43e83beda0543960025aa730ad98, type: 2}
+      expression: 
+      nameOverride: 
+      text: "\uC774\uACF3\uC778\uAC00, \uC545\uD55C \uAE30\uC6B4\uC774 \uBAA8\uC778\uACF3\uC774"
+    actions: 0
+    direction: {x: 0, y: 0}
+    cell: {x: 0, y: 0}
+    seconds: 0
+    keys: 
+    target: 
+    text: 
+    active: 0
+    scenePath: 
+    prefab: {fileID: 0}
+    sprite: {fileID: 0}
+    motion: 0
+    endMotion: 0
+    untilAction: 0
+    untilEnd: 0
+    display: 0
+  - id: 2fcbc307867346d89662f1a975093031
+    type: 0
+    line:
+      id: 
+      speaker: {fileID: 11400000, guid: bd9c43e83beda0543960025aa730ad98, type: 2}
+      expression: 
+      nameOverride: 
+      text: "\uCC98\uB2E8\uC744 \uC900\uBE44\uD574\uC57C\uACA0\uAD6C\uB098"
+    actions: 0
+    direction: {x: 0, y: 0}
+    cell: {x: 0, y: 0}
+    seconds: 0
+    keys: 
+    target: 
+    text: 
+    active: 0
+    scenePath: 
+    prefab: {fileID: 0}
+    sprite: {fileID: 0}
+    motion: 0
+    endMotion: 0
+    untilAction: 0
+    untilEnd: 0
+    display: 0
+  - id: 639747e8beea41d38670790da5b93fac
+    type: 17
+    line:
+      id: 
+      speaker: {fileID: 0}
+      expression: 
+      nameOverride: 
+      text: 
+    actions: 0
+    direction: {x: 0, y: 0}
+    cell: {x: 0, y: 0}
+    seconds: 0
+    keys: 
+    target: 
+    text: 
+    active: 0
+    scenePath: 
+    prefab: {fileID: 0}
+    sprite: {fileID: 0}
+    motion: 0
+    endMotion: 0
+    untilAction: 0
+    untilEnd: 0
+    display: 0
+  - id: 73e9395f8b0c4c619ae2e652e3d4f204
+    type: 0
+    line:
+      id: 
+      speaker: {fileID: 11400000, guid: bd9c43e83beda0543960025aa730ad98, type: 2}
+      expression: 
+      nameOverride: 
+      text: "\uD6C4\uC6B0,, \uB4DC\uB514\uC5B4 \uCCAB \uC2E4\uC804\uC778\uAC00"
+    actions: 0
+    direction: {x: 0, y: 0}
+    cell: {x: 0, y: 0}
+    seconds: 0
+    keys: 
+    target: 
+    text: 
+    active: 0
+    scenePath: 
+    prefab: {fileID: 0}
+    sprite: {fileID: 0}
+    motion: 0
+    endMotion: 0
+    untilAction: 0
+    untilEnd: 0
+    display: 0
+  - id: 56cfbac37f11403d8d9a98345b3a704f
+    type: 1
+    line:
+      id: 
+      speaker: {fileID: 0}
+      expression: 
+      nameOverride: 
+      text: 
+    actions: 0
+    direction: {x: 0, y: 0}
+    cell: {x: 0, y: 0}
+    seconds: 0
+    keys: 
+    target: player
+    text: '!'
+    active: 0
+    scenePath: 
+    prefab: {fileID: 0}
+    sprite: {fileID: 0}
+    motion: 0
+    endMotion: 0
+    untilAction: 0
+    untilEnd: 1
+    display: 0
+  - id: dc30a8dc91064edcb08636b120d8d227
+    type: 0
+    line:
+      id: 
+      speaker: {fileID: 0}
+      expression: 
+      nameOverride: 
+      text: "\uD50C\uB808\uC774\uC5B4\uC758 \uD5C8\uB9AC\uCDA4\uC5D0\uC11C \uC740\uC0C9
+        \uBE5B\uC774 \uCC28\uAC11\uAC8C \uD758\uB7EC\uB098\uC624\uBA70 \uC11C\uB298\uD55C
+        \uC18C\uC74C\uC744 \uD758\uB824\uBCF4\uB0B8\uB2E4."
+    actions: 0
+    direction: {x: 0, y: 0}
+    cell: {x: 0, y: 0}
+    seconds: 0
+    keys: 
+    target: 
+    text: 
+    active: 0
+    scenePath: 
+    prefab: {fileID: 0}
+    sprite: {fileID: 0}
+    motion: 0
+    endMotion: 0
+    untilAction: 0
+    untilEnd: 0
+    display: 0
+  - id: 6f121ec0d89e48f089a5313e24288b52
+    type: 15
+    line:
+      id: 
+      speaker: {fileID: 0}
+      expression: 
+      nameOverride: 
+      text: 
+    actions: 0
+    direction: {x: 0, y: 0}
+    cell: {x: 0, y: 0}
+    seconds: 0
+    keys: 
+    target: player
+    text: 
+    active: 0
+    scenePath: 
+    prefab: {fileID: 0}
+    sprite: {fileID: 0}
+    motion: 0
+    endMotion: 0
+    untilAction: 0
+    untilEnd: 0
+    display: 0
+  - id: 972ced61c55e498bb447849795353d9a
+    type: 0
+    line:
+      id: 
+      speaker: {fileID: 11400000, guid: bd9c43e83beda0543960025aa730ad98, type: 2}
+      expression: 
+      nameOverride: 
+      text: "\uBBF8\uC548\uD558\uB2E4 \uC5B4\uB9B0 \uC591\uB4E4\uC774\uC5B4, \uB098\uB97C
+        \uC704\uD574 \uD55C \uBAA9\uC228 \uD76C\uC0DD\uD574\uB2E4\uC624..."
+    actions: 0
+    direction: {x: 0, y: 0}
+    cell: {x: 0, y: 0}
+    seconds: 0
+    keys: 
+    target: 
+    text: 
+    active: 0
+    scenePath: 
+    prefab: {fileID: 0}
+    sprite: {fileID: 0}
+    motion: 0
+    endMotion: 0
+    untilAction: 0
+    untilEnd: 0
+    display: 0
+  - id: a1e83acba62245819acba23d93594e47
+    type: 13
+    line:
+      id: 
+      speaker: {fileID: 0}
+      expression: 
+      nameOverride: 
+      text: 
+    actions: 0
+    direction: {x: 0, y: 0}
+    cell: {x: 0, y: 0}
+    seconds: 0
+    keys: 
+    target: 
+    text: 
+    active: 0
+    scenePath: 
+    prefab: {fileID: 0}
+    sprite: {fileID: 21300000, guid: 64c5c2e396e45744f96b350e8cdc41d7, type: 3}
+    motion: 1
+    endMotion: 1
+    untilAction: 0
+    untilEnd: 1
+    display: 0
+  - id: d198c8b3dd8b4944a3b9791c19437496
+    type: 0
+    line:
+      id: 
+      speaker: {fileID: 11400000, guid: bd9c43e83beda0543960025aa730ad98, type: 2}
+      expression: 
+      nameOverride: 
+      text: "\uC6B8\uC5B4\uB77C, \uC9C0\uC625 \uCC38\uB9C8\uB3C4!!!!!"
+    actions: 0
+    direction: {x: 0, y: 0}
+    cell: {x: 0, y: 0}
+    seconds: 0
+    keys: 
+    target: 
+    text: 
+    active: 0
+    scenePath: 
+    prefab: {fileID: 0}
+    sprite: {fileID: 0}
+    motion: 0
+    endMotion: 0
+    untilAction: 0
+    untilEnd: 0
+    display: 0
+  - id: 200463b4c872434ea84ae269d43def2b
+    type: 0
+    line:
+      id: 
+      speaker: {fileID: 0}
+      expression: 
+      nameOverride: 
+      text: "\uD50C\uB808\uC774\uC5B4\uAC00 \uC801\uB4E4\uC744 \uD5A5\uD574 \uB2EC\uB824\uAC04\uB2E4."
+    actions: 0
+    direction: {x: 0, y: 0}
+    cell: {x: 0, y: 0}
+    seconds: 0
+    keys: 
+    target: 
+    text: 
+    active: 0
+    scenePath: 
+    prefab: {fileID: 0}
+    sprite: {fileID: 0}
+    motion: 0
+    endMotion: 0
+    untilAction: 0
+    untilEnd: 0
+    display: 0
+  - id: 2a22db5081f342a8886a6995ffb9c830
+    type: 0
+    line:
+      id: 
+      speaker: {fileID: 11400000, guid: 62cbb598f2f40c249b3713c3d307662c, type: 2}
+      expression: 
+      nameOverride: 
+      text: "...\uC5B4\uD734"
+    actions: 0
+    direction: {x: 0, y: 0}
+    cell: {x: 0, y: 0}
+    seconds: 0
+    keys: 
+    target: 
+    text: 
+    active: 0
+    scenePath: 
+    prefab: {fileID: 0}
+    sprite: {fileID: 0}
+    motion: 0
+    endMotion: 0
+    untilAction: 0
+    untilEnd: 0
+    display: 0
+  - id: f31ca162fd1a45339b3976817f822fb5
+    type: 15
+    line:
+      id: 
+      speaker: {fileID: 0}
+      expression: 
+      nameOverride: 
+      text: 
+    actions: 0
+    direction: {x: 0, y: 0}
+    cell: {x: 0, y: 0}
+    seconds: 0
+    keys: 
+    target: player
+    text: 
+    active: 0
+    scenePath: 
+    prefab: {fileID: 0}
+    sprite: {fileID: 0}
+    motion: 0
+    endMotion: 0
+    untilAction: 0
+    untilEnd: 0
+    display: 1
+  - id: f4f64da4557a4cf58a75ac2f7df19ab5
+    type: 16
+    line:
+      id: 
+      speaker: {fileID: 0}
+      expression: 
+      nameOverride: 
+      text: 
+    actions: 0
+    direction: {x: 0, y: 0}
+    cell: {x: 0, y: 0}
+    seconds: 0
+    keys: 
+    target: 
+    text: 
+    active: 0
+    scenePath: 
+    prefab: {fileID: 0}
+    sprite: {fileID: 0}
+    motion: 0
+    endMotion: 0
+    untilAction: 0
+    untilEnd: 0
+    display: 0
+  - id: 679a892e3c304ef1b74a6d2091080bdd
+    type: 0
+    line:
+      id: 
+      speaker: {fileID: 11400000, guid: bd9c43e83beda0543960025aa730ad98, type: 2}
+      expression: 
+      nameOverride: 
+      text: "\uC544\uBC84\uC9C0\uC2DC\uC5EC, \uD53C\uBB3B\uC740 \uC800\uC758 \uC601\uD63C\uC744
+        \uBC8C\uD558\uC2DC\uC635\uC18C\uC11C..."
+    actions: 0
+    direction: {x: 0, y: 0}
+    cell: {x: 0, y: 0}
+    seconds: 0
+    keys: 
+    target: 
+    text: 
+    active: 0
+    scenePath: 
+    prefab: {fileID: 0}
+    sprite: {fileID: 0}
+    motion: 0
+    endMotion: 0
+    untilAction: 0
+    untilEnd: 0
+    display: 0
+  - id: 6906c5fa1c1c4d8088f21b4e4b44ad15
+    type: 0
+    line:
+      id: 
+      speaker: {fileID: 11400000, guid: bd9c43e83beda0543960025aa730ad98, type: 2}
+      expression: 
+      nameOverride: 
+      text: "\uCC9C\uBC8C\uC744 \uB0B4\uB824\uC8FC\uC2DC\uC635\uC18C\uC11C!!!!!!"
+    actions: 0
+    direction: {x: 0, y: 0}
+    cell: {x: 0, y: 0}
+    seconds: 0
+    keys: 
+    target: 
+    text: 
+    active: 0
+    scenePath: 
+    prefab: {fileID: 0}
+    sprite: {fileID: 0}
+    motion: 0
+    endMotion: 0
+    untilAction: 0
+    untilEnd: 0
+    display: 0
+  - id: e8b58808a4d74144a066ff56bb6ad16d
+    type: 0
+    line:
+      id: 
+      speaker: {fileID: 11400000, guid: 62cbb598f2f40c249b3713c3d307662c, type: 2}
+      expression: 
+      nameOverride: 
+      text: "\uC8FD\uC5B4\uB77C \uC880"
+    actions: 0
+    direction: {x: 0, y: 0}
+    cell: {x: 0, y: 0}
+    seconds: 0
+    keys: 
+    target: 
+    text: 
+    active: 0
+    scenePath: 
+    prefab: {fileID: 0}
+    sprite: {fileID: 0}
+    motion: 0
+    endMotion: 0
+    untilAction: 0
+    untilEnd: 0
+    display: 0

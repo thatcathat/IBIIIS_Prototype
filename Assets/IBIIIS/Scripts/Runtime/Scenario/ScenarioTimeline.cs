@@ -13,7 +13,7 @@ namespace IBIIIS
         Seconds,
         /// <summary>같은 대상의 다음 표시로 바뀔 때(끝 단계 다음 단계에서 바뀜).</summary>
         Replaced,
-        /// <summary>대본이 끝나거나 씬이 바뀔 때까지.</summary>
+        /// <summary>대본(구간)이 끝나거나 씬이 바뀔 때까지.</summary>
         ScriptEnd,
         /// <summary>표시 끝 단계(Marker)에서. 끝 단계 바로 앞의 기다리는 단계가 끝날 때 사라진다.</summary>
         EndStep,
@@ -54,12 +54,15 @@ namespace IBIIIS
         /// <summary>장면을 끊는 단계인지(입력을 기다리거나 씬을 바꿈). 이 단계까지가 한 장면이다.</summary>
         public static bool EndsScene(ScenarioStepType type)
             => AcceptsAction(type) || type == ScenarioStepType.WaitClickCell || type == ScenarioStepType.NameInput || type == ScenarioStepType.LoadScene;
-        /// <summary>장면 목록(첫 단계, 마지막 단계). 장면을 끊는 단계가 그 장면의 마지막이다.</summary>
+        /// <summary>장면 목록(첫 단계, 마지막 단계). 장면을 끊는 단계가 그 장면의 마지막이다. 구간 경계 단계는 어느 장면에도 들지 않고 장면을 끊는다.</summary>
         public static List<(int start, int end)> Scenes(IReadOnlyList<ScenarioStep> steps)
         {
             var scenes = new List<(int, int)>(); int start = 0;
             for (int i = 0; i < steps.Count; i++)
+            {
+                if (ScenarioScript.IsSectionMarker(steps[i].type)) { if (start < i) scenes.Add((start, i - 1)); start = i + 1; continue; }
                 if (EndsScene(steps[i].type)) { scenes.Add((start, i)); start = i + 1; }
+            }
             if (start < steps.Count) scenes.Add((start, steps.Count - 1));
             return scenes;
         }
@@ -77,6 +80,7 @@ namespace IBIIIS
                     if (Replaces(step, next)) return new ScenarioSpan(index, LastWaitBefore(steps, index, i), ScenarioSpanEnd.Replaced);
                     if (Ends(step, next)) return new ScenarioSpan(index, LastWaitBefore(steps, index, i), ScenarioSpanEnd.EndStep, i);
                     if (next.type == ScenarioStepType.LoadScene) return new ScenarioSpan(index, i, ScenarioSpanEnd.ScriptEnd);
+                    if (ScenarioScript.IsSectionMarker(next.type)) return new ScenarioSpan(index, i - 1, ScenarioSpanEnd.ScriptEnd); // 구간이 끝나면 표시도 끝난다
                 }
                 return new ScenarioSpan(index, steps.Count - 1, ScenarioSpanEnd.ScriptEnd);
             }
@@ -90,6 +94,7 @@ namespace IBIIIS
                 if (untilAction ? AcceptsAction(next.type) : next.type == ScenarioStepType.Line)
                     return new ScenarioSpan(index, i, untilAction ? ScenarioSpanEnd.NextAction : ScenarioSpanEnd.LineDone);
                 if (next.type == ScenarioStepType.LoadScene) return new ScenarioSpan(index, i, ScenarioSpanEnd.ScriptEnd);
+                if (ScenarioScript.IsSectionMarker(next.type)) return new ScenarioSpan(index, i - 1, ScenarioSpanEnd.ScriptEnd);
             }
             return new ScenarioSpan(index, steps.Count - 1, ScenarioSpanEnd.ScriptEnd);
         }

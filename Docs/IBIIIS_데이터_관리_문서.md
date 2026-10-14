@@ -24,7 +24,7 @@
 | 패턴 ID·패턴 전환·타깃·예고 규칙 | 엑셀의 행동 패턴 시트 | 미구현. 패턴 ID 없이 적 프리팹마다 행동 목록 하나를 가진다 |
 | 플레이어 외형·이동 시간·표시·입력·연출 설정 | 게임 시스템 기획서 | `Assets/IBIIIS/ScriptableObjects/Settings/GlobalPlayerSettings.asset`과 연결된 설정 에셋(아래) |
 | 이미지·애니메이션·효과음 참조 | 엑셀의 현재 열 구조에 없음 | 플레이어는 `PlayerVisual.prefab`의 슬롯, 적은 프리팹의 `Visual` 자식, 충돌 연출은 `CollisionFeedback.asset`. 절차는 [에셋 제작 가이드](IBIIIS_에셋_제작_가이드.md) |
-| 스테이지 클리어 기록 | 게임 시스템 기획서의 미니맵 항목 | `Application.persistentDataPath/IBIIIS_progress.json`(아래 클리어 기록). 스테이지 ID는 미니맵의 `StageEntrance`에서 정한다 |
+| 스테이지 클리어 기록 | 게임 시스템 기획서의 어드벤처씬 항목 | `Application.persistentDataPath/IBIIIS_progress.json`(아래 클리어 기록). 스테이지 ID는 어드벤처씬의 `StageEntrance`에서 정한다 |
 | 대본(튜토리얼 등 전투 씬 대본) | 튜토리얼 문서·기획서 대본 | 대본 에셋 `ScenarioScript`(튜토리얼 대본은 `Assets/IBIIIS/ScriptableObjects/Scenarios/Tutorial/`, Dialogue Editor로 새로 만드는 대본의 기본 위치는 `Assets/IBIIIS/ScriptableObjects/Scenarios/`)이 실행 기준. 편집은 IBIIIS Dialogue Editor·Inspector. **대본 ID**(`Script Id`)는 클리어 기록 등에 연결되는 고정값이라 정한 뒤 바꾸지 않고, 영어 소문자·숫자·`_`·`-`만 쓰며 다른 대본과 겹치지 않게 한다(Dialogue Editor의 새 대본·복제가 검사). 단계 ID는 편집기 전용이며 진행에 쓰지 않는다 |
 | 화면 문구·대사·이름의 번역 | (기획 문서 없음) | 한국어 원문은 코드(`UiText`)와 대본·대화·인물·스테이지·NPC·전투 말풍선 에셋. 다른 언어는 번역 표(`ScriptableObjects/Localization/Tables`)가 기준이고 CSV로 주고받는다(아래 번역 데이터) |
 | 현재 위치·방향·생존·인식·회피기 쿨다운 | 개체별 실행 상태 | `GridSession`과 `EnemyState`에만 저장한다. 공유 설정·프리팹·맵 에셋에 기록하지 않으며 저장·불러오기 기능은 없다 |
@@ -55,16 +55,16 @@
 | `Assets/IBIIIS/ScriptableObjects/Settings/CollisionFeedback.asset` | 적 충돌 연출의 시간·강도·이펙트·효과음 |
 | `Assets/IBIIIS/ScriptableObjects/Settings/EnemyAlert.asset` | 적 인식 말풍선 높이·대답 지연·표시 시간·튀어나옴·효과음, 공용 대사 연결 |
 | `Assets/IBIIIS/ScriptableObjects/Settings/BattleDialogue.asset` | 전투 말풍선 공용 대사(인식 순간 플레이어 말·적 대답 쌍, 놓칠 때 적 혼잣말, 직전 대사 반복 방지). 적별 대사는 적 프리팹 `EnemyDefinition`의 `Dialogue` 슬롯 |
-| `Assets/IBIIIS/ScriptableObjects/Settings/OverworldSettings.asset` | 미니맵 이동 속도, 카메라 설정 연결·보이는 세로 범위·따라가는 빠르기, 달리기 속도·보폭, 구르기 거리·시간·감속·회복·쿨다운, 걷기 손맛, 미니맵 입력 연결 |
-| `Assets/IBIIIS/ScriptableObjects/Settings/OverworldCameraSettings.asset` | 미니맵 전용 카메라 각도·화각(현재 회전 40°, 화각 30). 전투의 GlobalCameraSettings와 별개 |
-| `Assets/IBIIIS/ScriptableObjects/Settings/OverworldInput.inputactions` | 미니맵 키 배치(`Overworld` 액션 맵: Move, Interact, Dash(누르고 있으면 달리기), Roll) |
+| `Assets/IBIIIS/ScriptableObjects/Settings/OverworldSettings.asset` | 어드벤처씬 이동 속도, 카메라 설정 연결·보이는 세로 범위·따라가는 빠르기, 달리기 속도·보폭, 구르기 거리·시간·감속·회복·쿨다운, 걷기 손맛, 어드벤처씬 입력 연결 |
+| `Assets/IBIIIS/ScriptableObjects/Settings/OverworldCameraSettings.asset` | 어드벤처씬 전용 카메라 각도·화각(현재 회전 40°, 화각 30). 전투의 GlobalCameraSettings와 별개 |
+| `Assets/IBIIIS/ScriptableObjects/Settings/OverworldInput.inputactions` | 어드벤처씬 키 배치(`Overworld` 액션 맵: Move, Interact, Dash(누르고 있으면 달리기), Roll) |
 
 이동 시간은 각 행동 시작 시 개별 세션에 복사하며 실행 상태는 공용 설정에 기록하지 않는다. 입력 에셋은 실행 시 사본을 만들어 쓴다. 편집 절차는 개발 및 사용 가이드를 따른다.
 
 ## 클리어 기록
 
 - 위치: `Application.persistentDataPath/IBIIIS_progress.json`(Windows 에디터에서는 보통 `%USERPROFILE%\AppData\LocalLow\<회사 이름>\<제품 이름>\`). 메뉴 `IBIIIS > Overworld > Show Save File`로 연다.
-- 형식: `{"version": 1, "clearedStages": ["스테이지 ID", ...], "seenScenarios": ["대본 ID", ...]}`. `seenScenarios`는 대본 설정 `처음 한 번만`(Only Once)이 켜진 대본을 끝까지 본 기록이다(2026-10-13 추가, 이 목록이 없는 이전 파일도 빈 목록으로 읽는다. 버전은 1 그대로). 승리 시 해당 스테이지 ID를 한 번만 추가하고 바로 저장한다. 임시 파일에 쓴 뒤 교체한다. 저장에 성공한 뒤에만 클리어로 표시하므로, 저장에 실패하면 깃발도 켜지지 않고 같은 스테이지를 다시 이기면 다시 저장을 시도한다.
+- 형식: `{"version": 1, "clearedStages": ["스테이지 ID", ...], "seenScenarios": ["대본 ID", ...]}`. `seenScenarios`는 대본 설정 `처음 한 번만`(Only Once)이 켜진 대본의 구간을 끝까지 본 기록이다(2026-10-13 추가, 이 목록이 없는 이전 파일도 빈 목록으로 읽는다. 버전은 1 그대로). 입장 후 구간은 `대본 ID`, 입장 전 구간은 `대본 ID:before`, 클리어 후 구간은 `대본 ID:clear`로 남는다(클리어 후 구간만 있는 대본은 `대본 ID` — 예전 클리어 대본 기록과 같음). 근접 대화 구역은 `zone:Zone Id`로 남는다(2026-10-15). 승리 시 해당 스테이지 ID를 한 번만 추가하고 바로 저장한다. 임시 파일에 쓴 뒤 교체한다. 저장에 성공한 뒤에만 클리어로 표시하므로, 저장에 실패하면 깃발도 켜지지 않고 같은 스테이지를 다시 이기면 다시 저장을 시도한다.
 - 키는 `StageEntrance`의 Stage Id다. 표시 이름·씬 경로가 바뀌어도 ID가 같으면 기록이 유지된다. ID를 바꾸거나 두 입구에 같은 ID를 쓰면 기록이 어긋나므로 Inspector가 누락·중복을 알린다. ID 명명 규칙은 미정이다.
 - 형식이 잘못된 파일은 `.corrupt` 사본으로 보존한 뒤 빈 기록으로 시작한다. 더 새로운 버전의 파일도 같은 방식으로 다룬다.
 - 파일을 읽지 못했거나(다른 프로그램이 잠금, 권한 없음 등) `.corrupt` 사본을 만들지 못했으면 원본을 지키려고 그 실행 동안 저장하지 않는다. Console에 `[IBIIIS]` 오류를 한 번 남기고, 클리어 팝업에 저장 실패를 표시한다. 원인을 해결한 뒤 Play를 다시 시작하면 다시 읽는다.
