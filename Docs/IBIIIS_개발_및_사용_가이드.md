@@ -34,7 +34,7 @@
 | 작업 | 기록 위치 | 상태 |
 |---|---|---|
 | 프로젝트 실행 | 아래 맵 편집·기본 이동 절차 | 개발 검증 완료, 플레이 사용자 확인 대기 |
-| 테스트 실행 | 아래 자동 테스트 | EditMode 210/210 통과 (2026-10-13) |
+| 테스트 실행 | 아래 자동 테스트 | EditMode 213/213 통과 (2026-10-14) |
 | 플레이어 외형 교체 | 아래 공용 플레이어 설정, 플레이어 스프라이트 외형 | 스프라이트 외형 구현·자동 검증 완료, 화면 사용자 확인 대기. 반복 애니메이션 미구현 |
 | 적 설정 편집·배치 | 전투 및 적 배치 가이드 | 구현·자동 검증 완료, 화면 사용자 확인 대기 |
 | 새 적 추가 | 설정 생성 메뉴, ID, 패턴·외형 연결, 등장 방법 | 미작성·미검증. 적 팔레트는 루트에 EnemyDefinition이 있는 프리팹을 자동 수집한다 |
@@ -139,9 +139,13 @@ Unity의 프로젝트 구성 가이드(unity.com/kr/how-to/organizing-your-proje
 ## 자동 테스트
 
 - `Window > General > Test Runner > EditMode`에서 `IBIIIS.Tests`를 실행한다. 자동 테스트는 Play를 조작하지 않고 EditMode에서 실행한다.
-- 최근 결과: 컴파일 완료, EditMode `IBIIIS.Tests` 210/210 통과(2026-10-13). 기능별로 확인한 내용은 각 기능 항목의 검증에 기록한다.
-- UnityMCP가 연결되지 않았을 때는 Unity가 만든 `IBIIIS.*.csproj`를 `dotnet build`해 컴파일만 확인할 수 있다. 이것은 Unity 컴파일·테스트 실행을 대신하지 않는다.
-- 에이전트는 Unity 에디터가 열려 UnityMCP가 연결되어 있을 때 컴파일 확인과 테스트 실행을 할 수 있다. Player 빌드는 실행하지 않았다.
+- 최근 결과: 컴파일 완료, EditMode `IBIIIS.Tests` 213/213 통과(2026-10-14, Unity CLI로 실행). 기능별로 확인한 내용은 각 기능 항목의 검증에 기록한다.
+- 에이전트는 Unity 에디터가 열려 있을 때 Unity CLI(`unity`, 에디터 안의 `com.unity.pipeline` 패키지와 연결)로 컴파일 확인과 테스트 실행을 한다. `unity status`에서 이 프로젝트가 `ready`여야 한다.
+  - 컴파일: `unity --json recompile --project-path <프로젝트 경로>` (오류·경고 수와 목록)
+  - 테스트: `unity --json command run_tests --mode editor --filter IBIIIS.Tests --filter_type assembly`
+  - 콘솔 오류: `unity command console --level error`
+- 에디터가 열려 있지 않으면 Unity가 만든 `IBIIIS.*.csproj`를 `dotnet build`해 컴파일만 확인할 수 있다. 이것은 Unity 컴파일·테스트 실행을 대신하지 않는다.
+- UnityMCP(`com.coplaydev.unity-mcp`)는 2026-10-14에 제거했다. Player 빌드는 실행하지 않았다.
 
 ## 맵 편집·기본 이동 프로토타입
 
