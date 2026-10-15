@@ -72,11 +72,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: IBIIIS.Runtime::IBIIIS.NpcSpeaker
   radius: 1.5
   labelHeight: 2
+  npcId: 
   displayName: NPC
-  lines:
-  - "\uC548\uB155!"
-  bubbleWidth: 320
-  dialogue: {fileID: 11400000, guid: 77e843d5f9191164fb8c0f7cf1d06f39, type: 2}
 --- !u!1 &5288282029276838340
 GameObject:
   m_ObjectHideFlags: 0

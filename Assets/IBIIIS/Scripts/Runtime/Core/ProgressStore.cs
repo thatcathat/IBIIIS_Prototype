@@ -6,7 +6,7 @@ using UnityEngine;
 namespace IBIIIS
 {
     /// <summary>스테이지 클리어 기록. `Application.persistentDataPath/IBIIIS_progress.json`에 스테이지 ID 목록으로 저장한다.
-    /// '한 번만' 대본을 끝까지 본 기록(대본 ID 목록)도 같은 파일에 둔다.
+    /// '한 번만' 대본·대화 대본을 끝까지 본 기록(대본 ID 목록)과 근접 대화 구역에서 이미 나온 대본 기록도 같은 파일에 둔다.
     /// 형식이 잘못된 파일은 `.corrupt` 사본으로 보존한 뒤 빈 기록으로 시작한다. 파일을 읽지 못했거나(IO 오류) 사본을 만들지 못했으면
     /// 원본을 지키려고 이번 실행 동안 저장하지 않는다(Reload 또는 ResetAll 전까지). 저장에 성공한 뒤에만 메모리 기록을 바꾼다.</summary>
     public static class ProgressStore
@@ -20,6 +20,8 @@ namespace IBIIIS
             public List<string> clearedStages = new List<string>();
             // 이 목록이 없던 이전 파일도 그대로 읽는다(빈 목록).
             public List<string> seenScenarios = new List<string>();
+            // 근접 대화 구역에서 이미 나온 대본('구역 ID|대본 ID'). 이 목록이 없던 이전 파일도 그대로 읽는다(빈 목록).
+            public List<string> zoneShown = new List<string>();
         }
         private static Data data;
         private static string overridePath;
@@ -35,6 +37,19 @@ namespace IBIIIS
         public static IReadOnlyList<string> ClearedStages => Load().clearedStages;
         /// <summary>대본(ID)을 끝까지 본 적이 있으면 true.</summary>
         public static bool IsSeen(string scenarioId) => !string.IsNullOrEmpty(scenarioId) && Load().seenScenarios.Contains(scenarioId);
+        private static string ZoneKey(string zoneId, string scenarioId) => zoneId + "|" + scenarioId;
+        /// <summary>근접 대화 구역에서 이 대본이 이미 나왔으면 true(구역은 대본마다 처음 한 번만 보여 준다).</summary>
+        public static bool IsZoneShown(string zoneId, string scenarioId) => !string.IsNullOrEmpty(zoneId) && !string.IsNullOrEmpty(scenarioId) && Load().zoneShown.Contains(ZoneKey(zoneId, scenarioId));
+        /// <summary>근접 대화 구역에서 대본이 나왔다고 기록하고 바로 저장한다. 이미 있으면 아무것도 하지 않는다. 실패 규칙은 MarkCleared와 같다.</summary>
+        public static void MarkZoneShown(string zoneId, string scenarioId)
+        {
+            if (string.IsNullOrEmpty(zoneId) || string.IsNullOrEmpty(scenarioId)) throw new ArgumentException("구역 ID나 대본 ID가 비어 있어 구역 기록을 저장할 수 없습니다.");
+            var current = Load(); var key = ZoneKey(zoneId, scenarioId);
+            if (current.zoneShown.Contains(key)) return;
+            if (blocked != null) throw new InvalidOperationException(blocked);
+            var next = Copy(current); next.zoneShown.Add(key);
+            Save(next); data = next;
+        }
         /// <summary>클리어 기록을 추가하고 바로 저장한다. 이미 있으면 아무것도 하지 않는다.
         /// 저장에 실패하면 예외를 던지고 메모리 기록도 바꾸지 않는다(같은 스테이지를 다시 이기면 다시 저장을 시도한다).</summary>
         public static void MarkCleared(string stageId)
@@ -56,7 +71,7 @@ namespace IBIIIS
             var next = Copy(current); next.seenScenarios.Add(scenarioId);
             Save(next); data = next;
         }
-        private static Data Copy(Data value) => new Data { version = value.version, clearedStages = new List<string>(value.clearedStages), seenScenarios = new List<string>(value.seenScenarios) };
+        private static Data Copy(Data value) => new Data { version = value.version, clearedStages = new List<string>(value.clearedStages), seenScenarios = new List<string>(value.seenScenarios), zoneShown = new List<string>(value.zoneShown) };
         /// <summary>모든 클리어 기록을 지운다(파일 삭제).</summary>
         public static void ResetAll()
         {
@@ -87,6 +102,8 @@ namespace IBIIIS
                 loaded.clearedStages.RemoveAll(string.IsNullOrEmpty);
                 if (loaded.seenScenarios == null) loaded.seenScenarios = new List<string>();
                 loaded.seenScenarios.RemoveAll(string.IsNullOrEmpty);
+                if (loaded.zoneShown == null) loaded.zoneShown = new List<string>();
+                loaded.zoneShown.RemoveAll(string.IsNullOrEmpty);
                 return data = loaded;
             }
             catch (Exception e) when (e is FormatException || e is ArgumentException)

@@ -16,6 +16,7 @@ namespace IBIIIS.Tests
         {
             savePath = Path.Combine(Path.GetTempPath(), $"IBIIIS_progress_test_{System.Guid.NewGuid():N}.json");
             ProgressStore.UseFile(savePath);
+            StageEnemy.IgnoreContactFor(0); // 에디터에서 Play한 뒤 남은 '접촉 무시 시간'이 시험에 섞이지 않게(게임은 Play 시작 때 초기화)
         }
         [TearDown] public void TearDown()
         {
@@ -27,6 +28,9 @@ namespace IBIIIS.Tests
             }
             foreach (var go in spawned) if (go != null) Object.DestroyImmediate(go);
             StageFlow.Begin(null);
+            if (graph != null) Object.DestroyImmediate(graph);
+            foreach (var s in talks) if (s != null) Object.DestroyImmediate(s);
+            talks.Clear(); graph = null; DialogueProgress.Graph = null;
         }
         [Test] public void MoveDirectionShowsSideForDiagonalsAndBackOrFrontOnlyForPureVertical()
         {
@@ -113,14 +117,25 @@ namespace IBIIIS.Tests
             Assert.IsNull(StageFlow.Current);
             Assert.IsFalse(StageFlow.TakeReturnPoint("Assets/Overworld.unity", out _, out _), "한 번만 복원");
         }
+        // 시험용 대화 그래프(DialogueProgress.Graph). 대상의 대본은 그래프에서 잇는다.
+        private DialogueGraph graph;
+        private readonly System.Collections.Generic.List<ScenarioScript> talks = new System.Collections.Generic.List<ScenarioScript>();
+        private DialogueGraph Graph() { if (graph == null) graph = ScriptableObject.CreateInstance<DialogueGraph>(); DialogueProgress.Graph = graph; return graph; }
+        // 대사가 있으면 대화 대본을 만들어 그래프의 이 NPC 순서 첫 대본으로 잇는다(대사가 없으면 그래프에 없는 NPC).
         private NpcSpeaker Npc(Vector3 position, params string[] lines)
         {
             var go = new GameObject("NPC"); go.transform.position = position;
             System.Array.Resize(ref spawned, spawned.Length + 1); spawned[spawned.Length - 1] = go;
             var npc = go.AddComponent<NpcSpeaker>();
-            var so = new SerializedObject(npc); var array = so.FindProperty("lines"); array.arraySize = lines.Length;
-            for (int i = 0; i < lines.Length; i++) array.GetArrayElementAtIndex(i).stringValue = lines[i];
-            so.ApplyModifiedPropertiesWithoutUndo();
+            string id = "npc-" + System.Guid.NewGuid().ToString("N").Substring(0, 8);
+            var so = new SerializedObject(npc); so.FindProperty("npcId").stringValue = id; so.ApplyModifiedPropertiesWithoutUndo();
+            if (lines.Length > 0)
+            {
+                var talk = ScriptableObject.CreateInstance<ScenarioScript>(); talks.Add(talk);
+                var o = talk.Options; o.use = ScenarioUse.Talk; talk.SetOptions(o);
+                talk.Set(id + "-talk", System.Array.ConvertAll(lines, Say));
+                Graph().SetFirst(id, talk); graph.Link(talk);
+            }
             return npc;
         }
         [Test] public void NearestTargetIgnoresFarAndSilentCandidates()
@@ -135,7 +150,7 @@ namespace IBIIIS.Tests
             all = new OverworldInteractable[] { farther, outOfRange, silent, near };
             Assert.AreSame(near, OverworldInteractable.FindNearest(Vector3.zero, all));
             Assert.IsNull(OverworldInteractable.FindNearest(new Vector3(10, 0, 10), all));
-            Assert.IsNull(silent.PromptVerb, "대사가 없으면 상호작용 대상이 아님");
+            Assert.IsNull(silent.PromptVerb, "대화 그래프에 대본이 없으면 상호작용 대상이 아님");
         }
         private GameObject Track(GameObject go) { System.Array.Resize(ref spawned, spawned.Length + 1); spawned[spawned.Length - 1] = go; return go; }
         [Test] public void CameraFacingSpriteStandsParallelToTheCamera()
@@ -483,8 +498,9 @@ namespace IBIIIS.Tests
         {
             var enemy = Track(new GameObject("Stage Enemy " + id)).AddComponent<StageEnemy>(); enemy.transform.position = position;
             var so = new UnityEditor.SerializedObject(enemy);
-            so.FindProperty("stageId").stringValue = id; so.FindProperty("script").objectReferenceValue = script;
+            so.FindProperty("stageId").stringValue = id;
             so.ApplyModifiedPropertiesWithoutUndo();
+            if (script != null) { Graph().SetFirst(id, script); graph.Link(script); } // 적의 대본 순서는 대화 그래프에서
             // 경로는 OnValidate가 씬 에셋에서 다시 쓰므로 직접 넣는다(시험용 없는 씬: 불러오기가 실패해야 Play 없이 확인할 수 있음).
             typeof(StageEnemy).GetField("battleScenePath", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance).SetValue(enemy, scene);
             Enable(enemy);
@@ -588,28 +604,6 @@ namespace IBIIIS.Tests
             }
             finally { Object.DestroyImmediate(script); }
         }
-        [Test] public void DialogueZoneStartsOnEnteringAndOnlyOnce()
-        {
-            var lines = ScriptableObject.CreateInstance<DialogueScript>();
-            try
-            {
-                var so = new UnityEditor.SerializedObject(lines); var list = so.FindProperty("lines"); list.arraySize = 1;
-                list.GetArrayElementAtIndex(0).FindPropertyRelative("text").stringValue = "여기는 숲이다"; so.ApplyModifiedPropertiesWithoutUndo();
-                var zone = Track(new GameObject("Zone")).AddComponent<DialogueZone>(); zone.transform.position = new Vector3(10, 0, 0);
-                so = new UnityEditor.SerializedObject(zone); so.FindProperty("zoneId").stringValue = "forest"; so.FindProperty("dialogue").objectReferenceValue = lines; so.ApplyModifiedPropertiesWithoutUndo();
-                Enable(zone);
-                Assert.IsNull(DialogueZone.UpdateInside(Vector3.zero), "구역 밖");
-                Assert.AreSame(zone, DialogueZone.UpdateInside(new Vector3(11, 0, 1)), "구역에 들어온 순간");
-                Assert.IsNull(DialogueZone.UpdateInside(new Vector3(10.5f, 0, 0)), "안에 계속 있으면 다시 시작하지 않음");
-                Assert.IsTrue(zone.Play(null));
-                var dialogue = Object.FindAnyObjectByType<DialogueController>(); Assert.AreEqual("여기는 숲이다", dialogue.Runner.Current.text);
-                dialogue.Runner.Advance(); dialogue.Runner.Advance();
-                Assert.IsTrue(ProgressStore.IsSeen("zone:forest"));
-                DialogueZone.UpdateInside(Vector3.zero);
-                Assert.IsNull(DialogueZone.UpdateInside(new Vector3(10, 0, 0)), "'한 번만': 본 뒤로는 다시 들어와도 시작하지 않음");
-            }
-            finally { foreach (var z in Object.FindObjectsByType<DialogueZone>(FindObjectsSortMode.None)) Disable(z); CloseDialogue(); Object.DestroyImmediate(lines); }
-        }
         [Test] public void LostBattleIsNotHeldByAClearDialogue()
         {
             var battle = WinnableBattle(out var map, 1, true); // 적 하나가 플레이어 칸 (1,0)으로 들어온다
@@ -634,18 +628,6 @@ namespace IBIIIS.Tests
             Assert.IsTrue(ProgressStore.IsSeen("talk")); Assert.IsTrue(ProgressStore.IsCleared("stage-a"), "클리어 기록 유지");
             Assert.IsFalse(ProgressStore.IsCleared("talk"), "본 기록은 클리어 기록과 따로");
         }
-        [Test] public void NpcSwitchesToClearedLinesAfterTheStageIsCleared()
-        {
-            var npc = Npc(Vector3.zero, "저 앞 밭이 위험해");
-            var so = new SerializedObject(npc);
-            so.FindProperty("clearedStageId").stringValue = "stage-n";
-            var cleared = so.FindProperty("clearedLines"); cleared.arraySize = 1; cleared.GetArrayElementAtIndex(0).stringValue = "벌레를 쫓아냈구나!";
-            so.ApplyModifiedPropertiesWithoutUndo();
-            npc.Interact(null); Assert.AreEqual("저 앞 밭이 위험해", npc.CurrentLine); Assert.IsFalse(npc.UsesCleared);
-            npc.OnLeft(); ProgressStore.MarkCleared("stage-n");
-            npc.Interact(null); Assert.AreEqual("벌레를 쫓아냈구나!", npc.CurrentLine); Assert.IsTrue(npc.UsesCleared);
-            npc.Interact(null); Assert.IsFalse(npc.IsTalking, "클리어 후 대사도 마지막 줄 다음 닫힘");
-        }
         [Test] public void EnteringAMissingBattleSceneDoesNothing()
         {
             LogAssert.Expect(LogType.Error, new System.Text.RegularExpressions.Regex("찾을 수 없습니다"));
@@ -668,15 +650,6 @@ namespace IBIIIS.Tests
             Assert.IsNull(battle.Session); Assert.IsFalse(battle.enabled);
             StringAssert.Contains("전투를 시작하지 못했습니다", popup.Problem);
             Object.DestroyImmediate(map);
-        }
-                [Test] public void SpeechBubbleAdvancesLineByLineThenCloses()
-        {
-            var npc = Npc(Vector3.zero, "첫째", "둘째");
-            Assert.IsFalse(npc.IsTalking); Assert.AreEqual("말 걸기", npc.PromptVerb);
-            npc.Interact(null); Assert.AreEqual("첫째", npc.CurrentLine); Assert.AreEqual("다음", npc.PromptVerb);
-            npc.Interact(null); Assert.AreEqual("둘째", npc.CurrentLine); Assert.AreEqual("닫기", npc.PromptVerb);
-            npc.Interact(null); Assert.IsFalse(npc.IsTalking);
-            npc.Interact(null); npc.OnLeft(); Assert.IsFalse(npc.IsTalking, "범위를 벗어나면 닫힘");
         }
     }
     public sealed class OverworldInputTests : InputTestFixture

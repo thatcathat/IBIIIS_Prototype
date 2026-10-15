@@ -15,14 +15,62 @@ MonoBehaviour:
   m_GroupName: Localization-String-Tables-Korean
   m_GUID: b436b1139368e3f4e979d2e0f8e22581
   m_SerializeEntries:
-  - m_GUID: 50e925fe7ec22e044bf856f2b388b0c9
-    m_Address: Scenario_tutorial_1_ko
+  - m_GUID: 0657eae47c3ba834892f91a42b44ecea
+    m_Address: Scenario_example_a_clear_ko
     m_ReadOnly: 1
     m_SerializedLabels:
     - Locale-ko
     FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 60dd43acbd855dd42a1afc0e65f87858
-    m_Address: Dialogue_villager_greeting_ko
+  - m_GUID: 155e5e0dc6d4b614da023cb756f6cc6c
+    m_Address: Scenario_npc_hello_ko
+    m_ReadOnly: 1
+    m_SerializedLabels:
+    - Locale-ko
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 24cfe3958ece2e14ebe98823b2c1150f
+    m_Address: Scenario_example_b_first_ko
+    m_ReadOnly: 1
+    m_SerializedLabels:
+    - Locale-ko
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 3024b1532b4c3aa47a3c3c8e121b010e
+    m_Address: Scenario_guide_hello_ko
+    m_ReadOnly: 1
+    m_SerializedLabels:
+    - Locale-ko
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 39103aa49c66a2d48919775e301c3e1a
+    m_Address: Scenario_example_b_next_ko
+    m_ReadOnly: 1
+    m_SerializedLabels:
+    - Locale-ko
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 4073199d8f8401648a22f8d7649761a8
+    m_Address: Scenario_villager_greeting_ko
+    m_ReadOnly: 1
+    m_SerializedLabels:
+    - Locale-ko
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 409fefc954564724bbb4be429ec91059
+    m_Address: Scenario_example_a_repeat_ko
+    m_ReadOnly: 1
+    m_SerializedLabels:
+    - Locale-ko
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 45f0eae9b43b12a46a1d4c029c06a7c2
+    m_Address: Scenario_example_a_first_ko
+    m_ReadOnly: 1
+    m_SerializedLabels:
+    - Locale-ko
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 4a153e95d8cb2ca4dbc1fc16e8de8b70
+    m_Address: Scenario_example_enemy_blocked_ko
+    m_ReadOnly: 1
+    m_SerializedLabels:
+    - Locale-ko
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 50e925fe7ec22e044bf856f2b388b0c9
+    m_Address: Scenario_tutorial_1_ko
     m_ReadOnly: 1
     m_SerializedLabels:
     - Locale-ko
@@ -35,6 +83,18 @@ MonoBehaviour:
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 9250346a9fab4a0459543c395ac33f1a
     m_Address: BattleDialogue_ko
+    m_ReadOnly: 1
+    m_SerializedLabels:
+    - Locale-ko
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: aad16b8116ac8ce43aaf7a07d0c5070c
+    m_Address: Scenario_example_a_repeat_2_ko
+    m_ReadOnly: 1
+    m_SerializedLabels:
+    - Locale-ko
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: bfa39a0f49c9d3e44bc3bce7006b176d
+    m_Address: NPC_ko
     m_ReadOnly: 1
     m_SerializedLabels:
     - Locale-ko
@@ -53,6 +113,24 @@ MonoBehaviour:
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: da52b3381ebe6ca46b481566e7676e6f
     m_Address: Scenario_tutorial_2_ko
+    m_ReadOnly: 1
+    m_SerializedLabels:
+    - Locale-ko
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: de0340d774a2a92428a0e706bc84e526
+    m_Address: Scenario_example_gate_blocked_ko
+    m_ReadOnly: 1
+    m_SerializedLabels:
+    - Locale-ko
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: e15ec78e8318a364087966a2f067f9c4
+    m_Address: Scenario_prototype_map_ko
+    m_ReadOnly: 1
+    m_SerializedLabels:
+    - Locale-ko
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: e8fcfae6f42d09142903e25d6971ddda
+    m_Address: Scenario_zone_test_ko
     m_ReadOnly: 1
     m_SerializedLabels:
     - Locale-ko

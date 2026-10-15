@@ -48,6 +48,40 @@ namespace IBIIIS
             });
             return true;
         }
+        /// <summary>대화 대본(기획서 7.6)을 보여 준다: 이번 버전(차례대로·무작위)의 대사·지문을 대화창으로 보이고 그동안 이동을 막는다.
+        /// 끝까지 보면 대본 ID로 본 기록을 남기고(버전과 관계없이 하나) done을 부른다. 보여 줄 대사가 없으면 클리어 기록 단계만 실행하고 본 것으로 기록한 뒤 null(done은 부르지 않음).</summary>
+        public static DialogueController PlayTalk(ScenarioScript script, OverworldPlayer player, Action done)
+        {
+            if (script == null) return null;
+            if (!script.IsTalk) { Debug.LogWarning($"[IBIIIS] 대본 '{script.name}'은(는) 대화 대본이 아니어서 대화로 보여 주지 않습니다.", script); return null; }
+            var steps = script.VersionSteps(DialogueProgress.NextVersion(script));
+            var lines = new List<DialogueLine>(); var table = GameText.Scenario(script.Id);
+            for (int i = 0; i < steps.Length; i++)
+            {
+                var step = steps[i];
+                if (step.type == ScenarioStepType.Line) lines.Add(step.line.Localized(table, step.id));
+                else if (step.type == ScenarioStepType.RecordClear)
+                {
+                    try { ProgressStore.MarkCleared(step.text); }
+                    catch (Exception e) { Debug.LogException(e); }
+                }
+                else Debug.LogWarning($"[IBIIIS] 대화 대본 '{script.name}' {i}번 단계({step.type})는 어드벤처씬에서 실행하지 않습니다(대사·지문·클리어 기록만).", script);
+            }
+            if (lines.Count == 0) { MarkTalkSeen(script); return null; }
+            player?.SetInputLocked(true);
+            var ui = player != null && player.Settings != null ? player.Settings.GameUi : null;
+            return DialogueController.Play(ui, lines, () =>
+            {
+                MarkTalkSeen(script);
+                if (player != null) player.SetInputLocked(false);
+                done?.Invoke();
+            });
+        }
+        private static void MarkTalkSeen(ScenarioScript script)
+        {
+            try { ProgressStore.MarkSeen(script.TalkSeenId); }
+            catch (Exception e) { Debug.LogException(e); }
+        }
         private static void MarkSeen(ScenarioScript script, ScenarioSection section)
         {
             if (!script.Options.onlyOnce) return;

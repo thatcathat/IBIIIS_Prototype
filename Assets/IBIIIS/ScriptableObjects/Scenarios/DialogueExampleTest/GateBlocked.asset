@@ -1,0 +1,72 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3e88d472cfafe72408bb437a77c307a9, type: 3}
+  m_Name: GateBlocked
+  m_EditorClassIdentifier: IBIIIS.Runtime::IBIIIS.ScenarioScript
+  scriptId: example_gate_blocked
+  settings:
+    startTiming: 0
+    onlyOnce: 0
+    allowSkip: 1
+    skipHoldSeconds: 0.6
+    hideEnemyAlerts: 1
+    scriptControlsDanger: 1
+    use: 1
+    versionOrder: 0
+  steps:
+  - id: f74b088f3c254f7a8e43b5477a1337c3
+    type: 0
+    line:
+      speaker: {fileID: 0}
+      expression: 
+      nameOverride: 
+      text: "\uC55E\uC5D0 \uBAAC\uC2A4\uD130\uAC00 \uAE38\uC744 \uB9C9\uACE0 \uC788\uB2E4."
+    actions: 0
+    direction: {x: 0, y: 0}
+    cell: {x: 0, y: 0}
+    seconds: 0
+    keys: 
+    target: 
+    text: 
+    active: 0
+    scenePath: 
+    prefab: {fileID: 0}
+    sprite: {fileID: 0}
+    motion: 0
+    endMotion: 0
+    untilAction: 0
+    untilEnd: 0
+    display: 0
+  - id: 6ea72310083846feaef9fad7839bd40b
+    type: 0
+    line:
+      speaker: {fileID: 11400000, guid: bd9c43e83beda0543960025aa730ad98, type: 2}
+      expression: 
+      nameOverride: 
+      text: "(NPC\uC5D0\uAC8C \uBA3C\uC800 \uB9D0\uC744 \uAC78\uC5B4 \uBCF4\uC790.)"
+    actions: 0
+    direction: {x: 0, y: 0}
+    cell: {x: 0, y: 0}
+    seconds: 0
+    keys: 
+    target: 
+    text: 
+    active: 0
+    scenePath: 
+    prefab: {fileID: 0}
+    sprite: {fileID: 0}
+    motion: 0
+    endMotion: 0
+    untilAction: 0
+    untilEnd: 0
+    display: 0
+  moreVersions: []

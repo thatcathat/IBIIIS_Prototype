@@ -67,6 +67,7 @@ namespace IBIIIS.Editor
                 Fill(so, "inputActions", EnsureInput);
                 Fill(so, "motionFeedback", () => AssetDatabase.LoadAssetAtPath<MotionFeedbackSettings>(AssetPaths.MotionFeedback));
                 Fill(so, "gameUi", GameUiSetup.EnsureDefault);
+                Fill(so, "dialogueGraph", DialogueSetup.EnsureGraph);
                 // 적 접촉 연출: 전투 충돌과 같은 충격 별·"쿵" 소리(임시)
                 Fill(so, "contactImpactPrefab", () => AssetDatabase.LoadAssetAtPath<GameObject>(CollisionFeedbackSetup.BurstPrefab));
                 Fill(so, "contactSound", () => AssetDatabase.LoadAssetAtPath<AudioClip>(CollisionFeedbackSetup.ImpactSound));
@@ -178,13 +179,10 @@ namespace IBIIIS.Editor
                 var npc = (GameObject)PrefabUtility.InstantiatePrefab(npcPrefab, scene); npc.name = "NPC_Guide";
                 npc.transform.position = new Vector3(-3, 0, 0);
                 var speaker = new SerializedObject(npc.GetComponent<NpcSpeaker>());
-                speaker.FindProperty("npcId").stringValue = "guide"; // 번역 표(NPC) 키
+                speaker.FindProperty("npcId").stringValue = GuideId; // 대화 그래프의 오브젝트 ID
                 speaker.FindProperty("displayName").stringValue = "안내인";
-                var lines = speaker.FindProperty("lines"); lines.arraySize = 3;
-                lines.GetArrayElementAtIndex(0).stringValue = "어서 와. 여기는 미니맵 테스트 장소야.";
-                lines.GetArrayElementAtIndex(1).stringValue = "주황색 발판 위에서 F를 누르면 전투에 들어갈 수 있어.";
-                lines.GetArrayElementAtIndex(2).stringValue = "이기든 지든 다시 여기로 돌아오게 될 거야.";
                 speaker.ApplyModifiedPropertiesWithoutUndo();
+                EnsureGuideDialogue();
 
                 var stage = new GameObject("Stage_ProtoTypeMap"); SceneManager.MoveGameObjectToScene(stage, scene);
                 stage.transform.position = new Vector3(3, 0, 3);
@@ -208,6 +206,26 @@ namespace IBIIIS.Editor
                 EditorSceneManager.CloseScene(scene, true);
             }
             return path;
+        }
+        // 안내인 NPC의 대화: 확인용 대화(처음 한 번) → 안내 대사(그다음부터 계속). 그래프에 이 NPC가 이미 있으면 사용자가 고친 연결을 그대로 둔다.
+        public const string GuideId = "npc_guide", GuideScript = AssetPaths.Scenarios + "/NPC/GuideHello.asset";
+        public static void EnsureGuideDialogue()
+        {
+            var greeting = DialogueSetup.EnsureDefault();
+            var villager = AssetDatabase.LoadAssetAtPath<DialogueCharacter>(DialogueSetup.Villager);
+            DialogueLine Say(string text) => new DialogueLine { speaker = villager, nameOverride = "안내인", text = text };
+            var guide = DialogueSetup.EnsureTalk(GuideScript, "guide_hello",
+                Say("어서 와. 여기는 미니맵 테스트 장소야."), Say("주황색 발판 위에서 F를 누르면 전투에 들어갈 수 있어."), Say("이기든 지든 다시 여기로 돌아오게 될 거야."));
+            var graph = DialogueSetup.EnsureGraph();
+            if (graph == null || greeting == null || guide == null || graph.HasObject(GuideId)) return;
+            // 그래프 규칙을 지킨다: 확인용 대화가 이미 다른 대상의 순서에 있으면 잇지 않고, 이미 이어 둔 다음은 덮어쓰지 않는다.
+            string why = DialogueGraphEdits.FirstProblem(graph, GuideId, greeting);
+            if (why != null) { Debug.LogWarning($"[IBIIIS] 안내인 대화를 잇지 않았습니다: {why}"); return; }
+            Undo.RecordObject(graph, "안내인 대화 연결");
+            graph.SetFirst(GuideId, greeting);
+            if (graph.NextOf(greeting) == null && DialogueGraphEdits.NextProblem(graph, greeting, guide) == null) graph.SetNext(greeting, guide);
+            graph.Entry(guide);
+            EditorUtility.SetDirty(graph); AssetDatabase.SaveAssetIfDirty(graph);
         }
         /// <summary>임시 NPC 실루엣(256×256, PPU 256 = 캔버스 한 칸 너비, 기준점 아래 중앙). 정식 그림이 생기면 이 파일을 교체하거나 프리팹의 Visual 스프라이트를 바꾼다.</summary>
         public static Sprite EnsureNpcSprite()

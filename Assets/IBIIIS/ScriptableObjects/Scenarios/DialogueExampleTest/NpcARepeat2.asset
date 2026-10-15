@@ -1,0 +1,97 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3e88d472cfafe72408bb437a77c307a9, type: 3}
+  m_Name: NpcARepeat2
+  m_EditorClassIdentifier: IBIIIS.Runtime::IBIIIS.ScenarioScript
+  scriptId: example_a_repeat_2
+  settings:
+    startTiming: 0
+    onlyOnce: 0
+    allowSkip: 1
+    skipHoldSeconds: 0.6
+    hideEnemyAlerts: 1
+    scriptControlsDanger: 1
+    use: 1
+    versionOrder: 0
+  steps:
+  - id: a7f88384231d467db3f0f84ea942d412
+    type: 0
+    line:
+      speaker: {fileID: 11400000, guid: 7e82f008d78776a41ade998e8d2387a2, type: 2}
+      expression: 
+      nameOverride: "\uB9C8\uC744 \uC0AC\uB78C A"
+      text: "\uB610 \uC654\uAD6C\uB098."
+    actions: 0
+    direction: {x: 0, y: 0}
+    cell: {x: 0, y: 0}
+    seconds: 0
+    keys: 
+    target: 
+    text: 
+    active: 0
+    scenePath: 
+    prefab: {fileID: 0}
+    sprite: {fileID: 0}
+    motion: 0
+    endMotion: 0
+    untilAction: 0
+    untilEnd: 0
+    display: 0
+  moreVersions:
+  - steps:
+    - id: 7b69b3e973364da1b5d625eab7a91cdb
+      type: 0
+      line:
+        speaker: {fileID: 11400000, guid: 7e82f008d78776a41ade998e8d2387a2, type: 2}
+        expression: 
+        nameOverride: "\uB9C8\uC744 \uC0AC\uB78C A"
+        text: "B\uC5D0\uAC8C\uB294 \uAC00 \uBD24\uC5B4?"
+      actions: 0
+      direction: {x: 0, y: 0}
+      cell: {x: 0, y: 0}
+      seconds: 0
+      keys: 
+      target: 
+      text: 
+      active: 0
+      scenePath: 
+      prefab: {fileID: 0}
+      sprite: {fileID: 0}
+      motion: 0
+      endMotion: 0
+      untilAction: 0
+      untilEnd: 0
+      display: 0
+  - steps:
+    - id: eb62d76eff744f43a54d213ed1753e42
+      type: 0
+      line:
+        speaker: {fileID: 11400000, guid: 7e82f008d78776a41ade998e8d2387a2, type: 2}
+        expression: 
+        nameOverride: "\uB9C8\uC744 \uC0AC\uB78C A"
+        text: "\uC624\uB298 \uB0A0\uC528 \uC88B\uB2E4."
+      actions: 0
+      direction: {x: 0, y: 0}
+      cell: {x: 0, y: 0}
+      seconds: 0
+      keys: 
+      target: 
+      text: 
+      active: 0
+      scenePath: 
+      prefab: {fileID: 0}
+      sprite: {fileID: 0}
+      motion: 0
+      endMotion: 0
+      untilAction: 0
+      untilEnd: 0
+      display: 0

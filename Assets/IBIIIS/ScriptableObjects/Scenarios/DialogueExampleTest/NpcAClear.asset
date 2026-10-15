@@ -1,0 +1,72 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3e88d472cfafe72408bb437a77c307a9, type: 3}
+  m_Name: NpcAClear
+  m_EditorClassIdentifier: IBIIIS.Runtime::IBIIIS.ScenarioScript
+  scriptId: example_a_clear
+  settings:
+    startTiming: 0
+    onlyOnce: 0
+    allowSkip: 1
+    skipHoldSeconds: 0.6
+    hideEnemyAlerts: 1
+    scriptControlsDanger: 1
+    use: 1
+    versionOrder: 0
+  steps:
+  - id: a3d8d1190a0845b798bc3487c202dcb9
+    type: 0
+    line:
+      speaker: {fileID: 11400000, guid: 7e82f008d78776a41ade998e8d2387a2, type: 2}
+      expression: 
+      nameOverride: "\uB9C8\uC744 \uC0AC\uB78C A"
+      text: "\uC815\uB9D0 \uD574\uCE58\uC6E0\uAD6C\uB098! \uACE0\uB9C8\uC6CC."
+    actions: 0
+    direction: {x: 0, y: 0}
+    cell: {x: 0, y: 0}
+    seconds: 0
+    keys: 
+    target: 
+    text: 
+    active: 0
+    scenePath: 
+    prefab: {fileID: 0}
+    sprite: {fileID: 0}
+    motion: 0
+    endMotion: 0
+    untilAction: 0
+    untilEnd: 0
+    display: 0
+  - id: 6f87f8e3727544e0a990d805bf73d3f1
+    type: 0
+    line:
+      speaker: {fileID: 11400000, guid: 7e82f008d78776a41ade998e8d2387a2, type: 2}
+      expression: 
+      nameOverride: "\uB9C8\uC744 \uC0AC\uB78C A"
+      text: "B\uC5D0\uAC8C\uB3C4 \uC54C\uB824 \uC918. \uC544\uB798\uCABD\uC5D0 \uC788\uC5B4."
+    actions: 0
+    direction: {x: 0, y: 0}
+    cell: {x: 0, y: 0}
+    seconds: 0
+    keys: 
+    target: 
+    text: 
+    active: 0
+    scenePath: 
+    prefab: {fileID: 0}
+    sprite: {fileID: 0}
+    motion: 0
+    endMotion: 0
+    untilAction: 0
+    untilEnd: 0
+    display: 0
+  moreVersions: []

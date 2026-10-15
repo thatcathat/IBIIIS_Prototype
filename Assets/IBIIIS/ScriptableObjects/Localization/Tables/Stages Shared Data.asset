@@ -19,6 +19,10 @@ MonoBehaviour:
     m_Key: stage-prototype-01
     m_Metadata:
       m_Items: []
+  - m_Id: 840662436823040
+    m_Key: stage-prototype-enemy-01
+    m_Metadata:
+      m_Items: []
   m_Metadata:
     m_Items: []
   m_KeyGenerator:

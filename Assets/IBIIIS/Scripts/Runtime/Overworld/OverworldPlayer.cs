@@ -71,6 +71,7 @@ namespace IBIIIS
             visual = GetComponentInChildren<PlayerVisual>(true);
             if (visual == null) Debug.LogWarning($"[IBIIIS] {name}: 자식에 PlayerVisual이 없어 스프라이트 방향·손맛 자세를 표시하지 않습니다(이동·먼지·발소리는 그대로).", this);
             if (settings == null) Debug.LogWarning($"[IBIIIS] {name}: Overworld Settings가 없어 기본 이동 속도·키 배치를 사용합니다.", this);
+            DialogueProgress.Graph = settings != null ? settings.DialogueGraph : null; // NPC·구역·적이 대본 순서를 찾는 그래프
             input = new OverworldInput(settings != null ? settings.InputActions : null); input.Enable();
             interactKey = input.Key(OverworldInput.Interact);
             controlsHint = UiText.OverworldControls.Format(("move", input.Key(OverworldInput.Move)), ("dash", input.Key(OverworldInput.Dash)), ("roll", input.Key(OverworldInput.Roll)), ("interact", interactKey));
@@ -127,6 +128,45 @@ namespace IBIIIS
             frozen = true; IsMoving = IsRunning = false; evade.Reset(); ShowVisual(Vector2Int.zero, false);
             if (visual != null) visual.SetPose(MotionPose.Identity, ViewCamera);
         }
+        // 정해진 자리로 걸어가기(적 대화 뒤 물러나기). 그동안 입력을 받지 않는다.
+        private Vector3? walkTarget;
+        private float walkLeft;
+        private System.Action walkDone;
+        /// <summary>걸어서 물러나는 중이면 true.</summary>
+        public bool WalkingBack => walkTarget.HasValue;
+        /// <summary>target(바닥 평면)까지 걷기 속도로 걸어간다(그동안 입력을 막음). 도착하거나 막히거나 maxSeconds가 지나면 그 자리에서 멈추고 done을 부른다.
+        /// 적과 대화한 뒤 물러날 때 쓴다(기획서 7.6). 바라보는 방향은 걷는 쪽이다.</summary>
+        public void WalkTo(Vector3 target, System.Action done, float maxSeconds = 3)
+        {
+            target.y = transform.position.y;
+            walkTarget = target; walkLeft = Mathf.Max(.1f, maxSeconds); walkDone = done;
+            inputLocked = true;
+        }
+        private void TickWalk(float seconds)
+        {
+            var to = walkTarget.Value - transform.position; to.y = 0;
+            float speed = settings != null ? settings.MoveSpeed : OverworldSettings.DefaultMoveSpeed, step = speed * seconds;
+            walkLeft -= seconds;
+            var before = transform.position; var intended = Vector3.zero;
+            // 컨트롤러가 없으면(Awake 전, 테스트) 위치를 바로 옮긴다.
+            bool usesController = controller != null && controller.enabled;
+            float minMove = usesController ? OverworldMotion.MinMoveFor(controller) : 1e-5f;
+            if (to.magnitude > 1e-3f) { intended = Vector3.ClampMagnitude(to, step); if (usesController) controller.Move(intended); else transform.position += intended; }
+            var actual = transform.position - before; actual.y = 0;
+            var direction = DirectionOf(new Vector2(to.x, to.z));
+            bool blocked = intended.sqrMagnitude > 0 && OverworldMotion.IsBlocked(intended, actual, minMove);
+            var left = walkTarget.Value - transform.position; left.y = 0;
+            bool arrived = left.magnitude <= 1e-2f;
+            IsMoving = !arrived && !blocked; IsRunning = false;
+            ShowVisual(direction, IsMoving);
+            if (motion != null) { var pose = motion.Tick(seconds, transform.position, intended, actual, false, minMove); if (visual != null) visual.SetPose(pose, ViewCamera); }
+            if (!arrived && !blocked && walkLeft > 0) return;
+            walkTarget = null; IsMoving = false; ShowVisual(Vector2Int.zero, false);
+            SetInputLocked(false);
+            var done = walkDone; walkDone = null; done?.Invoke();
+        }
+        /// <summary>걸어가기를 seconds만큼 진행한다(Play 중 매 프레임, 테스트에서는 직접 호출).</summary>
+        public void AdvanceWalk(float seconds) { if (walkTarget.HasValue) TickWalk(seconds); }
         // 적에 부딪힌 반응(표시 전용): 입력이 막혀 있어도 진행한다.
         private float contactBumpTime = -1;
         private Vector3 contactBumpDirection;
@@ -147,6 +187,7 @@ namespace IBIIIS
         private void Update()
         {
             if (contactBumpTime >= 0 && settings != null && settings.MotionFeedback != null) TickContactBump(Time.deltaTime);
+            if (walkTarget.HasValue && !frozen) { TickWalk(Time.deltaTime); return; }
             if (frozen || inputLocked || Time.frameCount == unlockedFrame || input == null) return;
             if (evade.Recovering) { UpdateRecovery(); CheckWorld(); return; }
             var move = input.ReadMove();

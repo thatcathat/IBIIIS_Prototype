@@ -43,3 +43,4 @@ MonoBehaviour:
   contactShakeTime: 0.2
   contactHoldSeconds: 0.5
   gameUi: {fileID: 11400000, guid: b077a0c6cd1c8c045b171d047fcb86d0, type: 2}
+  dialogueGraph: {fileID: 11400000, guid: a843bd8b1ccf59b438557a15f2412f7e, type: 2}

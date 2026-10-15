@@ -84,5 +84,9 @@ namespace IBIIIS
         [SerializeField, Tooltip("선택. 게임 화면 UI(미니맵 안내·결과 팝업) 설정. 전투 Player Settings와 같은 에셋을 연결합니다. 비우면 임시 IMGUI 표시를 씁니다.")]
         private GameUiSettings gameUi;
         public GameUiSettings GameUi => gameUi;
+        [Header("대화")]
+        [SerializeField, Tooltip("어드벤처씬 대화 진행 연결(대상 → 대본 순서·조건, 기획서 7.6). IBIIIS Dialogue Editor의 그래프가 편집합니다. 비우면 NPC는 말을 걸 수 없고, 구역은 시작할 때 오류를 남기며, 적은 대화 없이 전투에 들어갑니다.")]
+        private DialogueGraph dialogueGraph;
+        public DialogueGraph DialogueGraph => dialogueGraph;
     }
 }

@@ -1,0 +1,98 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1d53469e9eaa13944b98bdfcf9dad837, type: 3}
+  m_Name: DialogueGraph
+  m_EditorClassIdentifier: IBIIIS.Runtime::IBIIIS.DialogueGraph
+  objects:
+  - objectId: npc_guide
+    first: {fileID: 11400000, guid: 77e843d5f9191164fb8c0f7cf1d06f39, type: 2}
+    position: {x: -120, y: 1620}
+  - objectId: zone-test-01
+    first: {fileID: 11400000, guid: 200fb17ffe2e9794abdddc94f8d93f50, type: 2}
+    position: {x: -120, y: 1788}
+  - objectId: stage-prototype-enemy-01
+    first: {fileID: 11400000, guid: 1ce87a782eaea3a468a340ad340f31a8, type: 2}
+    position: {x: 0, y: 504}
+  - objectId: npc_a
+    first: {fileID: 11400000, guid: fc7980f3396794545ac9e5dd7fa75299, type: 2}
+    position: {x: 0, y: 84}
+  - objectId: npc_b
+    first: {fileID: 11400000, guid: 27de4fae9a8a5494fb000f5a34f8cd6a, type: 2}
+    position: {x: 696, y: 864}
+  - objectId: zone_gate
+    first: {fileID: 11400000, guid: eb1ecbc0e3c744449b8658795fe5e983, type: 2}
+    position: {x: -120, y: 1404}
+  scripts:
+  - script: {fileID: 11400000, guid: 77e843d5f9191164fb8c0f7cf1d06f39, type: 2}
+    next: {fileID: 11400000, guid: bc74e4836a7ba2e4399cce2a4ec0cd5f, type: 2}
+    conditions: []
+    position: {x: 180, y: 1620}
+  - script: {fileID: 11400000, guid: bc74e4836a7ba2e4399cce2a4ec0cd5f, type: 2}
+    next: {fileID: 0}
+    conditions: []
+    position: {x: 480, y: 1620}
+  - script: {fileID: 11400000, guid: 200fb17ffe2e9794abdddc94f8d93f50, type: 2}
+    next: {fileID: 0}
+    conditions: []
+    position: {x: 180, y: 1788}
+  - script: {fileID: 11400000, guid: 0ef6fcf52ed28c042944f80c11f8da30, type: 2}
+    next: {fileID: 0}
+    conditions:
+    - type: 0
+      script: {fileID: 11400000, guid: fc7980f3396794545ac9e5dd7fa75299, type: 2}
+    position: {x: 648, y: 420}
+  - script: {fileID: 11400000, guid: 2d4cd6e24a9a44741adce10535da4902, type: 2}
+    next: {fileID: 0}
+    conditions: []
+    position: {x: 132, y: 1188}
+  - script: {fileID: 11400000, guid: c39c97d0226a70941be4c3d8274e3244, type: 2}
+    next: {fileID: 0}
+    conditions: []
+    position: {x: -528, y: 1188}
+  - script: {fileID: 11400000, guid: 5cc77559b58fe72469eca3a2a1d8e3f7, type: 2}
+    next: {fileID: 0}
+    conditions: []
+    position: {x: -240, y: 1188}
+  - script: {fileID: 11400000, guid: fc7980f3396794545ac9e5dd7fa75299, type: 2}
+    next: {fileID: 11400000, guid: d08fd81dd5a04dd4b91d17a55ab505a1, type: 2}
+    conditions: []
+    position: {x: 300, y: 84}
+  - script: {fileID: 11400000, guid: d08fd81dd5a04dd4b91d17a55ab505a1, type: 2}
+    next: {fileID: 11400000, guid: 62dae3ac5087d9f47af7d371ee311d54, type: 2}
+    conditions: []
+    position: {x: 648, y: -216}
+  - script: {fileID: 11400000, guid: 62dae3ac5087d9f47af7d371ee311d54, type: 2}
+    next: {fileID: 11400000, guid: a3eae8e2b983e874c9400cbf19a91603, type: 2}
+    conditions: []
+    position: {x: 972, y: 84}
+  - script: {fileID: 11400000, guid: a3eae8e2b983e874c9400cbf19a91603, type: 2}
+    next: {fileID: 0}
+    conditions: []
+    position: {x: 1308, y: -216}
+  - script: {fileID: 11400000, guid: 27de4fae9a8a5494fb000f5a34f8cd6a, type: 2}
+    next: {fileID: 11400000, guid: 5d744af73f8fc4e42bc2463f204a4641, type: 2}
+    conditions: []
+    position: {x: 972, y: 864}
+  - script: {fileID: 11400000, guid: 5d744af73f8fc4e42bc2463f204a4641, type: 2}
+    next: {fileID: 0}
+    conditions:
+    - type: 0
+      script: {fileID: 11400000, guid: 62dae3ac5087d9f47af7d371ee311d54, type: 2}
+    position: {x: 1308, y: 420}
+  - script: {fileID: 11400000, guid: eb1ecbc0e3c744449b8658795fe5e983, type: 2}
+    next: {fileID: 0}
+    conditions: []
+    position: {x: 180, y: 1404}
+  - script: {fileID: 11400000, guid: 1ce87a782eaea3a468a340ad340f31a8, type: 2}
+    next: {fileID: 11400000, guid: 0ef6fcf52ed28c042944f80c11f8da30, type: 2}
+    conditions: []
+    position: {x: 300, y: 504}

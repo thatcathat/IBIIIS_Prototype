@@ -9,35 +9,135 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 62aef0e851cbcbd4d8ea6f304ba630dc, type: 3}
+  m_Script: {fileID: 11500000, guid: 3e88d472cfafe72408bb437a77c307a9, type: 3}
   m_Name: VillagerGreeting
-  m_EditorClassIdentifier: IBIIIS.Runtime::IBIIIS.DialogueScript
+  m_EditorClassIdentifier: IBIIIS.Runtime::IBIIIS.ScenarioScript
   scriptId: villager_greeting
-  lines:
+  settings:
+    startTiming: 0
+    onlyOnce: 0
+    allowSkip: 1
+    skipHoldSeconds: 0.6
+    hideEnemyAlerts: 1
+    scriptControlsDanger: 1
+    use: 1
+    versionOrder: 0
+  steps:
   - id: 57a9481d0bc8410f9026ba736a3ee4f7
-    speaker: {fileID: 0}
-    expression: 
-    nameOverride: 
-    text: "\uB9C8\uC744 \uC0AC\uB78C\uC774 \uC190\uC744 \uD754\uB4E0\uB2E4."
+    type: 0
+    line:
+      speaker: {fileID: 0}
+      expression: 
+      nameOverride: 
+      text: "\uB9C8\uC744 \uC0AC\uB78C\uC774 \uC190\uC744 \uD754\uB4E0\uB2E4."
+    actions: 0
+    direction: {x: 0, y: 0}
+    cell: {x: 0, y: 0}
+    seconds: 0
+    keys: 
+    target: 
+    text: 
+    active: 0
+    scenePath: 
+    prefab: {fileID: 0}
+    sprite: {fileID: 0}
+    motion: 0
+    endMotion: 0
+    untilAction: 0
+    untilEnd: 0
+    display: 0
   - id: 3e7a4104b6ca401697a6d9229de9b4e0
-    speaker: {fileID: 11400000, guid: 7e82f008d78776a41ade998e8d2387a2, type: 2}
-    expression: 
-    nameOverride: 
-    text: "\uC5B4\uC11C \uC640! \uCC98\uC74C \uBCF4\uB294 \uC5BC\uAD74\uC774\uB124."
+    type: 0
+    line:
+      speaker: {fileID: 11400000, guid: 7e82f008d78776a41ade998e8d2387a2, type: 2}
+      expression: 
+      nameOverride: 
+      text: "\uC5B4\uC11C \uC640! \uCC98\uC74C \uBCF4\uB294 \uC5BC\uAD74\uC774\uB124."
+    actions: 0
+    direction: {x: 0, y: 0}
+    cell: {x: 0, y: 0}
+    seconds: 0
+    keys: 
+    target: 
+    text: 
+    active: 0
+    scenePath: 
+    prefab: {fileID: 0}
+    sprite: {fileID: 0}
+    motion: 0
+    endMotion: 0
+    untilAction: 0
+    untilEnd: 0
+    display: 0
   - id: 917f69db392f46cc930f64d3b523d2f4
-    speaker: {fileID: 11400000, guid: bd9c43e83beda0543960025aa730ad98, type: 2}
-    expression: 
-    nameOverride: 
-    text: "\uC548\uB155\uD558\uC138\uC694. \uC5EC\uAE30\uB294 \uC5B4\uB514\uC608\uC694?"
+    type: 0
+    line:
+      speaker: {fileID: 11400000, guid: bd9c43e83beda0543960025aa730ad98, type: 2}
+      expression: 
+      nameOverride: 
+      text: "\uC548\uB155\uD558\uC138\uC694. \uC5EC\uAE30\uB294 \uC5B4\uB514\uC608\uC694?"
+    actions: 0
+    direction: {x: 0, y: 0}
+    cell: {x: 0, y: 0}
+    seconds: 0
+    keys: 
+    target: 
+    text: 
+    active: 0
+    scenePath: 
+    prefab: {fileID: 0}
+    sprite: {fileID: 0}
+    motion: 0
+    endMotion: 0
+    untilAction: 0
+    untilEnd: 0
+    display: 0
   - id: 1b37b0d781784b52943c5202730fca1b
-    speaker: {fileID: 11400000, guid: 7e82f008d78776a41ade998e8d2387a2, type: 2}
-    expression: 
-    nameOverride: 
-    text: "\uB358\uC804 \uC785\uAD6C \uB9C8\uC744\uC774\uC57C. \uC800\uAE30 \uC8FC\uD669
-      \uBC1C\uD310\uC73C\uB85C \uAC00\uBA74 \uB358\uC804\uC5D0 \uB4E4\uC5B4\uAC08
-      \uC218 \uC788\uC5B4."
+    type: 0
+    line:
+      speaker: {fileID: 11400000, guid: 7e82f008d78776a41ade998e8d2387a2, type: 2}
+      expression: 
+      nameOverride: 
+      text: "\uB358\uC804 \uC785\uAD6C \uB9C8\uC744\uC774\uC57C. \uC800\uAE30 \uC8FC\uD669
+        \uBC1C\uD310\uC73C\uB85C \uAC00\uBA74 \uB358\uC804\uC5D0 \uB4E4\uC5B4\uAC08
+        \uC218 \uC788\uC5B4."
+    actions: 0
+    direction: {x: 0, y: 0}
+    cell: {x: 0, y: 0}
+    seconds: 0
+    keys: 
+    target: 
+    text: 
+    active: 0
+    scenePath: 
+    prefab: {fileID: 0}
+    sprite: {fileID: 0}
+    motion: 0
+    endMotion: 0
+    untilAction: 0
+    untilEnd: 0
+    display: 0
   - id: 1e865fcb7e7a46c3ac57a108a2454a8e
-    speaker: {fileID: 11400000, guid: 62cbb598f2f40c249b3713c3d307662c, type: 2}
-    expression: 
-    nameOverride: 
-    text: "(\uB300\uD654\uCC3D \uD655\uC778\uC6A9 \uC784\uC2DC \uB300\uC0AC\uC608\uC694!)"
+    type: 0
+    line:
+      speaker: {fileID: 11400000, guid: 62cbb598f2f40c249b3713c3d307662c, type: 2}
+      expression: 
+      nameOverride: 
+      text: "(\uB300\uD654\uCC3D \uD655\uC778\uC6A9 \uC784\uC2DC \uB300\uC0AC\uC608\uC694!)"
+    actions: 0
+    direction: {x: 0, y: 0}
+    cell: {x: 0, y: 0}
+    seconds: 0
+    keys: 
+    target: 
+    text: 
+    active: 0
+    scenePath: 
+    prefab: {fileID: 0}
+    sprite: {fileID: 0}
+    motion: 0
+    endMotion: 0
+    untilAction: 0
+    untilEnd: 0
+    display: 0
+  moreVersions: []

@@ -17,6 +17,8 @@ namespace IBIIIS.Editor
         public const string Data = Root + "/ScriptableObjects";
         public const string Settings = Data + "/Settings";
         public const string Scenarios = Data + "/Scenarios";
+        // 어드벤처씬 대화 진행 연결(대상 → 대본 순서·조건). Overworld Settings의 Dialogue Graph 슬롯에 연결한다.
+        public const string DialogueGraph = Scenarios + "/DialogueGraph.asset";
         // 번역: Localization 설정·언어(Locale)·번역 표. Addressables 설정은 패키지가 Assets/AddressableAssetsData에 만든다(이동 금지).
         public const string Localization = Data + "/Localization";
         public const string LocalizationSettings = Localization + "/LocalizationSettings.asset";

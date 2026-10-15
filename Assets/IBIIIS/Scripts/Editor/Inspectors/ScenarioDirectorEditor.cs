@@ -37,7 +37,7 @@ namespace IBIIIS.Editor
                 // 대본이 없는 진행기는 정상 상태(새 맵에 기본으로 붙음): 시작하지 않고 전투는 평소대로 진행된다.
                 if (script == null) { summary.Add(new HelpBox("대본 없음 — 이 씬에서는 대본이 실행되지 않고 전투가 평소대로 진행됩니다. 대화를 넣으려면 Script에 대본을 연결하거나 IBIIIS Dialogue Editor의 '씬에 연결'을 쓰세요.", HelpBoxMessageType.Info)); return; }
                 summary.Add(new HelpBox(text, HelpBoxMessageType.None));
-                summary.Add(new Button(() => DialogueEditorWindow.Open(script).SelectStart()) { text = "IBIIIS Dialogue Editor에서 대본 설정 열기" });
+                summary.Add(new Button(() => DialogueGraphWindow.OpenScript(script, true)) { text = "IBIIIS Dialogue Editor에서 대본 설정 열기" });
             }
             root.TrackSerializedObjectValue(serializedObject, _ => Refresh());
             Refresh();

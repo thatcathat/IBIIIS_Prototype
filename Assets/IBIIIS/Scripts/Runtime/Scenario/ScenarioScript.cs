@@ -56,6 +56,23 @@ namespace IBIIIS
         /// <summary>적을 모두 물리치고 충돌 연출이 끝난 뒤. 그때까지 전투는 평소대로 진행되고, 결과 팝업은 대본이 끝난 뒤 뜬다.</summary>
         [InspectorName("클리어 시 (Battle Won)")] BattleWon = 1,
     }
+    /// <summary>대본 용도. 값은 에셋에 정수로 저장되므로 끝에만 추가한다(예전 대본은 모두 전투 진입 = 0).</summary>
+    public enum ScenarioUse
+    {
+        /// <summary>전투 진입 대본: 입장 전·입장 후·클리어 후 세 구간(적·전투씬 진행기).</summary>
+        [InspectorName("전투 진입 (Battle)")] Battle = 0,
+        /// <summary>대화 대본: 구간 없이 대사만. 어드벤처씬의 NPC·근접 대화 구역·적이 대화 그래프의 순서대로 보여 준다. 버전을 여러 개 둘 수 있다.</summary>
+        [InspectorName("대화 (Talk)")] Talk = 1,
+    }
+    /// <summary>대화 대본의 버전을 고르는 순서. 값은 에셋에 정수로 저장되므로 끝에만 추가한다.</summary>
+    public enum ScenarioVersionOrder { [InspectorName("차례대로")] InOrder = 0, [InspectorName("무작위")] Random = 1 }
+    /// <summary>대화 대본의 추가 버전(버전 2부터). 버전 1은 대본의 단계 목록이다.</summary>
+    [Serializable]
+    public struct ScenarioVersion
+    {
+        public ScenarioStep[] steps;
+        public ScenarioStep[] Steps => steps ?? Array.Empty<ScenarioStep>();
+    }
     /// <summary>표시 끝 단계가 끝낼 표시 종류.</summary>
     public enum ScenarioDisplay { Emote = 0, Pose = 1 }
     /// <summary>자세 연출의 움직임. 표시 전용. 값은 에셋에 정수로 저장되므로 끝에만 추가한다.</summary>
@@ -94,15 +111,26 @@ namespace IBIIIS
             return (actions & flag) != 0 && (direction == Vector2Int.zero || direction == dir);
         }
     }
-    /// <summary>튜토리얼 등 대본(단계 목록). 전투 씬의 ScenarioDirector가 위에서부터 실행한다. 대사·입력 제한·조건·연출을 Inspector에서 편집한다.</summary>
+    /// <summary>대본(단계 목록). 용도가 전투 진입이면 전투 씬의 ScenarioDirector와 어드벤처씬 적이 구간별로 실행하고(튜토리얼 등),
+    /// 대화면 어드벤처씬의 NPC·근접 대화 구역·적이 대화 그래프(DialogueGraph)의 순서대로 보여 준다(기획서 7.6). 대사·입력 제한·조건·연출을 Inspector에서 편집한다.</summary>
     [CreateAssetMenu(menuName = "IBIIIS/Scenario Script")]
     public sealed class ScenarioScript : ScriptableObject
     {
         [SerializeField, Tooltip("이 대본의 고정 ID. 기록 등이 이 값으로 연결되므로 정한 뒤 바꾸지 않습니다.")] private string scriptId = "tutorial";
         [SerializeField, Tooltip("대본 전체 설정: 시작 시점·한 번만·건너뛰기·전투 연출. IBIIIS Dialogue Editor의 시작 노드에서 편집합니다.")] private Settings settings = Settings.Default;
         [SerializeField] private ScenarioStep[] steps = Array.Empty<ScenarioStep>();
+        [SerializeField, Tooltip("대화 대본의 버전 2부터(버전 1은 위 단계 목록). 보여 줄 때마다 대본 설정의 Version Order대로 하나를 고릅니다. 전투 진입 대본은 쓰지 않습니다.")]
+        private ScenarioVersion[] moreVersions = Array.Empty<ScenarioVersion>();
         public string Id => scriptId;
         public Settings Options => settings;
+        public ScenarioUse Use => settings.use;
+        public bool IsTalk => settings.use == ScenarioUse.Talk;
+        /// <summary>버전 수. 전투 진입 대본은 항상 1.</summary>
+        public int VersionCount => IsTalk ? 1 + (moreVersions?.Length ?? 0) : 1;
+        /// <summary>버전의 단계 목록(0 = 버전 1 = Steps). 범위 밖이면 버전 1.</summary>
+        public ScenarioStep[] VersionSteps(int index) => index <= 0 || index >= VersionCount ? Steps : moreVersions[index - 1].Steps;
+        /// <summary>대화 대본을 끝까지 본 기록 ID(어느 버전이든 같음).</summary>
+        public string TalkSeenId => scriptId;
         /// <summary>대본 전체 설정. 씬 연결(전투·등장 오브젝트)은 진행기(ScenarioDirector)에 있다.</summary>
         [Serializable]
         public struct Settings
@@ -113,6 +141,8 @@ namespace IBIIIS
             [Min(0.1f), Tooltip("건너뛰기에 필요한 Esc 누르는 시간(초). 임시 0.6.")] public float skipHoldSeconds;
             [Tooltip("체크하면 대본이 도는 동안 적 인식 말풍선(대사)을 띄우지 않습니다. 대본 대사와 겹치지 않게 튜토리얼에서 켭니다.")] public bool hideEnemyAlerts;
             [Tooltip("체크하면 대본이 도는 동안 적 인식 범위 안의 위험 그림을 자동으로 보이지 않습니다. 위험 자세는 대본의 Pose 단계로 정합니다.")] public bool scriptControlsDanger;
+            [Tooltip("전투 진입: 적·전투씬에 연결하는 세 구간 대본. 대화: 어드벤처씬 NPC·근접 대화 구역·적이 대화 그래프 순서대로 보여 주는 대본(구간 없음, 버전 여러 개 가능).")] public ScenarioUse use;
+            [Tooltip("대화 대본: 버전이 여럿일 때 보여 줄 때마다 고르는 순서(차례대로·무작위). 어느 버전 차례인지는 저장하지 않습니다(다시 실행하면 버전 1부터).")] public ScenarioVersionOrder versionOrder;
             /// <summary>건너뛰기 누르는 시간(0 이하로 저장된 값은 0.1초).</summary>
             public float SkipHold => Mathf.Max(.1f, skipHoldSeconds);
             /// <summary>새 대본의 기본값(이전에 진행기에 있던 기본값과 같다).</summary>
@@ -166,6 +196,7 @@ namespace IBIIIS
         /// 예전 시작 시점대로 입장 후 구간 시작 바로 뒤(Battle Won)나 맨 뒤에 넣고, 같은 경계가 두 개 이상이면 첫 번째만 남기며, 순서가 거꾸로면 클리어 경계를 입장 후 경계 뒤로 옮긴다. 바뀌었으면 true.</summary>
         public bool EnsureSections()
         {
+            if (IsTalk) return false; // 대화 대본은 구간이 없다
             var list = new System.Collections.Generic.List<ScenarioStep>(Steps);
             bool changed = false;
             bool legacyWon = settings.startTiming == ScenarioStartTiming.BattleWon;
@@ -184,16 +215,53 @@ namespace IBIIIS
             return changed;
         }
         public void Set(string id, ScenarioStep[] value) { scriptId = id; steps = value ?? Array.Empty<ScenarioStep>(); EnsureStepIds(); }
+        /// <summary>버전의 단계 목록을 바꾼다(0 = 버전 1 = Steps). 범위 밖이면 아무것도 하지 않는다. 편집기(노드 안 타임라인)가 Undo 기록 뒤 부른다.</summary>
+        public void SetVersionSteps(int index, ScenarioStep[] value)
+        {
+            if (index <= 0) { steps = value ?? Array.Empty<ScenarioStep>(); EnsureStepIds(); return; }
+            if (index >= VersionCount) return;
+            moreVersions[index - 1].steps = value ?? Array.Empty<ScenarioStep>();
+            EnsureStepIds();
+        }
+        /// <summary>대화 대본에 빈 지문 한 줄의 버전을 맨 뒤에 더한다. 새 버전 번호(0부터)를 돌려준다. 전투 진입 대본이면 -1.</summary>
+        public int AddVersion()
+        {
+            if (!IsTalk) return -1;
+            var list = new System.Collections.Generic.List<ScenarioVersion>(moreVersions ?? Array.Empty<ScenarioVersion>())
+                { new ScenarioVersion { steps = new[] { new ScenarioStep { type = ScenarioStepType.Line, line = DialogueLine.Narrate("") } } } };
+            moreVersions = list.ToArray(); EnsureStepIds();
+            return VersionCount - 1;
+        }
+        /// <summary>버전을 지운다(버전이 하나뿐이면 지우지 않음). 버전 1을 지우면 버전 2가 버전 1이 된다. 지웠으면 true.</summary>
+        public bool RemoveVersion(int index)
+        {
+            if (VersionCount <= 1 || index < 0 || index >= VersionCount) return false;
+            var list = new System.Collections.Generic.List<ScenarioVersion>(moreVersions);
+            if (index == 0) { steps = list[0].Steps; list.RemoveAt(0); }
+            else list.RemoveAt(index - 1);
+            moreVersions = list.ToArray();
+            return true;
+        }
+        /// <summary>대화 대본의 버전 2부터를 바꾼다(코드·테스트용. 편집기는 직렬화 속성으로 고친다).</summary>
+        public void SetMoreVersions(params ScenarioStep[][] versions)
+        {
+            moreVersions = Array.ConvertAll(versions ?? Array.Empty<ScenarioStep[]>(), v => new ScenarioVersion { steps = v ?? Array.Empty<ScenarioStep>() });
+            EnsureStepIds();
+        }
         /// <summary>대본 설정을 바꾼다(코드·테스트용. 편집기는 직렬화 속성으로 고친다).</summary>
         public void SetOptions(Settings value) => settings = value;
         /// <summary>비었거나 앞 단계와 겹치는 단계 ID를 새로 채운다(복사·추가된 단계). 바뀌었으면 true. 진행에는 쓰지 않고 편집기만 쓴다.</summary>
         public bool EnsureStepIds()
         {
+            // 버전 사이에서도 겹치지 않게 한다(단계 ID가 번역 표의 키).
             var seen = new System.Collections.Generic.HashSet<string>(); bool changed = false;
-            for (int i = 0; i < Steps.Length; i++)
+            void Fix(ScenarioStep[] list)
             {
-                if (string.IsNullOrEmpty(steps[i].id) || !seen.Add(steps[i].id)) { steps[i].id = Guid.NewGuid().ToString("N"); seen.Add(steps[i].id); changed = true; }
+                for (int i = 0; i < list.Length; i++)
+                    if (string.IsNullOrEmpty(list[i].id) || !seen.Add(list[i].id)) { list[i].id = Guid.NewGuid().ToString("N"); seen.Add(list[i].id); changed = true; }
             }
+            Fix(Steps);
+            if (moreVersions != null) for (int v = 0; v < moreVersions.Length; v++) { if (moreVersions[v].steps == null) moreVersions[v].steps = Array.Empty<ScenarioStep>(); Fix(moreVersions[v].steps); }
             return changed;
         }
         // Inspector에서 단계를 복제하면 ID가 겹치므로 고친다.

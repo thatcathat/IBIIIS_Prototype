@@ -1,0 +1,39 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e9620f8c34305754d8cc9a7e49e852d9, type: 3}
+  m_Name: Scenario_example_a_repeat_ko
+  m_EditorClassIdentifier: Unity.Localization::UnityEngine.Localization.Tables.StringTable
+  m_LocaleId:
+    m_Code: ko
+  m_SharedData: {fileID: 11400000, guid: db829febcd82f8b4397b875e4d3a6dbe, type: 2}
+  m_Metadata:
+    m_Items: []
+  m_TableData:
+  - m_Id: 615268352
+    m_Localized: "\uC801\uC740 \uC704\uCABD\uC5D0 \uC788\uC5B4."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 703348736
+    m_Localized: "\uB9C8\uC744 \uC0AC\uB78C A"
+    m_Metadata:
+      m_Items: []
+  - m_Id: 703348737
+    m_Localized: "\uC900\uBE44\uB418\uBA74 \uAC00 \uBD10. \uC870\uC2EC\uD558\uACE0."
+    m_Metadata:
+      m_Items: []
+  - m_Id: 703348738
+    m_Localized: "\uB9C8\uC744 \uC0AC\uB78C A"
+    m_Metadata:
+      m_Items: []
+  references:
+    version: 2
+    RefIds: []

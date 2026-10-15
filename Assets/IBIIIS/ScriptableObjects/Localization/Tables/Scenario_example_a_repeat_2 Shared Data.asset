@@ -1,0 +1,52 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5b11a58205ec3474ca216360e9fa74a8, type: 3}
+  m_Name: Scenario_example_a_repeat_2 Shared Data
+  m_EditorClassIdentifier: Unity.Localization::UnityEngine.Localization.Tables.SharedTableData
+  m_TableCollectionName: Scenario_example_a_repeat_2
+  m_TableCollectionNameGuidString: 8d94026630098c444ab48fd0ee83f183
+  m_Entries:
+  - m_Id: 552353792
+    m_Key: a7f88384231d467db3f0f84ea942d412
+    m_Metadata:
+      m_Items: []
+  - m_Id: 611074048
+    m_Key: a7f88384231d467db3f0f84ea942d412.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 611074049
+    m_Key: 7b69b3e973364da1b5d625eab7a91cdb
+    m_Metadata:
+      m_Items: []
+  - m_Id: 611074050
+    m_Key: 7b69b3e973364da1b5d625eab7a91cdb.name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 611074051
+    m_Key: eb62d76eff744f43a54d213ed1753e42
+    m_Metadata:
+      m_Items: []
+  - m_Id: 611074052
+    m_Key: eb62d76eff744f43a54d213ed1753e42.name
+    m_Metadata:
+      m_Items: []
+  m_Metadata:
+    m_Items: []
+  m_KeyGenerator:
+    rid: 4242813409278034230
+  references:
+    version: 2
+    RefIds:
+    - rid: 4242813409278034230
+      type: {class: DistributedUIDGenerator, ns: UnityEngine.Localization.Tables, asm: Unity.Localization}
+      data:
+        m_CustomEpoch: 1792063757872

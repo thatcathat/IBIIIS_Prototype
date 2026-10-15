@@ -9,24 +9,37 @@ namespace IBIIIS.Editor
     /// <summary>스테이지 입구 Inspector(StageLinkEditor와 같음).</summary>
     [CustomEditor(typeof(StageEntrance)), CanEditMultipleObjects]
     public sealed class StageEntranceEditor : StageLinkEditor { }
-    /// <summary>어드벤처씬 적 Inspector. 입구와 같은 검사에, 진입 대화 대본이 전투 씬 진행기의 대본과 같은지 알려 준다.</summary>
+    /// <summary>어드벤처씬 적 Inspector. 입구와 같은 검사에, 대화 그래프의 이 적 대본 순서(Stage Id)와 그 전투 진입 대본이 전투 씬 진행기의 대본과 같은지 알려 준다.</summary>
     [CustomEditor(typeof(StageEnemy)), CanEditMultipleObjects]
     public sealed class StageEnemyEditor : StageLinkEditor
     {
+        // 편집 중에는 게임이 쓰는 그래프(Overworld Settings의 Dialogue Graph)를 직접 읽는다.
+        private static DialogueGraph ProjectGraph() => AssetDatabase.LoadAssetAtPath<OverworldSettings>(AssetPaths.OverworldSettings)?.DialogueGraph;
+        private ScenarioScript BattleScript(out List<ScenarioScript> chain)
+        {
+            var enemy = (StageEnemy)target; var graph = ProjectGraph();
+            chain = graph != null ? graph.Chain(enemy.StageId) : new List<ScenarioScript>();
+            return chain.Find(s => s != null && !s.IsTalk);
+        }
         protected override void AddExtra(VisualElement status)
         {
             var enemy = (StageEnemy)target;
-            if (enemy.Script == null || string.IsNullOrEmpty(enemy.BattleScenePath)) return;
+            var battle = BattleScript(out var chain);
+            if (string.IsNullOrEmpty(enemy.StageId)) return;
+            if (chain.Count == 0) { status.Add(new HelpBox("대화 그래프에 이 적(Stage Id)의 대본 순서가 없어 대화 없이 전투에 들어갑니다. 대본은 IBIIIS Dialogue Editor의 그래프에서 잇습니다.", HelpBoxMessageType.Info)); return; }
+            var order = new TextField("대본 순서(그래프)") { value = string.Join(" → ", chain.ConvertAll(s => s.name)), isReadOnly = true };
+            order.AddToClassList(TextField.alignedFieldUssClassName); status.Add(order);
+            if (battle == null || string.IsNullOrEmpty(enemy.BattleScenePath)) return;
             var directors = DialogueScriptScenes.DirectorsInProject().FindAll(e => e.ScenePath == enemy.BattleScenePath);
             if (directors.Count == 0)
                 status.Add(new HelpBox("전투 씬에 대본 진행기가 없어 대본의 '입장 후' 구간은 실행되지 않습니다(입장 전·클리어 후 구간은 어드벤처씬에서 실행).", HelpBoxMessageType.Info));
-            else if (!directors.Exists(e => e.Script == enemy.Script))
+            else if (!directors.Exists(e => e.Script == battle))
             {
-                status.Add(new HelpBox($"전투 씬 진행기의 대본({(directors[0].Script != null ? directors[0].Script.name : "없음")})이 이 적의 진입 대화 대본({enemy.Script.name})과 다릅니다. '입장 후' 구간은 전투 씬 진행기의 대본으로 실행됩니다.", HelpBoxMessageType.Warning));
-                status.Add(new Button(() => { DialogueScriptScenes.Connect(directors[0], enemy.Script, out string problem); if (problem != null) EditorUtility.DisplayDialog("전투 씬에 연결", problem, "확인"); }) { text = "전투 씬 진행기에 이 대본 연결" });
+                status.Add(new HelpBox($"전투 씬 진행기의 대본({(directors[0].Script != null ? directors[0].Script.name : "없음")})이 이 적의 전투 진입 대본({battle.name})과 다릅니다. '입장 후' 구간은 전투 씬 진행기의 대본으로 실행됩니다.", HelpBoxMessageType.Warning));
+                status.Add(new Button(() => { DialogueScriptScenes.Connect(directors[0], battle, out string problem); if (problem != null) EditorUtility.DisplayDialog("전투 씬에 연결", problem, "확인"); }) { text = "전투 씬 진행기에 이 대본 연결" });
             }
         }
-        protected override string ExtraKey => ((StageEnemy)target).Script != null ? ((StageEnemy)target).Script.name : "";
+        protected override string ExtraKey { get { var battle = BattleScript(out var chain); return string.Join(",", chain.ConvertAll(s => s.name)) + "|" + (battle != null ? battle.name : ""); } }
     }
     /// <summary>전투 스테이지 연결(입구·어드벤처씬 적) Inspector 공통. 전투 씬을 씬 에셋으로 고르게 하고, ID 누락·중복과 빌드 씬 목록 누락을 알려 준다.</summary>
     public abstract class StageLinkEditor : UnityEditor.Editor

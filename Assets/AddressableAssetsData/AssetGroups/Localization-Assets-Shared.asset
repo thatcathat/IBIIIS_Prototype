@@ -15,13 +15,60 @@ MonoBehaviour:
   m_GroupName: Localization-Assets-Shared
   m_GUID: 2625dc0e4d6c19e499a4fc712170f189
   m_SerializeEntries:
+  - m_GUID: 0f15020788c32d64b8176f499702e8f9
+    m_Address: Assets/IBIIIS/ScriptableObjects/Localization/Tables/NPC Shared Data.asset
+    m_ReadOnly: 1
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 11f22c61b60939e4aac5040afb7e60a9
+    m_Address: Assets/IBIIIS/ScriptableObjects/Localization/Tables/Scenario_example_b_first
+      Shared Data.asset
+    m_ReadOnly: 1
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 1d1bb4d972e19524bb20e486600c5faf
+    m_Address: Assets/IBIIIS/ScriptableObjects/Localization/Tables/Scenario_example_enemy_blocked
+      Shared Data.asset
+    m_ReadOnly: 1
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 20c9ead0860d1e642a3cc4b7dd5172c8
     m_Address: Assets/IBIIIS/ScriptableObjects/Localization/Tables/UI Shared Data.asset
     m_ReadOnly: 1
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 21448951a0209fc47804f9aaa9d389ca
+    m_Address: Assets/IBIIIS/ScriptableObjects/Localization/Tables/Scenario_guide_hello
+      Shared Data.asset
+    m_ReadOnly: 1
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 5c448d04bdbeab841b14db609b065fd7
+    m_Address: Assets/IBIIIS/ScriptableObjects/Localization/Tables/Scenario_example_a_clear
+      Shared Data.asset
+    m_ReadOnly: 1
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 66899854c64b22b46bbf1fd80bcd590f
     m_Address: Assets/IBIIIS/ScriptableObjects/Localization/Tables/Scenario_tutorial_1
+      Shared Data.asset
+    m_ReadOnly: 1
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 70be4a1fdd89896419fed702311add6a
+    m_Address: Assets/IBIIIS/ScriptableObjects/Localization/Tables/Scenario_npc_hello
+      Shared Data.asset
+    m_ReadOnly: 1
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 8d94026630098c444ab48fd0ee83f183
+    m_Address: Assets/IBIIIS/ScriptableObjects/Localization/Tables/Scenario_example_a_repeat_2
+      Shared Data.asset
+    m_ReadOnly: 1
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 8ff762029aff1b54db107f0584ce1923
+    m_Address: Assets/IBIIIS/ScriptableObjects/Localization/Tables/Scenario_villager_greeting
       Shared Data.asset
     m_ReadOnly: 1
     m_SerializedLabels: []
@@ -38,8 +85,14 @@ MonoBehaviour:
     m_ReadOnly: 1
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: b53f044127fc48b49954edd0f02eef47
-    m_Address: Assets/IBIIIS/ScriptableObjects/Localization/Tables/Dialogue_villager_greeting
+  - m_GUID: b9a04ee65db78b244b91de251051e71c
+    m_Address: Assets/IBIIIS/ScriptableObjects/Localization/Tables/Scenario_example_gate_blocked
+      Shared Data.asset
+    m_ReadOnly: 1
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: c35f525955d629c4f8cf0d3e59c3a602
+    m_Address: Assets/IBIIIS/ScriptableObjects/Localization/Tables/Scenario_prototype_map
       Shared Data.asset
     m_ReadOnly: 1
     m_SerializedLabels: []
@@ -52,6 +105,30 @@ MonoBehaviour:
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: c9cd9e0f27207fb4b9e7cfefdf7387d8
     m_Address: Assets/IBIIIS/ScriptableObjects/Localization/Tables/Scenario_tutorial_2
+      Shared Data.asset
+    m_ReadOnly: 1
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: db829febcd82f8b4397b875e4d3a6dbe
+    m_Address: Assets/IBIIIS/ScriptableObjects/Localization/Tables/Scenario_example_a_repeat
+      Shared Data.asset
+    m_ReadOnly: 1
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: e354cf57d519c564e907c7993fd84a90
+    m_Address: Assets/IBIIIS/ScriptableObjects/Localization/Tables/Scenario_zone_test
+      Shared Data.asset
+    m_ReadOnly: 1
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: ee939a9f889b60847a1ecca6a3f46615
+    m_Address: Assets/IBIIIS/ScriptableObjects/Localization/Tables/Scenario_example_a_first
+      Shared Data.asset
+    m_ReadOnly: 1
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: f0fa144696fb15544945f621a235ffc4
+    m_Address: Assets/IBIIIS/ScriptableObjects/Localization/Tables/Scenario_example_b_next
       Shared Data.asset
     m_ReadOnly: 1
     m_SerializedLabels: []

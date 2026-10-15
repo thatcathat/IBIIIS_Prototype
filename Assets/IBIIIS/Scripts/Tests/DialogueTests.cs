@@ -89,16 +89,31 @@ namespace IBIIIS.Tests
         }
         [Test] public void NpcWithDialogueOpensTheDialogueAndClosesAtTheEnd()
         {
-            var script = Track(ScriptableObject.CreateInstance<DialogueScript>()); script.Set("test", Script());
-            var npc = Track(new GameObject("NPC").AddComponent<NpcSpeaker>());
-            var so = new SerializedObject(npc); so.FindProperty("dialogue").objectReferenceValue = script; so.ApplyModifiedPropertiesWithoutUndo();
-            Assert.AreEqual("말 걸기", npc.PromptVerb);
-            npc.Interact(null);
-            Assert.IsTrue(npc.InDialogue); Assert.IsNull(npc.PromptVerb, "대화 중에는 다시 말 걸 수 없음");
-            var controller = Object.FindAnyObjectByType<DialogueController>(); Track(controller);
-            Assert.IsFalse(controller.UsesGameUi, "Game UI 없이 열면 임시 표시");
-            for (int i = 0; i < 10 && controller.IsOpen; i++) controller.Runner.Advance();
-            Assert.IsFalse(npc.InDialogue); Assert.AreEqual("말 걸기", npc.PromptVerb);
+            // NPC의 대본은 대화 그래프에서 잇는다(기획서 7.6). 본 기록이 실제 저장 파일에 남지 않게 임시 파일을 쓴다.
+            var save = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"IBIIIS_progress_test_{System.Guid.NewGuid():N}.json");
+            ProgressStore.UseFile(save);
+            var script = Track(ScriptableObject.CreateInstance<ScenarioScript>());
+            var options = script.Options; options.use = ScenarioUse.Talk; script.SetOptions(options);
+            script.Set("test", System.Array.ConvertAll(Script(), l => new ScenarioStep { type = ScenarioStepType.Line, line = l }));
+            var graph = Track(ScriptableObject.CreateInstance<DialogueGraph>()); graph.SetFirst("npc-test", script); graph.Link(script);
+            DialogueProgress.Graph = graph;
+            try
+            {
+                var npc = Track(new GameObject("NPC").AddComponent<NpcSpeaker>());
+                var so = new SerializedObject(npc); so.FindProperty("npcId").stringValue = "npc-test"; so.ApplyModifiedPropertiesWithoutUndo();
+                Assert.AreEqual("말 걸기", npc.PromptVerb);
+                npc.Interact(null);
+                Assert.IsTrue(npc.InDialogue); Assert.IsNull(npc.PromptVerb, "대화 중에는 다시 말 걸 수 없음");
+                var controller = Object.FindAnyObjectByType<DialogueController>(); Track(controller);
+                Assert.IsFalse(controller.UsesGameUi, "Game UI 없이 열면 임시 표시");
+                for (int i = 0; i < 10 && controller.IsOpen; i++) controller.Runner.Advance();
+                Assert.IsFalse(npc.InDialogue); Assert.AreEqual("말 걸기", npc.PromptVerb, "순서 끝 대본이라 계속 말함");
+            }
+            finally
+            {
+                DialogueProgress.Graph = null; ProgressStore.UseFile(null);
+                foreach (var f in new[] { save, save + ".tmp" }) if (System.IO.File.Exists(f)) System.IO.File.Delete(f);
+            }
         }
     }
 }
