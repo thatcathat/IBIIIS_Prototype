@@ -67,6 +67,12 @@ namespace IBIIIS
             IsOpen = false; Index = -1; Visible = 0; Left = Right = null;
             var finished = onFinished; onFinished = null; finished?.Invoke();
         }
+        /// <summary>대화를 끝 알림 없이 닫는다. 대화창이 사라질 때(씬 내리기·Play 끝) 쓴다: 기다리던 쪽(대본 진행기 등)도 함께 사라지므로 다음 단계로 진행하지 않는다.</summary>
+        public void Cancel()
+        {
+            onFinished = null;
+            Close();
+        }
         private void Show(int index)
         {
             Index = index; elapsed = 0; Visible = CharactersPerSecond <= 0 ? Text.Length : 0;

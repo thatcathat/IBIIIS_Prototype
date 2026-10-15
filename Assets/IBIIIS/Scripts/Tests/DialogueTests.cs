@@ -65,6 +65,14 @@ namespace IBIIIS.Tests
             runner.Start(new DialogueLine[0], () => finished++);
             Assert.IsFalse(runner.IsOpen); Assert.AreEqual(1, finished);
         }
+        [Test] public void CancelClosesWithoutTheFinishedCallback()
+        {
+            int finished = 0; var runner = new DialogueRunner();
+            runner.Start(new[] { DialogueLine.Narrate("a"), DialogueLine.Narrate("b") }, () => finished++);
+            runner.Cancel();
+            Assert.IsFalse(runner.IsOpen); Assert.AreEqual(0, finished, "창이 사라질 때는 다음 단계로 진행하지 않음");
+            runner.Close(); Assert.AreEqual(0, finished, "이미 닫힌 뒤에도 알림 없음");
+        }
         [Test] public void ViewDrawsNamePortraitsAndNarration()
         {
             var root = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(GameUiSetup.DialogueBoxPath).CloneTree();

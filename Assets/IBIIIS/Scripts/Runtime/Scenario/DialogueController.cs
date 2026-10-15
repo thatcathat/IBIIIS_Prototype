@@ -97,6 +97,7 @@ namespace IBIIIS
             if (Event.current.type == EventType.Repaint) GUI.Box(new Rect(40, Screen.height - 170, Screen.width - 80, 140), text, OverworldGui.Body);
             if (nameDone != null && GUI.Button(new Rect(Screen.width / 2 - 60, Screen.height - 60, 120, 32), UiText.Confirm.Text)) SubmitName(nameDefault);
         }
-        private void OnDestroy() { runner.Close(); }
+        // 사라질 때는 '끝남'이 아니다: 이미 파괴된 대본 진행기가 다음 단계(기록·씬 전환 등)를 이어 가지 않게 알림 없이 닫는다.
+        private void OnDestroy() { runner.Cancel(); }
     }
 }
