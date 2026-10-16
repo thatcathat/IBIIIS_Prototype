@@ -3,14 +3,14 @@ using UnityEngine;
 
 namespace IBIIIS.Editor
 {
-    /// <summary>미연시 대화의 기본 에셋을 만든다: 임시 초상화(코드로 그린 실루엣), 기본 인물(플레이어·어시 파리·마을 사람), 확인용 대화 대본(용도: 대화),
-    /// 어드벤처씬 대화 그래프. 이미 있는 파일은 덮어쓰지 않는다. 대본을 NPC에 잇는 것은 대화 그래프에서 한다(NPC 프리팹에는 대본 칸이 없다).</summary>
+    /// <summary>미연시 대화의 기본 에셋을 만든다: 임시 초상화(코드로 그린 실루엣), 기본 인물(플레이어·어시 파리·마을 사람), 어드벤처씬 대화 그래프.
+    /// 이미 있는 파일은 덮어쓰지 않는다. 대화 대본은 만들지 않는다(2026-10-16 확인용 대화 VillagerGreeting은 사용자가 정리 — 시험 예시는 Add Dialogue Example).
+    /// 대본을 NPC에 잇는 것은 대화 그래프에서 한다(NPC 프리팹에는 대본 칸이 없다).</summary>
     public static class DialogueSetup
     {
         // 초상화(그림)는 Art/Portraits, 대화 인물은 ScriptableObjects/Dialogue/Characters, NPC 대화는 ScriptableObjects/Scenarios/NPC.
         public const string PortraitFolder = AssetPaths.Portraits, CharacterFolder = AssetPaths.Data + "/Dialogue/Characters", ScriptFolder = AssetPaths.Scenarios + "/NPC";
         public const string Player = CharacterFolder + "/Player.asset", AssiFly = CharacterFolder + "/AssiFly.asset", Villager = CharacterFolder + "/Villager.asset";
-        public const string SampleScript = ScriptFolder + "/VillagerGreeting.asset";
 
         /// <summary>어드벤처씬 대화 그래프(대상 → 대본 순서·조건, 기획서 7.6). 없을 때만 빈 그래프를 만든다(이미 있으면 그대로).</summary>
         public static DialogueGraph EnsureGraph()
@@ -23,19 +23,13 @@ namespace IBIIIS.Editor
             return graph;
         }
         [MenuItem("IBIIIS/Create Default Dialogue")]
-        public static ScenarioScript EnsureDefault()
+        public static void EnsureDefault()
         {
             AssetPaths.EnsureFolder(PortraitFolder); AssetPaths.EnsureFolder(CharacterFolder); AssetPaths.EnsureFolder(ScriptFolder);
-            var player = EnsureCharacter(Player, "player", "플레이어", DialogueSide.Left, new Color(.55f, .78f, 1f), Silhouette("Player", new Color(.95f, .78f, .35f)));
-            var fly = EnsureCharacter(AssiFly, "assi_fly", "어시 파리", DialogueSide.Right, new Color(.55f, .9f, .45f), Silhouette("AssiFly", new Color(.45f, .8f, .4f)));
-            var villager = EnsureCharacter(Villager, "villager", "마을 사람", DialogueSide.Right, new Color(1f, .85f, .55f), Silhouette("Villager", new Color(.66f, .76f, .9f)));
+            EnsureCharacter(Player, "player", "플레이어", DialogueSide.Left, new Color(.55f, .78f, 1f), Silhouette("Player", new Color(.95f, .78f, .35f)));
+            EnsureCharacter(AssiFly, "assi_fly", "어시 파리", DialogueSide.Right, new Color(.55f, .9f, .45f), Silhouette("AssiFly", new Color(.45f, .8f, .4f)));
+            EnsureCharacter(Villager, "villager", "마을 사람", DialogueSide.Right, new Color(1f, .85f, .55f), Silhouette("Villager", new Color(.66f, .76f, .9f)));
             EnsureGraph();
-            return EnsureTalk(SampleScript, "villager_greeting",
-                DialogueLine.Narrate("마을 사람이 손을 흔든다."),
-                DialogueLine.Say(villager, "어서 와! 처음 보는 얼굴이네."),
-                DialogueLine.Say(player, "안녕하세요. 여기는 어디예요?"),
-                DialogueLine.Say(villager, "던전 입구 마을이야. 저기 주황 발판으로 가면 던전에 들어갈 수 있어."),
-                DialogueLine.Say(fly, "(대화창 확인용 임시 대사예요!)"));
         }
         /// <summary>대화 대본(용도: 대화)을 없을 때만 만든다(줄마다 대사 단계 하나). 이미 있으면 그대로 돌려준다. 그 경로에 다른 종류 파일이 있으면 만들지 않고 null.</summary>
         public static ScenarioScript EnsureTalk(string path, string id, params DialogueLine[] lines)

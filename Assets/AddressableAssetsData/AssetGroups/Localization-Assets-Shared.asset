@@ -37,12 +37,6 @@ MonoBehaviour:
     m_ReadOnly: 1
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 21448951a0209fc47804f9aaa9d389ca
-    m_Address: Assets/IBIIIS/ScriptableObjects/Localization/Tables/Scenario_guide_hello
-      Shared Data.asset
-    m_ReadOnly: 1
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 5c448d04bdbeab841b14db609b065fd7
     m_Address: Assets/IBIIIS/ScriptableObjects/Localization/Tables/Scenario_example_a_clear
       Shared Data.asset
@@ -55,20 +49,8 @@ MonoBehaviour:
     m_ReadOnly: 1
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 70be4a1fdd89896419fed702311add6a
-    m_Address: Assets/IBIIIS/ScriptableObjects/Localization/Tables/Scenario_npc_hello
-      Shared Data.asset
-    m_ReadOnly: 1
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 8d94026630098c444ab48fd0ee83f183
     m_Address: Assets/IBIIIS/ScriptableObjects/Localization/Tables/Scenario_example_a_repeat_2
-      Shared Data.asset
-    m_ReadOnly: 1
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 8ff762029aff1b54db107f0584ce1923
-    m_Address: Assets/IBIIIS/ScriptableObjects/Localization/Tables/Scenario_villager_greeting
       Shared Data.asset
     m_ReadOnly: 1
     m_SerializedLabels: []
@@ -111,12 +93,6 @@ MonoBehaviour:
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: db829febcd82f8b4397b875e4d3a6dbe
     m_Address: Assets/IBIIIS/ScriptableObjects/Localization/Tables/Scenario_example_a_repeat
-      Shared Data.asset
-    m_ReadOnly: 1
-    m_SerializedLabels: []
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: e354cf57d519c564e907c7993fd84a90
-    m_Address: Assets/IBIIIS/ScriptableObjects/Localization/Tables/Scenario_zone_test
       Shared Data.asset
     m_ReadOnly: 1
     m_SerializedLabels: []

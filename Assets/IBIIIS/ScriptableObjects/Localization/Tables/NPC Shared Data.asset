@@ -15,10 +15,6 @@ MonoBehaviour:
   m_TableCollectionName: NPC
   m_TableCollectionNameGuidString: 0f15020788c32d64b8176f499702e8f9
   m_Entries:
-  - m_Id: 653017088
-    m_Key: npc_guide.name
-    m_Metadata:
-      m_Items: []
   - m_Id: 13961502932992
     m_Key: npc_a.name
     m_Metadata:

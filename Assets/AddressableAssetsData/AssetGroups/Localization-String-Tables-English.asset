@@ -69,20 +69,8 @@ MonoBehaviour:
     m_SerializedLabels:
     - Locale-en
     FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 37c4d15ad0e481347bfd98a09924a52a
-    m_Address: Scenario_villager_greeting_en
-    m_ReadOnly: 1
-    m_SerializedLabels:
-    - Locale-en
-    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 3e162557edbd7c5499d1610fbc981f00
     m_Address: Scenario_tutorial_2_en
-    m_ReadOnly: 1
-    m_SerializedLabels:
-    - Locale-en
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 4768ca4f682c25c4f95ea33030210b09
-    m_Address: Scenario_npc_hello_en
     m_ReadOnly: 1
     m_SerializedLabels:
     - Locale-en
@@ -105,20 +93,8 @@ MonoBehaviour:
     m_SerializedLabels:
     - Locale-en
     FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: 8d3ba4cfe3b02be4ca4e88b652f88acf
-    m_Address: Scenario_guide_hello_en
-    m_ReadOnly: 1
-    m_SerializedLabels:
-    - Locale-en
-    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: b179e25334a5f784e85192b8d9f0f5e7
     m_Address: Characters_en
-    m_ReadOnly: 1
-    m_SerializedLabels:
-    - Locale-en
-    FlaggedDuringContentUpdateRestriction: 0
-  - m_GUID: b88915512385250458967cc44736e756
-    m_Address: Scenario_zone_test_en
     m_ReadOnly: 1
     m_SerializedLabels:
     - Locale-en

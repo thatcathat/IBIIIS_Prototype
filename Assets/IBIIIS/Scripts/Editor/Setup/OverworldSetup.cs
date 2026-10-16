@@ -135,7 +135,8 @@ namespace IBIIIS.Editor
         }
         [MenuItem("IBIIIS/Overworld/Create NPC Prefab")]
         public static void CreateNpcPrefabMenu() { Selection.activeObject = EnsureNpcPrefab(); EditorGUIUtility.PingObject(Selection.activeObject); }
-        /// <summary>바닥·경계·플레이어·따라가는 카메라·NPC 하나·스테이지 입구 하나를 담은 테스트 씬을 만든다. 현재 열린 씬은 바꾸지 않는다.</summary>
+        /// <summary>바닥·경계·플레이어·따라가는 카메라·스테이지 입구 하나를 담은 테스트 씬을 만든다. 현재 열린 씬은 바꾸지 않는다.
+        /// NPC·대화는 넣지 않는다(2026-10-16 안내인 NPC와 그 대화는 사용자가 정리 — 대화 시험 대상은 Add Dialogue Example).</summary>
         public static string CreateTestScene(string path)
         {
             if (EditorApplication.isPlayingOrWillChangePlaymode) throw new InvalidOperationException("Play 모드를 종료한 뒤 만드세요.");
@@ -152,7 +153,6 @@ namespace IBIIIS.Editor
                 var settings = EnsureSettings(true);
                 var playerPrefab = EnsurePlayerPrefab(settings);
                 var ground = MapEditorSetup.EnsureGroundMaterial();
-                var npcPrefab = EnsureNpcPrefab();
                 var stageMaterial = EnsureMaterial("Placeholder_Stage", new Color(1f, .55f, .25f));
                 var flagPrefab = EnsureClearedFlagPrefab();
                 const float half = 12;
@@ -176,14 +176,6 @@ namespace IBIIIS.Editor
                 if (settings.CameraSettings != null) settings.CameraSettings.Apply(camera);
                 var follow = cameraObject.GetComponent<OverworldCamera>(); follow.Configure(player.transform, settings); follow.Snap();
 
-                var npc = (GameObject)PrefabUtility.InstantiatePrefab(npcPrefab, scene); npc.name = "NPC_Guide";
-                npc.transform.position = new Vector3(-3, 0, 0);
-                var speaker = new SerializedObject(npc.GetComponent<NpcSpeaker>());
-                speaker.FindProperty("npcId").stringValue = GuideId; // 대화 그래프의 오브젝트 ID
-                speaker.FindProperty("displayName").stringValue = "안내인";
-                speaker.ApplyModifiedPropertiesWithoutUndo();
-                EnsureGuideDialogue();
-
                 var stage = new GameObject("Stage_ProtoTypeMap"); SceneManager.MoveGameObjectToScene(stage, scene);
                 stage.transform.position = new Vector3(3, 0, 3);
                 var pad = Primitive(PrimitiveType.Cylinder, "Pad (임시)", scene, stage.transform, stageMaterial, false);
@@ -206,26 +198,6 @@ namespace IBIIIS.Editor
                 EditorSceneManager.CloseScene(scene, true);
             }
             return path;
-        }
-        // 안내인 NPC의 대화: 확인용 대화(처음 한 번) → 안내 대사(그다음부터 계속). 그래프에 이 NPC가 이미 있으면 사용자가 고친 연결을 그대로 둔다.
-        public const string GuideId = "npc_guide", GuideScript = AssetPaths.Scenarios + "/NPC/GuideHello.asset";
-        public static void EnsureGuideDialogue()
-        {
-            var greeting = DialogueSetup.EnsureDefault();
-            var villager = AssetDatabase.LoadAssetAtPath<DialogueCharacter>(DialogueSetup.Villager);
-            DialogueLine Say(string text) => new DialogueLine { speaker = villager, nameOverride = "안내인", text = text };
-            var guide = DialogueSetup.EnsureTalk(GuideScript, "guide_hello",
-                Say("어서 와. 여기는 미니맵 테스트 장소야."), Say("주황색 발판 위에서 F를 누르면 전투에 들어갈 수 있어."), Say("이기든 지든 다시 여기로 돌아오게 될 거야."));
-            var graph = DialogueSetup.EnsureGraph();
-            if (graph == null || greeting == null || guide == null || graph.HasObject(GuideId)) return;
-            // 그래프 규칙을 지킨다: 확인용 대화가 이미 다른 대상의 순서에 있으면 잇지 않고, 이미 이어 둔 다음은 덮어쓰지 않는다.
-            string why = DialogueGraphEdits.FirstProblem(graph, GuideId, greeting);
-            if (why != null) { Debug.LogWarning($"[IBIIIS] 안내인 대화를 잇지 않았습니다: {why}"); return; }
-            Undo.RecordObject(graph, "안내인 대화 연결");
-            graph.SetFirst(GuideId, greeting);
-            if (graph.NextOf(greeting) == null && DialogueGraphEdits.NextProblem(graph, greeting, guide) == null) graph.SetNext(greeting, guide);
-            graph.Entry(guide);
-            EditorUtility.SetDirty(graph); AssetDatabase.SaveAssetIfDirty(graph);
         }
         /// <summary>임시 NPC 실루엣(256×256, PPU 256 = 캔버스 한 칸 너비, 기준점 아래 중앙). 정식 그림이 생기면 이 파일을 교체하거나 프리팹의 Visual 스프라이트를 바꾼다.</summary>
         public static Sprite EnsureNpcSprite()
