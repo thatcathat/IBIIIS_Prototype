@@ -90,6 +90,14 @@ namespace IBIIIS
         private GameUiSettings Ui => battle != null && battle.SharedPlayerSettings != null ? battle.SharedPlayerSettings.GameUi : null;
         public void Configure(GridMapPlayer value, ScenarioScript tutorial, Actor[] cast = null) { battle = value; script = tutorial; actors = cast ?? Array.Empty<Actor>(); }
 
+        // 자동 시작할 대본이 있으면 첫 프레임부터 전투 입력을 막는다. 같은 프레임에 전투가 진행기보다 먼저 돌면
+        // (실행 순서는 정해져 있지 않음) 씬을 불러오는 동안 쌓인 키(대사를 넘기던 Space = 대기)가 턴을 넘겨 버린다(튜토리얼 2에서 시작하자마자 패배, 2026-10-16).
+        private void Start() => HoldInputUntilStart();
+        /// <summary>자동 시작할 입장 후 구간이 있으면 시작 전까지 전투 입력을 막는다(시작하면 단계가, 끝나면 Restore가 다시 정한다).</summary>
+        public void HoldInputUntilStart()
+        {
+            if (playOnStart && battle != null && script != null && !IsRunning && !Finished && !AlreadySeen) battle.CommandFilter = DenyAll;
+        }
         private void Update()
         {
             TryAutoStart(); // 테스트와 같은 경로: 시작할 구간(전투 시작·클리어)을 골라 시작한다

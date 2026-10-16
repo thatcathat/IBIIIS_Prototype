@@ -48,6 +48,27 @@ namespace IBIIIS.Tests
             Object.DestroyImmediate(map); Object.DestroyImmediate(script); Object.DestroyImmediate(fly);
         }
         private void NextLine() { var r = director.Dialogue.Runner; r.Advance(); r.Advance(); }
+        // 튜토리얼 2는 시작 자리에서 대기 한 번이면 옆 적에게 진다. 진행기가 시작하기 전 첫 프레임에 들어온 대기(대사를 넘기던 Space)가
+        // 턴을 넘기지 않아야 한다(2026-10-16 사용자 보고: 튜토리얼 1→2 넘어가자마자 패배, 대사만 나오고 진행이 멈춤).
+        [Test] public void AutoStartScriptHoldsBattleInputFromTheFirstFrame()
+        {
+            var stageMap = UnityEditor.AssetDatabase.LoadAssetAtPath<GridMap>(IBIIIS.Editor.TutorialSetup.Stage2Map);
+            var stageScript = UnityEditor.AssetDatabase.LoadAssetAtPath<ScenarioScript>(IBIIIS.Editor.TutorialSetup.Stage2Script);
+            var go = new GameObject("Tutorial2 Battle"); SceneManager.MoveGameObjectToScene(go, scene);
+            var fight = go.AddComponent<GridMapPlayer>(); fight.Configure(stageMap, null, null); fight.Build();
+            Assert.AreEqual(BattlePhase.Lost, fight.Session.Predict(PlayerAction.Wait, Vector2Int.zero), "전제: 시작 자리에서 대기하면 짐");
+            var run = go.AddComponent<ScenarioDirector>(); run.Configure(fight, stageScript);
+            run.HoldInputUntilStart(); // Play에서는 Start에서(모든 Update보다 먼저)
+            Assert.IsFalse(fight.TryPlayerCommand(PlayerAction.Wait, Vector2Int.zero), "시작 전 대기는 막힘");
+            Assert.AreEqual(BattlePhase.Waiting, fight.Session.Phase); Assert.AreEqual(0, fight.Session.UndoCount);
+            Assert.IsTrue(run.TryAutoStart(), "그다음 대본이 시작됨");
+            Assert.IsFalse(fight.TryPlayerCommand(PlayerAction.Wait, Vector2Int.zero), "대사 중에도 막힘");
+            // 자동 시작하지 않는 진행기(대본 없음)는 막지 않는다
+            var free = new GameObject("Free Battle"); SceneManager.MoveGameObjectToScene(free, scene);
+            var plain = free.AddComponent<GridMapPlayer>(); plain.Configure(map, null, null); plain.Build();
+            var none = free.AddComponent<ScenarioDirector>(); none.Configure(plain, null); none.HoldInputUntilStart();
+            Assert.IsNull(plain.CommandFilter, "대본이 없으면 입력을 막지 않음");
+        }
         private void Act(PlayerAction action, Vector2Int direction, bool expect = true)
         {
             Assert.AreEqual(expect, battle.TryPlayerCommand(action, direction), $"{action} {direction}");

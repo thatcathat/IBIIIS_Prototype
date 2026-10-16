@@ -636,7 +636,8 @@ namespace IBIIIS
             UpdateMotion(dt);
             BlinkGuides();
             if (restartRequested) { Restart(); return; }
-            if (input != null) ReadCommand();
+            // 씬 전환(가리기·불러오기·드러내기) 중에는 키 입력을 받지 않는다. 불러오는 동안 쌓인 키가 새 씬의 첫 프레임에 행동으로 들어가지 않게(2026-10-16).
+            if (input != null && !SceneTransition.Busy) ReadCommand();
             RefreshHud();
         }
         private void ReadCommand()
