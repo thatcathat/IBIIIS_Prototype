@@ -109,7 +109,7 @@ Unity의 프로젝트 구성 가이드(unity.com/kr/how-to/organizing-your-proje
 | `Assets/IBIIIS/ScriptableObjects/Dialogue/Characters` | 대화 인물(DialogueCharacter). 초상화 그림은 `Art/Portraits` |
 | `Assets/IBIIIS/Materials` | 공용 재질(PrototypeUnlit, 어드벤처씬 임시 재질) |
 | `Assets/IBIIIS/Scenes` | 씬: `Title.unity`, `OverworldTest.unity`(어드벤처씬 테스트), `Battle/<맵>/`(전투 맵 데이터와 씬 한 쌍) |
-| `Assets/IBIIIS/ScriptableObjects/Scenarios` | 모든 대본: `Tutorial/`(Tutorial1Script·Tutorial2Script), `DialogueExampleTest/`((시험) 어드벤처씬 대화 예시 대본 8개), `PrototypeMap/`(전투 진입 대본), `NPC/`·`Zone/`(2026-10-16부터 비어 있음 — 예전 대화 대본은 사용자가 정리), `DialogueGraph.asset`(대화 그래프 — 대상 → 대본 순서·조건). IBIIIS Dialogue Editor의 새 대본 기본 위치 |
+| `Assets/IBIIIS/ScriptableObjects/Scenarios` | 모든 대본: `Tutorial/`(Tutorial1Script·Tutorial2Script), `DialogueExampleTest/`((시험) 어드벤처씬 대화 예시 대본 8개), `PrototypeMap/`(전투 진입 대본), `NPC/`(2026-10-16부터 비어 있음 — 예전 대화 대본은 사용자가 정리, 대화 설치기가 쓰는 폴더라 남김. 빈 `Zone/`은 2026-10-18 지움), `DialogueGraph.asset`(대화 그래프 — 대상 → 대본 순서·조건). IBIIIS Dialogue Editor의 새 대본 기본 위치 |
 | `Assets/IBIIIS/Scenes/Battle/<맵 이름>/` | GridMap(.asset)과 연결 씬(.unity) 한 쌍. 샘플과 사용자 맵 모두 여기에 둔다 |
 | `Assets/IBIIIS/Resources/IBIIIS` | 이름으로 로드하는 에셋: 기본 재질(DefaultGround), 씬 전환 설정(SceneTransitionSettings). 이동 금지 |
 | `Assets/IBIIIS/ScriptableObjects/Localization` | 다국어: `LocalizationSettings`, `Locales/`(Korean·English), `Tables/`(번역 표. 표 묶음마다 `<표>`·`<표> Shared Data`·`<표>_ko`·`<표>_en` 에셋), `TranslationRecord`(번역할 때 본 원문 기록) |

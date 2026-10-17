@@ -35,11 +35,11 @@ MonoBehaviour:
   - script: {fileID: 11400000, guid: c39c97d0226a70941be4c3d8274e3244, type: 2}
     next: {fileID: 0}
     conditions: []
-    position: {x: 288, y: 1236}
+    position: {x: -756, y: 480}
   - script: {fileID: 11400000, guid: 5cc77559b58fe72469eca3a2a1d8e3f7, type: 2}
     next: {fileID: 0}
     conditions: []
-    position: {x: 576, y: 1236}
+    position: {x: -468, y: 480}
   - script: {fileID: 11400000, guid: fc7980f3396794545ac9e5dd7fa75299, type: 2}
     next: {fileID: 11400000, guid: d08fd81dd5a04dd4b91d17a55ab505a1, type: 2}
     conditions: []
